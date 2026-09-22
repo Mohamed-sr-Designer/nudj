@@ -45,6 +45,8 @@ ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="can
 <meta property="og:title" content="${esc(m.title)}">
 <meta property="og:description" content="${esc(m.desc)}">
 <meta property="og:url" content="${C.base}${m.file === "index.html" ? "" : m.file}">
+${(m.ogImage || D.IMAGES["og-share"]) ? `<meta property="og:image" content="${C.base}${m.ogImage || D.IMAGES["og-share"]}">
+<meta name="twitter:card" content="summary_large_image">` : ""}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Noto+Kufi+Arabic:wght@700;800;900&display=swap" rel="stylesheet">
@@ -107,7 +109,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
     <span class="pays" aria-label="طرق الدفع"><span>مدى</span><span>Apple Pay</span><span>VISA</span><span>Mastercard</span><span>تمارا</span><span>الدفع عند الاستلام</span></span></div>
 </div></footer>`;
 
-  const SCRIPTS = ["assets/js/data.js", "assets/js/store.js", "assets/js/ui.js", "assets/js/app.js"];
+  const SCRIPTS = ["assets/js/data.js", "assets/js/images.js", "assets/js/store.js", "assets/js/ui.js", "assets/js/app.js"];
 
   /* الصفحة كاملة */
   return function render(m, main) {

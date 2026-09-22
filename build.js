@@ -20,6 +20,42 @@ const write = (p, s) => { fs.mkdirSync(path.dirname(rel(p)), { recursive: true }
 const sandbox = { window: {}, console };
 vm.createContext(sandbox);
 vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
+
+/* ---------- اكتشاف الصور من أسماء الملفات → assets/js/images.js ----------
+   site/<key>.ext · products/<id>-1|2|3.ext · posters/guide-<id>.ext · posters/dish-<slug>.ext */
+{
+  const EXT = /\.(jpe?g|png|webp)$/i;
+  const list = dir => { try { return fs.readdirSync(rel(dir)).filter(f => EXT.test(f)).sort(); } catch (e) { return []; } };
+  const M = { site: {}, products: {}, posters: {} };
+  list("assets/img/site").forEach(f => { M.site[f.replace(EXT, "")] = "assets/img/site/" + f; });
+  list("assets/img/products").forEach(f => {
+    const m = f.replace(EXT, "").match(/^(.+)-([123])$/); if (!m) return;
+    (M.products[m[1]] = M.products[m[1]] || [])[+m[2] - 1] = "assets/img/products/" + f;
+  });
+  list("assets/img/posters").forEach(f => {
+    const k = f.replace(EXT, "");
+    if (k.indexOf("guide-") === 0) M.posters[k.slice(6)] = "assets/img/posters/" + f;
+    else if (k.indexOf("dish-") === 0) M.posters[k] = "assets/img/posters/" + f;
+  });
+  const n = Object.keys(M.site).length + Object.keys(M.products).reduce((t, k) => t + M.products[k].filter(Boolean).length, 0) + Object.keys(M.posters).length;
+  write("assets/js/images.js", `/* مولّد تلقائياً بواسطة build.js — لا تعدّله يدوياً (${n} صورة مكتشفة).
+   يربط الصور المحفوظة بأسمائها الصحيحة بخاناتها في الموقع. */
+(function (D) {
+  if (!D) return;
+  var M = ${JSON.stringify(M)};
+  Object.keys(M.site).forEach(function (k) { if (!D.IMAGES[k]) D.IMAGES[k] = M.site[k]; });
+  D.PRODUCTS.forEach(function (p) {
+    var f = (M.products[p.id] || []).filter(Boolean);
+    if (f.length) { if (!p.img) p.img = f[0]; if (!p.gallery || !p.gallery.length) p.gallery = p.img === f[0] ? f.slice(1) : f; }
+    if (!p.poster && M.posters[p.id]) p.poster = M.posters[p.id];
+  });
+  if (!D.CARCASS_GUIDE.poster && M.posters.carcass) D.CARCASS_GUIDE.poster = M.posters.carcass;
+  D.DISHES.forEach(function (d) { if (!d.poster && M.posters["dish-" + d.slug]) d.poster = M.posters["dish-" + d.slug]; });
+})(window.NUDJ);
+`);
+  if (n) console.log("  images: " + n + " detected");
+}
+vm.runInContext(read("assets/js/images.js"), sandbox, { filename: "images.js" });
 vm.runInContext(read("assets/js/ui.js"), sandbox, { filename: "ui.js" });
 const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, C = D.CONFIG;
 

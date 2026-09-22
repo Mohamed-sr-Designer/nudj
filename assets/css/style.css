@@ -1216,3 +1216,7 @@ a.member-card{display:grid;text-decoration:none}
 .stat:hover{box-shadow:0 0 0 1px var(--line),var(--sh-2)}
 .stat b{font-size:1.6rem;color:var(--ink);font-weight:600;line-height:1.2}
 .stat span{font-size:.84rem;color:var(--muted)}
+/* أغلفة الفيديو (poster) تملأ الإطار، والأزرار فوقها */
+.video>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.video__lock,.video__play,.video__cap{z-index:1}
+.xp-card__vid .pill,.xp-card__vid .play{z-index:1}

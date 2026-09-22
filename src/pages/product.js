@@ -56,7 +56,7 @@ module.exports = function (ctx) {
     const xp = gid ? `<section class="pdp-sec" id="guide" aria-labelledby="xpH">
   <h2 id="xpH">الدليل المصوّر</h2>
   <div class="xp-card" data-xp="${gid}">
-    <a class="xp-card__vid ph" href="${U.url.guide(gid)}" aria-label="افتح صفحة الدليل"><span class="pill pill--brand">${icon("lock")}خدمة إضافية</span><span class="play">${U.playIcon()}</span></a>
+    <a class="xp-card__vid ph" href="${U.url.guide(gid)}" aria-label="افتح صفحة الدليل">${U.posterImg(gid, "دليل " + p.name)}<span class="pill pill--brand">${icon("lock")}خدمة إضافية</span><span class="play">${U.playIcon()}</span></a>
     <div class="xp-card__b">
       <h3>${gid === "carcass" ? "دليل تقطيع الذبيحة" : "دليل " + esc(p.name) + ": من التقطيع حتى الطبق"}</h3>
       <p class="muted">${gid === "carcass" ? "فيديو يشرح كيف تُقسم الذبيحة، وأي تقطيع يناسب كل طبخة، وكم تكفي حسب حجمها." : "فيديو يشرح كيف تُقطّع هذي القطعة، وخطوات طبخها بكل طريقة مع الحرارة والوقت."}</p>
@@ -105,11 +105,12 @@ module.exports = function (ctx) {
       name: "product", file: U.url.product(p.id), tab: "shop", nav: "shop", mode: "push", back: ["shop.html", "المتجر"],
       appTitle: p.name, trail: ["share", "wish:" + p.id, "cart"], tabbar: false,
       actionbar: `<div class="action-bar__p"><small>الإجمالي</small><b id="abTotal">${money(U.unitPrice(p, {}))} ${C.currency}</b></div><button class="btn btn--brand" type="button" id="abAdd">${icon("cart")}أضف للسلة</button>`,
-      scripts: ["product"], data: { id: p.id }, ogType: "product",
+      scripts: ["product"], data: { id: p.id }, ogType: "product", ogImage: p.img || "",
       title: `${p.name} — ${typeName} · نُضْج`,
       desc: `${p.name}: ${p.short}. ${p.type === "cut" ? p.why : p.about}`.slice(0, 300),
       jsonld: [
         { "@context": "https://schema.org", "@type": "Product", name: p.name, alternateName: p.en, sku: p.code, description: p.type === "cut" ? p.why : p.about,
+          image: [p.img].concat(p.gallery || []).filter(Boolean).map(s => C.base + s),
           brand: { "@type": "Brand", name: "نُضْج" }, category: typeName,
           offers: { "@type": "Offer", priceCurrency: "SAR", price: String(priceNum), availability: "https://schema.org/InStock", url: C.base + U.url.product(p.id) } },
         { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [

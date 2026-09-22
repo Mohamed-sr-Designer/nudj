@@ -35,16 +35,23 @@
 
 بعد أي تعديل: `node build.js` (يولّد كل الصفحات وsitemap وllms.txt).
 
-### إضافة الصور
-1. ضع الصورة في `assets/img/`.
-2. **صور المنتجات:** في المنتج داخل `PRODUCTS` أضف `img: "assets/img/lamb-rack.jpg"` وللمعرض `gallery: ["...", "..."]` (مربّعة 1:1).
-3. **صور الصفحات** (البانر، الأنواع، الخبرة، الاستشارة، من نحن): في `IMAGES` — المقاس المقترح مكتوب بجانب كل خانة.
-4. `node build.js`. أي خانة بلا صورة تبقى مستطيلاً رمادياً.
+### إضافة الصور — بدون أي تعديل في الكود
+احفظ كل صورة **بالاسم الصحيح** في المجلد الصحيح، ثم شغّل `node build.js` — تظهر في مكانها تلقائياً في كل الصفحات (البطاقات، المعرض، السلة، المشاركة في واتساب…).
+
+| النوع | المجلد | الاسم |
+|---|---|---|
+| صور الصفحات | `assets/img/site/` | `home-hero.jpg` · `home-expertise.jpg` · `type-carcass.jpg` · `type-lamb.jpg` · `type-beef.jpg` · `type-mince.jpg` · `type-box.jpg` · `expertise-hero.jpg` · `consult.jpg` · `about.jpg` · `og-share.jpg` |
+| صور المنتجات | `assets/img/products/` | `<id>-1.jpg` (الرئيسية) · `<id>-2.jpg` · `<id>-3.jpg` (المعرض) — مثال: `lamb-rack-1.jpg` |
+| أغلفة فيديو الأدلة | `assets/img/posters/` | `guide-<id>.jpg` · `guide-carcass.jpg` · `dish-<slug>.jpg` — مثال: `dish-kabsa.jpg` |
+
+- يُقبل `jpg` أو `png` أو `webp`. الخانة بلا صورة تبقى مستطيلاً رمادياً.
+- البرومبتات التفصيلية لكل صورة، مع اسمها ومقاسها ومكانها: **`NUDJ-Image-Prompts.docx`** في مجلد المشروع.
 
 ### إضافة الفيديو
 - دليل قطعة: `video: "https://..."` داخل المنتج (رابط mp4 أو رابط تضمين YouTube/Vimeo).
 - دليل الطبخة: `video` داخل الطبخة في `DISHES`.
 - دليل الذبيحة: `CARCASS_GUIDE.video`.
+- غلاف الفيديو يُؤخذ تلقائياً من `assets/img/posters/`.
 
 ## التشغيل محلياً
 ```

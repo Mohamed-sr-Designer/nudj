@@ -140,7 +140,7 @@ module.exports = function (ctx) {
       main: `<div class="wrap">
   ${h.crumbs([["الخبرة", "expertise.html"], [g.title]])}
   <div class="guide-hero">
-    <div class="video" id="gVideo">
+    <div class="video" id="gVideo">${U.posterImg(g.id, g.title)}
       <div class="video__lock" id="gLock">${icon("lock")}<span>الفيديو ضمن الدليل الكامل</span></div>
     </div>
     <div>

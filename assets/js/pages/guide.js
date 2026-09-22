@@ -9,9 +9,11 @@
   const esc = U.esc;
   const MI = { grill: "flame", pan: "pan", oven: "oven", slow: "clock", braise: "pot", reverse: "swap" };
 
-  function video(src) {
-    if (!src) return `<button class="video__play" type="button" aria-label="تشغيل الفيديو" data-novideo>${U.playIcon()}</button><span class="video__cap">مكان فيديو الدليل</span>`;
-    if (/\.(mp4|webm|m3u8)(\?|$)/.test(src)) return `<video src="${esc(src)}" controls playsinline preload="metadata"></video>`;
+  /* الفيديو: رابط mp4 ← مشغّل بالغلاف، رابط تضمين ← iframe، بلا رابط ← الغلاف (إن وُجد) وزر تشغيل */
+  function video(src, poster) {
+    const pimg = poster ? `<img src="${esc(poster)}" alt="" loading="lazy" decoding="async">` : "";
+    if (!src) return `${pimg}<button class="video__play" type="button" aria-label="تشغيل الفيديو" data-novideo>${U.playIcon()}</button>${poster ? "" : `<span class="video__cap">مكان فيديو الدليل</span>`}`;
+    if (/\.(mp4|webm|m3u8)(\?|$)/.test(src)) return `<video src="${esc(src)}" controls playsinline preload="metadata"${poster ? ` poster="${esc(poster)}"` : ""}></video>`;
     return `<iframe src="${esc(src)}" title="فيديو الدليل" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
   }
 
@@ -53,7 +55,7 @@ ${dishes.length ? `<section class="gsec"><h2>تنفع لهذي الطبخات</h
     const bar = $("#actionBar");
     if (open) {
       const p = gid === "carcass" ? null : D.byId(gid);
-      vid.innerHTML = video((p && p.video) || (gid === "carcass" ? D.CARCASS_GUIDE.video : ""));
+      vid.innerHTML = video((p && p.video) || (gid === "carcass" ? D.CARCASS_GUIDE.video : ""), U.posterFor(gid));
       body.innerHTML = gid === "carcass" ? carcassGuide() : cutGuide(p);
       A.ruler($("#gRuler", body), p && p.doneness);
       if (bar) bar.hidden = true;

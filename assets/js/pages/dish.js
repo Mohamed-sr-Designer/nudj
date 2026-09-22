@@ -62,7 +62,7 @@
       if (S.cart.guideInCart(gid) && !$("[data-incart]", box)) box.insertAdjacentHTML("afterbegin", `<p class="digital-note" data-incart style="margin-bottom:12px">${U.icon("cart")}الدليل في سلتك — أكمل الطلب ليُفتح. <a class="link" href="cart.html">السلة</a></p>`);
       return;
     }
-    box.innerHTML = `<div class="video" style="margin-bottom:16px">${d.video ? `<iframe src="${U.esc(d.video)}" title="فيديو ${d.name}" allowfullscreen></iframe>` : `<button class="video__play" type="button" aria-label="تشغيل" data-novideo>${U.playIcon()}</button><span class="video__cap">مكان فيديو ${d.name}</span>`}</div>
+    box.innerHTML = `<div class="video" style="margin-bottom:16px">${d.video ? `<iframe src="${U.esc(d.video)}" title="فيديو ${d.name}" allowfullscreen></iframe>` : `${U.posterImg(gid, d.name)}<button class="video__play" type="button" aria-label="تشغيل" data-novideo>${U.playIcon()}</button>${d.poster ? "" : `<span class="video__cap">مكان فيديو ${d.name}</span>`}`}</div>
       <ol class="ol">${d.steps.map(s => `<li>${U.esc(s)}</li>`).join("")}</ol>`;
   }
   document.addEventListener("click", e => { if (e.target.closest("[data-novideo]")) A.toast("يُضاف الفيديو هنا عند رفعه", { icon: "video" }); });

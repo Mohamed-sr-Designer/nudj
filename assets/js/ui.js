@@ -92,6 +92,14 @@
   }
   const slot = (key, cls, alt) => img(D.IMAGES[key] || "", alt, cls).replace('<div class="ph', `<div data-slot="${key}" class="ph`);
   const productImg = (p, cls) => img(p.img || "", p.name, cls);
+  /* غلاف فيديو الدليل: القطعة ← poster المنتج، الذبيحة ← دليل الذبيحة، الطبخة ← poster الطبخة */
+  function posterFor(gid) {
+    if (!gid) return "";
+    if (gid === "carcass") return D.CARCASS_GUIDE.poster || "";
+    if (gid.indexOf("dish-") === 0) { const d = D.dishBySlug(gid.slice(5)); return (d && d.poster) || ""; }
+    const p = D.byId(gid); return (p && p.poster) || "";
+  }
+  const posterImg = (gid, alt) => { const s = posterFor(gid); return s ? `<img src="${esc(s)}" alt="${esc(alt || "")}" loading="lazy" decoding="async">` : ""; };
 
   /* ---------------- التسعير ---------------- */
   function sizeOf(p, k) { return (p.sizes || []).find(s => s.k === k) || (p.sizes || []).find(s => s.k === p.sizeDef) || (p.sizes || [])[0]; }
@@ -286,7 +294,7 @@
   };
 
   root.NUDJ_UI = {
-    esc, money, cur, icon, playIcon, brand, url, img, slot, productImg, unitPrice, boxValue, priceTag, typeName, sizeOf,
+    esc, money, cur, icon, playIcon, brand, url, img, slot, productImg, posterFor, posterImg, unitPrice, boxValue, priceTag, typeName, sizeOf,
     codeTag, specStrip, productCard, productGrid, productRow, typeTile, dishIcon, dishTile, guideCard,
     lockPill, ownPill, cartPill, buyForm, chartSVG, locatorSVG, ruler, empty, cell, group, fmtDate, optsText
   };
