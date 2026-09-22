@@ -36,7 +36,7 @@ module.exports = function (ctx) {
   ${h.crumbs([["القطيع"]])}
   <div class="page-head"><h1 class="large-title">القطيع</h1><p>ست مواشي، كل قطعة لها رقم على الرسم. اختر الماشية.</p></div>
   <div class="herd-index">${D.ANIMALS.map((a, i) => `<a class="herd-tile" href="${U.url.animal(a.k)}">
-    <span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile" })}
+    <span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile", static: true })}
     <span class="herd-tile__b"><b>${a.n}</b><i class="num">${a.en}</i><small>${esc(a.note)}</small><span class="seeall">${D.cutsOf(a.k).length} منتجات ${icon("chevL")}</span></span></a>`).join("")}</div>
 </div>`
   });

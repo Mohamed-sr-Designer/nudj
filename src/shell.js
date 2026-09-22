@@ -93,9 +93,8 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
     : `<a href="${h}" data-tab="${k}"${m.tab === k ? ' class="is-on" aria-current="page"' : ""}>${icon(ic)}<span>${t}</span>${k === "cart" ? '<b class="badge" data-cart-count>0</b>' : ""}</a>`).join("")}</nav>`;
 
   const footer = () => `<footer class="site-footer"><div class="wrap">
-  <div class="ftr__big" aria-hidden="true">${U.logo()}</div>
   <div class="ftr">
-    <div class="ftr__brand"><p>ملحمة إلكترونية ومستشار طبخ: قل لنا وش المناسبة، ونقطّع لك اللحم على طبختك بالجرام.</p>
+    <div class="ftr__brand"><a href="index.html" class="ftr__logo" aria-label="نُضْج — الرئيسية">${U.brand()}</a><p>ملحمة إلكترونية ومستشار طبخ: قل لنا وش المناسبة، ونقطّع لك اللحم على طبختك بالجرام.</p>
       <div class="ftr__meta"><span>السجل التجاري <b>${C.contact.cr}</b></span><span>الرقم الضريبي <b>${C.contact.vatNo}</b></span><span>للطلبات <b>${C.contact.phone}</b></span></div></div>
     <div><h3>القطيع</h3><ul>${D.ANIMALS.map(a => `<li><a href="${a.k}.html">${a.n}</a></li>`).join("")}</ul></div>
     <div><h3>تسوّق</h3><ul><li><a href="shop.html">كل القطعيات</a></li><li><a href="shop.html?a=carcass">الذبائح</a></li><li><a href="shop.html?a=extra">عدّة الشواء والبهارات</a></li><li><a href="advisor.html">مستشار نُضْج</a></li><li><a href="cuts.html">خريطة القطعيات</a></li></ul></div>

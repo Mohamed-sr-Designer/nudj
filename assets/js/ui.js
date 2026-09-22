@@ -150,7 +150,8 @@
     const seen = {};
     const pins = list.map(p => {
       const z = a.pins[p.zone]; const n = (seen[p.zone] = (seen[p.zone] || 0) + 1);
-      return `<a class="pin" href="${url.product(p.id)}" data-pin="${p.id}" style="left:${z[0] + (n - 1) * 4}%;top:${z[1] + (n - 1) * 5}%"><span class="num">${p.code.slice(2)}</span><em>${esc(p.name)}</em></a>`;
+      const pos = `style="left:${z[0] + (n - 1) * 4}%;top:${z[1] + (n - 1) * 5}%"`;
+      return o.static ? `<span class="pin" data-pin="${p.id}" ${pos}><span class="num">${p.code.slice(2)}</span></span>` : `<a class="pin" href="${url.product(p.id)}" data-pin="${p.id}" ${pos}><span class="num">${p.code.slice(2)}</span><em>${esc(p.name)}</em></a>`;
     }).join("");
     return `<div class="herd-map${o.cls ? " " + o.cls : ""}" style="aspect-ratio:${a.ratio.toFixed(3)}">${herdArt(a.k, "herd-map__art")}${pins}</div>`;
   }
@@ -173,7 +174,7 @@
     o = o || {};
     const rule = `<div class="rc__rule" aria-hidden="true"></div>`;
     return `<div class="receipt${o.cls ? " " + o.cls : ""}">
-  <div class="rc__head">${logo("rc__logo")}<div><b>نُضْج</b><small>${esc(o.kicker || "ملحمة إلكترونية · مستشار طبخ")}</small></div></div>
+  <div class="rc__head">${logo("rc__logo")}<small>${esc(o.kicker || "ملحمة إلكترونية · مستشار طبخ")}</small></div>
   ${o.title ? `<div class="rc__title">${o.title}</div>` : ""}
   ${(o.meta || []).length ? `<dl class="rc__meta">${o.meta.map(m => `<div><dt>${m[0]}</dt><dd>${m[1]}</dd></div>`).join("")}</dl>` : ""}
   ${rule}

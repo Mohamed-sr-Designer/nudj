@@ -157,8 +157,8 @@ b,strong{color:var(--bone);font-weight:700}
 
 /* ================= الفوتر ================= */
 .site-footer{margin-top:64px;border-top:1px solid var(--line);padding-top:48px;background:linear-gradient(180deg,var(--char),var(--ink))}
-.ftr__big{color:var(--slate-2);opacity:.9;margin-bottom:36px}
-.ftr__big .logo{height:clamp(90px,14vw,180px);color:var(--slate-3)}
+.ftr__logo{display:inline-flex;margin-bottom:18px}
+.ftr__logo .logo{height:52px}
 .ftr{display:grid;grid-template-columns:1.6fr repeat(3,1fr);gap:40px;padding-bottom:40px}
 .ftr__brand p{color:var(--muted);max-width:40ch}
 .ftr__meta{margin-top:18px;display:grid;gap:4px;font-size:.8rem;color:var(--faint)}
@@ -194,7 +194,8 @@ b,strong{color:var(--bone);font-weight:700}
 /* شريط الأسماء العملاقة */
 .marquee{overflow:hidden;border-block:1px solid var(--line);padding-block:22px;background:var(--char)}
 .marquee__track{display:flex;align-items:center;width:max-content;animation:ticker 46s linear infinite}
-.marquee span{font-family:var(--f-display);font-weight:900;font-size:clamp(3rem,8vw,6.5rem);line-height:1;color:transparent;-webkit-text-stroke:1.2px rgba(237,232,225,.55);padding-inline:26px}
+/* الخط المفرّغ بالعربي: الحدّ يُرسم تحت التعبئة (paint-order) فتختفي خطوط تداخل الحروف المتصلة */
+.marquee span{font-family:var(--f-display);font-weight:900;font-size:clamp(2.2rem,5.2vw,4.3rem);line-height:1.25;color:var(--char);-webkit-text-stroke:2.6px rgba(237,232,225,.5);paint-order:stroke fill;padding-inline:22px}
 .marquee i{font-family:var(--f-mono);font-style:normal;font-size:.8rem;letter-spacing:.3em;color:var(--ember);padding-inline:10px}
 .marquee:hover .marquee__track{animation-play-state:paused}
 
@@ -225,8 +226,8 @@ b,strong{color:var(--bone);font-weight:700}
 .herd-map--focus .pin{opacity:.35}
 .herd-map--focus .pin[aria-current]{opacity:1;background:var(--ember);animation:live 2s infinite}
 .herd-map--focus .pin[aria-current] em{opacity:1;transform:translate(-50%,0)}
-.herd-map--tile .pin{width:22px;height:22px;font-size:.6rem;pointer-events:none}
-.herd-map--tile .pin em{display:none}
+.herd-map--tile .pin{width:24px;height:24px;font-size:.6rem;pointer-events:none}
+.herd-tile:hover .herd-map--tile .pin{background:var(--ember)}
 .herd-index{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .herd-tile{position:relative;display:grid;grid-template-columns:1.2fr 1fr;align-items:center;gap:20px;padding:26px;border-radius:var(--r-xl);background:var(--char);border:1px solid var(--line);transition:border-color .25s,background .25s}
 .herd-tile:hover{border-color:var(--ember);background:var(--slate)}
@@ -311,7 +312,7 @@ b,strong{color:var(--bone);font-weight:700}
 .band__img img{width:100%;height:100%;object-fit:cover}
 .band::before{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(270deg,rgba(14,18,22,.92),rgba(14,18,22,.45))}
 .band__t{font-family:var(--f-display);font-size:clamp(2.4rem,6vw,5.4rem);font-weight:900;color:var(--bone);line-height:1.05}
-.band__t em{font-style:normal;color:transparent;-webkit-text-stroke:1.5px var(--fat)}
+.band__t em{font-style:normal;color:var(--ember)}
 .carcass-cta{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
 .carcass-cta__img{aspect-ratio:4/5;border-radius:var(--r-xl)}
 .carcass-cta__img img{width:100%;height:100%;object-fit:cover;border-radius:var(--r-xl)}
@@ -396,10 +397,8 @@ b,strong{color:var(--bone);font-weight:700}
   mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) bottom/var(--s) 51% repeat-x,conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) top/var(--s) 51% repeat-x;
   background-image:repeating-linear-gradient(0deg,rgba(26,21,18,.018) 0 1px,transparent 1px 3px),linear-gradient(180deg,#F6F1E8,#EFE7DA)}
 .receipt b,.receipt strong,.receipt h1,.receipt h2,.receipt h3{color:var(--paper-ink)}
-.rc__head{display:flex;align-items:center;gap:12px;justify-content:center;text-align:center;padding-bottom:6px}
-.rc__logo{height:34px;color:var(--paper-ink)}
-.rc__head div{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25}
-.rc__head b{font-family:var(--f-display);font-size:1.05rem}
+.rc__head{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding-bottom:6px}
+.rc__logo{height:40px;color:var(--paper-ink)}
 .rc__head small{font-size:.7rem;color:var(--paper-mute);letter-spacing:.02em}
 .rc__title{text-align:center;font-family:var(--f-display);font-weight:800;font-size:1.05rem;margin-top:10px;padding:8px;border:1.5px solid var(--paper-ink);border-radius:6px}
 .rc__meta{display:grid;gap:3px;margin-top:14px;font-size:.78rem}
