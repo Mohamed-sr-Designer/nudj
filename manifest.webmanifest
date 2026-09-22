@@ -1,5 +1,5 @@
 {
-  "name": "نُضْج — لحم طازج مقطّع على طبختك",
+  "name": "نُضْج — ملحمة ومستشار طبخ",
   "short_name": "نُضْج",
   "lang": "ar",
   "dir": "rtl",
@@ -7,8 +7,8 @@
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F4F1EA",
-  "theme_color": "#F4F1EA",
+  "background_color": "#0E1216",
+  "theme_color": "#0E1216",
   "icons": [
     {
       "src": "assets/icons/icon-192.png",

@@ -1,108 +1,116 @@
-/* الرئيسية — المتجر أولاً، والخبرة عرض اختياري */
+/* الرئيسية */
 module.exports = function (ctx) {
-  const { D, U, C, h } = ctx;
-  const { icon } = U;
-  const P = D.PRODUCTS;
-  const featured = P.filter(p => p.featured && p.type !== "box");
-  const carcass = P.filter(p => p.type === "carcass");
-  const boxes = P.filter(p => p.type === "box");
-  const guidesCount = D.GUIDES.length;
+  const { D, U, C, h, S } = ctx;
+  const { icon, esc } = U;
+  const cutsCount = D.PRODUCTS.filter(p => p.sold === "kg").length;
 
-  const trust = [
-    ["snow", "توصيل مبرّد سريع", "يحفظ اللحم طازجاً"],
-    ["shield", "ذبح حلال", "بإشراف شرعي كامل"],
-    ["knife", "تقطيع وتجهيز مجاني", "حسب طلبك وطبختك"],
-    ["cash", "الدفع عند الاستلام", "وطرق دفع إلكترونية"]
+  /* فاتورة مثال (تُحسب وقت البناء بنفس منطق السلة) */
+  const sample = [
+    { id: "lamb-shoulder", kg: 2, opts: { prep: "cubes", marinade: "hot", skewer: true }, why: "أوصال · 200 جم للشخص" },
+    { id: "lamb-mince", kg: 1.5, opts: { prep: "kebab", marinade: "classic", skewer: true }, why: "كباب · 150 جم للشخص" },
+    { id: "lamb-rack", kg: 1.5, opts: { prep: "chops" }, why: "ريش بالعظم · 150 جم للشخص" },
+    { id: "charcoal", qty: 2, why: "كيس لكل 4.5 كجم" }
   ];
+  const sTotal = sample.reduce((t, l) => t + S.breakdown(l).total, 0);
+  const sampleReceipt = U.receipt({
+    cls: "receipt--sample", kicker: "خطة المستشار", title: "حفلة مشاوي · 10 أشخاص",
+    lines: sample.map(l => { const x = U.lineForReceipt(l); x.sub = [esc(l.why), x.sub].filter(Boolean).join(" · "); return x; }),
+    totals: [["مجموع الخطة", U.money2(sTotal), "is-total"], ["للشخص تقريباً", U.money2(sTotal / 10)]],
+    stamp: "مثال"
+  });
 
-  const main = `<div class="wrap">
-  <button class="city-chip mob-only" type="button" data-city>${icon("pin")}التوصيل إلى <b data-city-label>${C.cities[0]}</b>${icon("chevD")}</button>
-  <a class="search-bar home-search mob-only" href="search.html">${icon("search")}<span>ابحث عن قطعة أو طبخة…</span></a>
+  const uses = ["grill", "kabsa", "steak", "slow", "mince"];
+  const byUse = u => D.PRODUCTS.filter(p => p.sold === "kg" && p.uses[0] === u).slice(0, 8);
 
-  <section class="hero" aria-labelledby="heroTitle">
-    <div class="hero__text">
-      <span class="eyebrow">ملحمة إلكترونية</span>
-      <h1 id="heroTitle">لحم طازج،<br><em>مقطّع على طبختك.</em></h1>
-      <p>ذبائح وقطعيات ضأن وبقر، نقطّعها ونغلّفها حسب طلبك، وتوصلك مبرّدة في الموعد اللي تختاره.</p>
-      <div class="hero__cta"><a class="btn btn--brand btn--lg" href="shop.html">تسوّق الآن</a><a class="btn btn--ghost btn--lg" href="shop.html?t=carcass">اطلب ذبيحة</a></div>
+  return [{
+    name: "home", file: "index.html", tab: "home", nav: "", mode: "root", appTitle: "", scripts: ["home"],
+    preload: D.IMAGES["home-hero"] || "",
+    title: "نُضْج — ملحمة ومستشار طبخ: لحم مقطّع على مناسبتك بالجرام",
+    desc: "قل لمستشار نُضْج وش المناسبة — مشاوي، كبسة، ذبيحة، ستيك — ويحسب لك الكمية بالجرام والتقطيع والتتبيلة والفحم. ضأن وماعز وحاشي وعجل وبقر وجاموس، والتقطيع مجاني.",
+    jsonld: [{ "@context": "https://schema.org", "@type": "Store", name: "نُضْج", url: C.base, image: C.base + (D.IMAGES["og-share"] || ""), priceRange: "SAR", currenciesAccepted: "SAR", description: "ملحمة إلكترونية ومستشار طبخ تفاعلي." }],
+    main: `
+<section class="hero" aria-labelledby="heroT">
+  <div class="hero__media">${U.slot("home-hero", "hero__img", "", { eager: true })}</div>
+  <div class="wrap hero__in">
+    <div class="hero__copy">
+      <span class="eyebrow"><i class="live"></i>ملحمة · مستشار طبخ</span>
+      <h1 class="hero__t" id="heroT">قل لنا وش المناسبة.<em>نقطّعها لك بالجرام.</em></h1>
+      <p class="hero__s">المستشار يسألك عن العدد والطبخة، ويحسب لك كم جرام من كل قطعة، ووش التقطيع والتتبيلة، وكم كيس فحم — وتطلب الخطة كاملة بضغطة.</p>
+      <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}ابدأ مع المستشار</a><a class="btn btn--line btn--lg" href="shop.html">تسوّق القطعيات</a></div>
+      <dl class="hero__stats"><div><dt class="num">6</dt><dd>مواشي</dd></div><div><dt class="num">${cutsCount}</dt><dd>قطعية</dd></div><div><dt class="num">0</dt><dd>ر.س للتقطيع</dd></div></dl>
     </div>
-    <div class="hero__media">${U.slot("home-hero", "hero__img", "لحم طازج من نُضْج")}</div>
-  </section>
+    <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>مستشار نُضْج</b></div><div class="adv__log"><p class="muted" style="padding:20px">جارٍ تشغيل المستشار…</p></div></div></div>
+  </div>
+</section>
 
-  <section class="section--tight" aria-label="لماذا نُضْج">
-    <ul class="trust">${trust.map(t => `<li class="trust__i">${icon(t[0])}<span><b>${t[1]}</b><small>${t[2]}</small></span></li>`).join("")}</ul>
-  </section>
+<div class="marquee" aria-hidden="true"><div class="marquee__track">${Array(2).fill(D.ANIMALS.map(a => `<span>${a.n}</span><i>${a.en}</i>`).join("")).join("")}</div></div>
 
-  <section class="section">
-    ${h.secHead("تسوّق حسب النوع", "", "shop.html", "المتجر")}
-    <div class="type-grid">${D.TYPES.map(U.typeTile).join("")}</div>
-  </section>
+<section class="section wrap" aria-labelledby="herdH">
+  <div class="sec-head">${U.kicker("01", "القطيع")}<h2 id="herdH">ست مواشي. كل قطعة لها رقم.</h2><p>اختر الماشية وشوف قطعياتها على الرسم — كل نقطة قطعة تقدر تطلبها بالتقطيع اللي تبغاه.</p><a class="seeall" href="cuts.html">خريطة القطعيات ${icon("chevL")}</a></div>
+  <div class="herd-rail">${D.ANIMALS.map((a, i) => U.herdCard(a, i)).join("")}</div>
+</section>
 
-  <section class="section">
-    ${h.secHead("مختارات", "قطعيات يكثر طلبها للطبخ اليومي والعزائم", "shop.html", "كل المنتجات")}
-    <div class="shelf">${U.productGrid(featured)}</div>
-  </section>
+<section class="section wrap" aria-labelledby="occH">
+  <div class="sec-head">${U.kicker("02", "المستشار")}<h2 id="occH">مناسبتك أولاً، والقطعة بعدين.</h2><p>اختر المناسبة والمستشار يكمل معك الأسئلة: قطع ولا شرائح ولا قطع سليمة؟ متبّلة؟ مسيّخة؟ — ويطلع لك فاتورة بالجرام.</p></div>
+  <div class="bento">${D.ADVISOR.occasions.map((o, i) => `<button type="button" class="bento__i bento__i--${i + 1}" data-advisor="${o.k}">
+    ${o.img ? U.slot(o.img, "bento__img", "") : `<span class="bento__ic">${icon(o.ic, "", 1.4)}</span>`}
+    <span class="bento__b"><b>${o.n}</b><small>${o.s}</small><span class="bento__go">ابدأ ${icon("chevL", "", 2.2)}</span></span></button>`).join("")}</div>
+</section>
 
-  <section class="section" aria-labelledby="xpTitle">
-    <div class="xp-band">
-      <div class="xp-band__b">
-        <span class="eyebrow">خدمة إضافية اختيارية</span>
-        <h2 id="xpTitle">تبغى تطبخها صح؟</h2>
-        <p>لحمك تشتريه عادي. وإذا تبغى تتقنه، أضف الخبرة:</p>
-        <ul class="xp-list">
-          <li>${icon("video")}<span>فيديو يشرح كيف تُقطّع القطعة ومن وين تجي</span></li>
-          <li>${icon("thermo")}<span>خطوات الطبخ والحرارة والوقت لكل طريقة</span></li>
-          <li>${icon("chat")}<span>استشارة مباشرة مع جزّار قبل عزيمتك</span></li>
-        </ul>
-        <div class="btn-row"><a class="btn btn--light btn--lg" href="expertise.html">اكتشف الخبرة</a><span class="from">دليل واحد بـ ${C.guidePrice} ${C.currency} · أو ${guidesCount} دليلاً مع نُضْج+</span></div>
-      </div>
-      ${U.slot("home-expertise", "xp-band__img", "خبرة نُضْج")}
+<section class="section how" aria-labelledby="howH">
+  <div class="wrap how__in">
+    <div class="how__steps">
+      <div class="sec-head">${U.kicker("03", "كيف تشتغل")}<h2 id="howH">من «عندي عزومة» إلى فاتورة جاهزة.</h2></div>
+      <ol class="steps">
+        <li><b class="num">01</b><div><h3>قل المناسبة والعدد</h3><p>مشاوي لعشرة؟ كبسة حاشي لعشرين؟ اختر أو اكتبها بكلامك.</p></div></li>
+        <li><b class="num">02</b><div><h3>جاوب أسئلة الجزّار</h3><p>قطع ولا شرائح؟ بالعظم؟ تتبيلة؟ تسييخ؟ كل خيار واضح بسعره.</p></div></li>
+        <li><b class="num">03</b><div><h3>عدّل واطلب</h3><p>غيّر أي وزن بـ − و +، أضف طبق ثاني، واطلب الخطة كلها بضغطة.</p></div></li>
+      </ol>
+      <a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="grill">جرّبها على حفلة مشاوي</a>
     </div>
-  </section>
+    <div class="how__rc">${sampleReceipt}</div>
+  </div>
+</section>
 
-  <section class="section">
-    ${h.secHead("وش تطبخ اليوم؟", "اختر الطبخة ونقول لك أي قطعة تحتاج وكم للشخص", "expertise.html#dishes", "الكل")}
-    <div class="dish-grid">${D.DISHES.map(U.dishTile).join("")}</div>
-  </section>
+<section class="section wrap" aria-labelledby="useH">
+  <div class="sec-head">${U.kicker("04", "ابدأ من الطبخة")}<h2 id="useH">وش بتطبخ؟</h2><a class="seeall" href="shop.html">كل القطعيات ${icon("chevL")}</a></div>
+  <div class="seg-tabs" role="tablist" aria-label="حسب الطبخة">${uses.map((u, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-use-tab="${u}">${icon(D.USES[u].ic)}${D.USES[u].n}</button>`).join("")}</div>
+  ${uses.map((u, i) => `<div class="rail" role="tabpanel" data-use-panel="${u}"${i ? " hidden" : ""}>${U.grid(byUse(u))}</div>`).join("")}
+</section>
 
-  <section class="section">
-    ${h.secHead("الذبائح", "كاملة ونصف وربع — تُقطّع حسب طبختك", "shop.html?t=carcass", "الكل")}
-    <div class="grid-p grid-p--3">${U.productGrid(carcass, { spec: false })}</div>
-    <h3 class="sub-head">كيف تطلب ذبيحتك؟</h3>
-    <ol class="steps3">
-      <li><b>اختر الحجم</b><small>صغيرة أو متوسطة أو كبيرة — الوزن التقريبي مكتوب تحت كل حجم.</small></li>
-      <li><b>اختر التقطيع</b><small>ثلاجة، كبسة، مندي، أرباع أو مفصّل — واكتب أي تفصيل للجزّار.</small></li>
-      <li><b>اختر موعد التوصيل</b><small>تصلك مبرّدة ومغلّفة في الفترة اللي تناسبك.</small></li>
-    </ol>
-  </section>
-
-  <section class="section">
-    ${h.secHead("البوكسات", "تشكيلات جاهزة بسعر أقل من شرائها منفصلة", "shop.html?t=box", "الكل")}
-    <div class="shelf">${U.productGrid(boxes, { spec: false })}</div>
-  </section>
-
-  <section class="section">
-    <div class="chart-teaser">
-      <div>
-        <span class="eyebrow">تسوّق من الذبيحة</span>
-        <h2>اعرف كل قطعة من وين تجي</h2>
-        <p class="muted">اضغط على أي منطقة في المخطط وتشوف قطعياتها وأسعارها وطريقة الطبخ المناسبة.</p>
-        <a class="btn btn--ghost" href="cuts.html" style="margin-top:14px">افتح مخطط الذبيحة ${icon("chevL")}</a>
-      </div>
-      <a href="cuts.html" aria-label="افتح مخطط الذبيحة">${U.chartSVG({ cls: "chart-svg--teaser" })}</a>
+<section class="section svc" aria-labelledby="svcH">
+  <div class="wrap svc__in">
+    <div class="svc__media">${U.slot("marinade", "svc__img", "")}</div>
+    <div class="svc__b">
+      <div class="sec-head">${U.kicker("05", "خدمات بالطلب")}<h2 id="svcH">اللحم يوصلك خام. والباقي على كيفك.</h2><p>التقطيع مجاني بأي شكل. التتبيل والتسييخ والتغليف المفرّغ خدمات إضافية تنحسب بالكيلو — وتشوف سعرها قبل ما تضيف.</p></div>
+      <ul class="price-list">
+        ${D.MARINADES.filter(m => m.p).map(m => `<li><span><b>تتبيلة ${m.n}</b><small>${m.d}</small></span><em class="num">+${m.p} ر.س/كجم</em></li>`).join("")}
+        <li><span><b>${D.SERVICES.skewer.n}</b><small>${D.SERVICES.skewer.d}</small></span><em class="num">+${D.SERVICES.skewer.p} ر.س/كجم</em></li>
+        <li><span><b>${D.SERVICES.vacuum.n}</b><small>${D.SERVICES.vacuum.d}</small></span><em class="num">+${D.SERVICES.vacuum.p} ر.س/كجم</em></li>
+        <li class="is-free"><span><b>التقطيع</b><small>قطع، مكعبات، شرائح، ستيك، مفروم، كباب…</small></span><em>مجاناً</em></li>
+      </ul>
+      <a class="seeall" href="shop.html?a=extra">عدّة الشواء والبهارات ${icon("chevL")}</a>
     </div>
-  </section>
-</div>`;
+  </div>
+</section>
 
-  return {
-    name: "home", file: "index.html", tab: "home", nav: "", mode: "root", lead: "brand", trail: ["wishlist"], appTitle: "",
-    title: "نُضْج — لحم طازج مقطّع على طبختك",
-    desc: "ملحمة إلكترونية سعودية: ذبائح وقطعيات ضأن وبقر ومفروم وبوكسات، تُقطّع وتُغلّف حسب طبختك وتوصلك مبرّدة. ومعها أدلة مصوّرة واستشارة جزّار لمن يبغى يتقن الطبخ.",
-    jsonld: [
-      { "@context": "https://schema.org", "@type": "Organization", "@id": C.base + "#org", name: "نُضْج", alternateName: "NUDJ", url: C.base },
-      { "@context": "https://schema.org", "@type": "WebSite", "@id": C.base + "#site", name: "نُضْج", inLanguage: "ar-SA", url: C.base,
-        potentialAction: { "@type": "SearchAction", target: C.base + "search.html?q={q}", "query-input": "required name=q" } }
-    ],
-    main
-  };
+<section class="band" aria-label="التقطيع مجاني">
+  ${U.slot("texture", "band__img", "")}
+  <div class="wrap band__in"><p class="band__t">التقطيع مجاني.<br><em>بأي شكل تبغاه.</em></p></div>
+</section>
+
+<section class="section wrap carcass-cta" aria-labelledby="carH">
+  <div class="carcass-cta__media">${U.slot("occ-carcass", "carcass-cta__img", "")}</div>
+  <div class="carcass-cta__b">
+    <div class="sec-head">${U.kicker("06", "الذبائح")}<h2 id="carH">ذبيحة كاملة؟ خلّ المستشار يحسب الحجم.</h2><p>قل كم شخص، ونقترح لك نصف أو كاملة وبأي حجم، ونقطّعها ثلاجة أو كبسة أو مندي — مجاناً.</p></div>
+    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</b><small>${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg} كجم</small></a>`).join("")}</div>
+    <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="carcass">احسب لي الذبيحة</button><a class="btn btn--line" href="shop.html?a=carcass">كل الذبائح</a></div>
+  </div>
+</section>
+
+<section class="section wrap" aria-labelledby="faqH">
+  <div class="sec-head">${U.kicker("07", "أسئلة")}<h2 id="faqH">قبل ما تطلب</h2><a class="seeall" href="help.html">كل الأسئلة ${icon("chevL")}</a></div>
+  <div class="faq">${D.FAQ.slice(0, 4).map(f => h.faq(f[0], f[1])).join("")}</div>
+</section>`
+  }];
 };

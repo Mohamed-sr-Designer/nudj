@@ -1,18 +1,14 @@
 /* =========================================================
-   نُضْج — طبقة الحالة (السلة، المفضلة، الحساب، الاشتراك، الطلبات)
+   نُضْج — طبقة الحالة (السلة، المفضلة، الحساب، الطلبات، خطط المستشار)
    كل شيء محفوظ في المتصفح (localStorage). في النسخة الفعلية
-   تُستبدل هذه الطبقة بواجهة برمجية على الخادم — بقية الموقع لا يتغير.
+   تُستبدل هذه الطبقة بواجهة برمجية — بقية الموقع لا يتغير.
    ========================================================= */
 window.NUDJ_STORE = (function () {
   "use strict";
   const D = window.NUDJ;
   const C = D.CONFIG;
 
-  /* ---------- تخزين آمن ---------- */
-  const K = {
-    cart: "nudj_cart", wish: "nudj_wish", user: "nudj_user", member: "nudj_member", guides: "nudj_guides",
-    orders: "nudj_orders", addr: "nudj_addr", consults: "nudj_consults", recent: "nudj_recent", city: "nudj_city"
-  };
+  const K = { cart: "nudj_cart", wish: "nudj_wish", user: "nudj_user", orders: "nudj_orders", addr: "nudj_addr", recent: "nudj_recent", city: "nudj_city", plans: "nudj_plans", known: "nudj_known" };
   function read(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
   function write(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
 
@@ -20,98 +16,128 @@ window.NUDJ_STORE = (function () {
   const subs = {};
   function on(evt, fn) { (subs[evt] = subs[evt] || []).push(fn); }
   function emit(evt, data) { (subs[evt] || []).forEach(fn => { try { fn(data); } catch (e) { console.error(e); } }); }
-  /* تزامن بين التبويبات */
   window.addEventListener("storage", e => {
     if (e.key === K.cart) emit("cart");
     if (e.key === K.wish) emit("wish");
-    if (e.key === K.user || e.key === K.member || e.key === K.guides) emit("auth");
+    if (e.key === K.user) emit("auth");
   });
 
-  const round2 = n => Math.round(n * 100) / 100;
+  const r2 = n => Math.round(n * 100) / 100;
+  const snapKg = (p, kg) => { const st = p.step || 0.5; return Math.max(p.min || st, Math.min(50, Math.round((+kg || 0) / st) * st)); };
 
   /* =========================================================
      التسعير
+     سطر اللحم بالكيلو:  { key, id, kg, opts:{prep, marinade, skewer, vacuum}, note, src }
+     سطر الذبيحة:        { key, id, qty, opts:{size, part, style, vacuum}, note }
+     سطر الإضافة:        { key, id, qty }
      ========================================================= */
-  function sizeOf(p, k) { return (p.sizes || []).find(s => s.k === k) || (p.sizes || []).find(s => s.k === p.sizeDef) || (p.sizes || [])[0]; }
+  const sizeOf = (p, k) => (p.sizes || []).find(s => s.k === k) || (p.sizes || []).find(s => s.k === p.sizeDef) || (p.sizes || [])[0];
 
-  /* سعر وحدة واحدة من المنتج حسب الخيارات */
+  /* تفصيل سعر السطر: الأساس + كل إضافة مدفوعة على حدة (تُعرض كما هي في الفاتورة) */
+  function breakdown(l) {
+    const p = D.byId(l.id); if (!p) return { base: 0, adds: [], total: 0 };
+    const o = l.opts || {}, adds = [];
+    let base = 0;
+    if (p.sold === "kg") {
+      const kg = l.kg || p.def;
+      base = r2(kg * p.price);
+      const m = D.marinade(o.marinade);
+      if (m.p) adds.push({ k: "marinade", n: "تتبيلة " + m.n, q: kg, u: m.p, v: r2(kg * m.p) });
+      if (o.skewer) adds.push({ k: "skewer", n: D.SERVICES.skewer.n, q: kg, u: D.SERVICES.skewer.p, v: r2(kg * D.SERVICES.skewer.p) });
+      if (o.vacuum) adds.push({ k: "vacuum", n: D.SERVICES.vacuum.n, q: kg, u: D.SERVICES.vacuum.p, v: r2(kg * D.SERVICES.vacuum.p) });
+    } else if (p.sold === "carcass") {
+      const q = l.qty || 1, s = sizeOf(p, o.size);
+      base = r2(s.p * q);
+      if (o.vacuum) adds.push({ k: "vacuum", n: D.SERVICES.vacuum.n, q, u: D.SERVICES.vacuum.carcass, v: r2(q * D.SERVICES.vacuum.carcass), flat: true });
+    } else base = r2(p.price * (l.qty || 1));
+    return { base, adds, total: r2(base + adds.reduce((t, a) => t + a.v, 0)) };
+  }
+  const linePrice = l => breakdown(l).total;
+  /* سعر وحدة للعرض (للكيلو أو للحبة أو للذبيحة بالحجم) */
   function unitPrice(p, opts) {
     if (!p) return 0;
-    if (p.type === "carcass") { const s = sizeOf(p, opts && opts.size); return s ? s.p : 0; }
-    if (p.type === "box") return p.price;
-    if (p.unit === "kg") { const s = sizeOf(p, opts && opts.size); return round2(p.price * (s ? s.m : 1)); }
+    if (p.sold === "carcass") return sizeOf(p, opts && opts.size).p;
     return p.price;
   }
-  /* السعر المعروض على البطاقة */
-  function fromPrice(p) {
-    if (p.type === "carcass") return Math.min.apply(null, p.sizes.map(s => s.p));
-    return p.price;
-  }
-  /* القيمة المنفصلة لمحتويات البوكس */
-  function boxValue(p) {
-    return round2((p.contents || []).reduce((t, c) => { const q = D.byId(c.id); return t + unitPrice(q, { size: c.size }) * (c.qty || 1); }, 0));
-  }
+  const fromPrice = p => p.sold === "carcass" ? Math.min.apply(null, p.sizes.map(s => s.p)) : p.price;
 
   /* =========================================================
      السلة
-     سطر اللحم: { key, kind:"meat", id, qty, opts:{size,cut,part,extras,pack}, note }
-     سطر الدليل: { key, kind:"guide", id }
      ========================================================= */
-  function getCart() { return read(K.cart, []).filter(validLine); }
-  function validLine(l) {
-    if (!l || !l.kind) return false;
-    if (l.kind === "meat") return !!D.byId(l.id);
-    if (l.kind === "guide") return !!D.guideById(l.id);
-    return false;
-  }
+  const getCart = () => read(K.cart, []).filter(l => l && D.byId(l.id));
   function saveCart(c) { write(K.cart, c); emit("cart"); }
-  function lineKey(id, opts, note) { return id + "|" + JSON.stringify(opts || {}) + "|" + (note || ""); }
+  const lineKey = (id, opts, note) => id + "|" + JSON.stringify(opts || {}) + "|" + (note || "");
 
-  function addMeat(id, opts, qty, note) {
-    const c = getCart(); const key = lineKey(id, opts, note);
-    const ex = c.find(l => l.key === key);
-    if (ex) ex.qty = Math.min(99, ex.qty + (qty || 1));
-    else c.push({ key, kind: "meat", id, qty: qty || 1, opts: opts || {}, note: note || "" });
+  /* يضيف سطراً أو يدمجه مع سطر مطابق */
+  function add(id, o) {
+    o = o || {};
+    const p = D.byId(id); if (!p) return null;
+    const c = getCart(), opts = clean(p, o.opts || {}), key = lineKey(id, opts, o.note);
+    let ex = c.find(l => l.key === key);
+    if (p.sold === "kg") {
+      const kg = snapKg(p, o.kg || p.def);
+      if (ex) ex.kg = snapKg(p, ex.kg + kg); else c.push({ key, id, kg, opts, note: o.note || "", src: o.src || "" });
+    } else {
+      const q = Math.max(1, o.qty || 1);
+      if (ex) ex.qty = Math.min(99, ex.qty + q); else c.push({ key, id, qty: q, opts, note: o.note || "", src: o.src || "" });
+    }
     saveCart(c); return key;
   }
-  function addGuide(gid) {
-    if (!D.guideById(gid) || hasAccess(gid)) return false;
-    const c = getCart(); const key = "guide:" + gid;
-    if (!c.find(l => l.key === key)) { c.push({ key, kind: "guide", id: gid }); saveCart(c); }
-    return true;
+  /* يحذف الخيارات غير الصالحة للمنتج */
+  function clean(p, o) {
+    const out = {};
+    if (p.sold === "kg") {
+      out.prep = p.preps.indexOf(o.prep) > -1 ? o.prep : p.prepDef;
+      if (o.marinade && o.marinade !== "none" && D.marinade(o.marinade).p) out.marinade = o.marinade;
+      if (o.skewer && D.PREPS[out.prep] && D.PREPS[out.prep].skew) out.skewer = true;
+      if (o.vacuum) out.vacuum = true;
+    } else if (p.sold === "carcass") {
+      out.size = sizeOf(p, o.size).k;
+      if (p.parts) out.part = (p.parts.find(x => x.k === o.part) || p.parts[0]).k;
+      out.style = o.style || "fridge";
+      if (o.vacuum) out.vacuum = true;
+    }
+    return out;
   }
-  function guideInCart(gid) { return getCart().some(l => l.kind === "guide" && l.id === gid); }
-  function setQty(key, q) {
+  function setAmount(key, v) {
     let c = getCart(); const l = c.find(x => x.key === key); if (!l) return;
-    if (q <= 0) c = c.filter(x => x.key !== key); else l.qty = Math.min(99, q);
+    const p = D.byId(l.id);
+    if (p.sold === "kg") { if (v <= 0) c = c.filter(x => x.key !== key); else l.kg = snapKg(p, v); }
+    else { if (v <= 0) c = c.filter(x => x.key !== key); else l.qty = Math.min(99, Math.round(v)); }
     saveCart(c);
   }
-  function removeLine(key) { saveCart(getCart().filter(x => x.key !== key)); }
-  function clearCart() { saveCart([]); }
-  /* يزيل من السلة أي دليل صار متاحاً (بعد الاشتراك أو الشراء) */
-  function pruneOwnedGuides() { const c = getCart(); const n = c.filter(l => !(l.kind === "guide" && hasAccess(l.id))); if (n.length !== c.length) saveCart(n); }
-
-  function cartCount() { return getCart().reduce((t, l) => t + (l.kind === "meat" ? l.qty : 1), 0); }
-
-  function linePrice(l) {
-    if (l.kind === "guide") return C.guidePrice;
-    return round2(unitPrice(D.byId(l.id), l.opts) * l.qty);
+  /* تعديل خيارات سطر موجود (مثلاً إضافة تتبيلة من السلة) */
+  function setOpts(key, patch) {
+    const c = getCart(); const l = c.find(x => x.key === key); if (!l) return;
+    const p = D.byId(l.id);
+    l.opts = clean(p, Object.assign({}, l.opts, patch));
+    const nk = lineKey(l.id, l.opts, l.note);
+    const dup = c.find(x => x !== l && x.key === nk);
+    if (dup) { if (p.sold === "kg") dup.kg = snapKg(p, dup.kg + l.kg); else dup.qty += l.qty; c.splice(c.indexOf(l), 1); }
+    else l.key = nk;
+    saveCart(c);
   }
+  const remove = key => saveCart(getCart().filter(x => x.key !== key));
+  const clear = () => saveCart([]);
+  const has = id => getCart().some(l => l.id === id);
+  /* العدد في الشارة: عدد الأسطر (الوزن لا يُعد قطعاً) */
+  const count = () => getCart().length;
 
-  /* الإجماليات — الأسعار شاملة الضريبة، والضريبة تُعرض كجزء مشمول */
+  /* الإجماليات — الأسعار شاملة الضريبة، والضريبة جزء مشمول يُعرض منفصلاً */
   function totals(lines, coupon) {
     lines = lines || getCart();
-    const meat = round2(lines.filter(l => l.kind === "meat").reduce((t, l) => t + linePrice(l), 0));
-    const digital = round2(lines.filter(l => l.kind === "guide").reduce((t, l) => t + linePrice(l), 0));
+    const meatLines = lines.filter(l => { const p = D.byId(l.id); return p && p.animal !== "extra"; });
+    const meat = r2(meatLines.reduce((t, l) => t + breakdown(l).base, 0));
+    const services = r2(lines.reduce((t, l) => t + breakdown(l).adds.reduce((s, a) => s + a.v, 0), 0));
+    const extrasSum = r2(lines.filter(l => { const p = D.byId(l.id); return p && p.animal === "extra"; }).reduce((t, l) => t + breakdown(l).total, 0));
     const cp = coupon && C.coupons[coupon] ? C.coupons[coupon] : null;
-    const discount = cp ? round2(meat * cp.pct / 100) : 0;
-    const hasMeat = lines.some(l => l.kind === "meat");
-    const afterDisc = meat - discount;
-    const delivery = !hasMeat ? 0 : afterDisc >= C.delivery.freeOver ? 0 : C.delivery.fee;
-    const total = round2(afterDisc + digital + delivery);
-    const vat = round2(total - total / (1 + C.vat));
-    const toFree = hasMeat && delivery > 0 ? round2(C.delivery.freeOver - afterDisc) : 0;
-    return { meat, digital, discount, delivery, total, vat, hasMeat, toFree, coupon: cp ? coupon : null };
+    const discount = cp ? r2(meat * cp.pct / 100) : 0;
+    const sub = r2(meat + services + extrasSum - discount);
+    const delivery = !lines.length ? 0 : sub >= C.delivery.freeOver ? 0 : C.delivery.fee;
+    const total = r2(sub + delivery);
+    const vat = r2(total - total / (1 + C.vat));
+    const kg = r2(lines.reduce((t, l) => { const p = D.byId(l.id); return t + (p.sold === "kg" ? l.kg : p.sold === "carcass" ? sizeOf(p, l.opts.size).kg * (l.qty || 1) : 0); }, 0));
+    return { meat, services, extras: extrasSum, discount, sub, delivery, total, vat, kg, toFree: delivery ? r2(C.delivery.freeOver - sub) : 0, coupon: cp ? coupon : null, count: lines.length };
   }
 
   /* =========================================================
@@ -124,18 +150,16 @@ window.NUDJ_STORE = (function () {
   };
 
   /* =========================================================
-     الحساب (تسجيل الدخول برقم الجوال)
+     الحساب (الدخول برقم الجوال)
      ========================================================= */
-  /* أسماء الأرقام التي سجّلت سابقاً على هذا الجهاز (بديل مؤقت لقاعدة المستخدمين) */
-  const known = () => read("nudj_known", {});
+  const known = () => read(K.known, {});
   const user = {
     get: () => read(K.user, null),
     knownName: phone => known()[phone] || null,
-    login(phone, name) { const u = { phone, name: name || "", since: Date.now() }; write(K.user, u); const k = known(); k[phone] = u.name; write("nudj_known", k); emit("auth"); return u; },
-    update(patch) { const u = Object.assign({}, read(K.user, {}), patch); write(K.user, u); if (u.phone) { const k = known(); k[u.phone] = u.name || ""; write("nudj_known", k); } emit("auth"); return u; },
+    login(phone, name) { const u = { phone, name: name || "", since: Date.now() }; write(K.user, u); const k = known(); k[phone] = u.name; write(K.known, k); emit("auth"); return u; },
+    update(patch) { const u = Object.assign({}, read(K.user, {}), patch); write(K.user, u); if (u.phone) { const k = known(); k[u.phone] = u.name || ""; write(K.known, k); } emit("auth"); return u; },
     logout() { try { localStorage.removeItem(K.user); } catch (e) { } emit("auth"); }
   };
-  /* رقم سعودي: 5XXXXXXXX (9 أرقام) — يقبل 05 و 966 و +966 */
   function normPhone(v) {
     let d = String(v || "").replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/\D/g, "");
     if (d.indexOf("966") === 0) d = d.slice(3);
@@ -143,28 +167,6 @@ window.NUDJ_STORE = (function () {
     return /^5\d{8}$/.test(d) ? d : null;
   }
   const fmtPhone = d => d ? "+966 " + d.slice(0, 2) + " " + d.slice(2, 5) + " " + d.slice(5) : "";
-
-  /* =========================================================
-     الخبرة: اشتراك نُضْج+ والأدلة المشتراة
-     ========================================================= */
-  const member = {
-    get() { const m = read(K.member, null); return m && m.status === "active" ? m : null; },
-    raw: () => read(K.member, null),
-    subscribe(plan) {
-      const P = C.plans[plan]; if (!P) return null;
-      const now = new Date(); const renew = new Date(now);
-      if (plan === "annual") renew.setFullYear(renew.getFullYear() + 1); else renew.setMonth(renew.getMonth() + 1);
-      const m = { plan, price: P.price, since: now.getTime(), renews: renew.getTime(), status: "active", autoRenew: true };
-      write(K.member, m); pruneOwnedGuides(); emit("auth"); return m;
-    },
-    setAutoRenew(v) { const m = read(K.member, null); if (!m) return; m.autoRenew = !!v; write(K.member, m); emit("auth"); },
-    end() { try { localStorage.removeItem(K.member); } catch (e) { } emit("auth"); }
-  };
-  const isMember = () => !!member.get();
-  const owned = () => read(K.guides, []);
-  function grant(ids) { const o = owned(); (ids || []).forEach(id => { if (o.indexOf(id) < 0) o.push(id); }); write(K.guides, o); pruneOwnedGuides(); emit("auth"); }
-  /* هل يستطيع المستخدم فتح هذا الدليل؟ مختبر الطبخ للأعضاء فقط */
-  function hasAccess(gid) { if (gid === "lab") return isMember(); return isMember() || owned().indexOf(gid) > -1; }
 
   /* =========================================================
      العناوين
@@ -194,37 +196,24 @@ window.NUDJ_STORE = (function () {
   const orders = {
     list: () => read(K.orders, []),
     get: id => read(K.orders, []).find(o => o.id === id),
-    /* ينشئ الطلب من أسطر محددة (السلة أو شراء سريع) ويمنح الأدلة المدفوعة فوراً */
-    create({ lines, coupon, address, slot, payment }) {
+    create({ lines, coupon, address, slot, payment, plan }) {
       const t = totals(lines, coupon);
-      const snap = lines.map(l => {
-        if (l.kind === "guide") { const g = D.guideById(l.id); return { kind: "guide", id: l.id, name: g.title, qty: 1, price: C.guidePrice }; }
-        const p = D.byId(l.id);
-        return { kind: "meat", id: l.id, name: p.name, qty: l.qty, opts: l.opts, note: l.note, unit: unitPrice(p, l.opts), price: linePrice(l) };
-      });
-      const guides = lines.filter(l => l.kind === "guide").map(l => l.id);
-      const o = {
-        id: orderId(), date: Date.now(), items: snap, totals: t, address: t.hasMeat ? address : null,
-        slot: t.hasMeat ? slot : null, payment, guides, status: t.hasMeat ? "placed" : "done"
-      };
+      const items = lines.map(l => { const p = D.byId(l.id); const b = breakdown(l); return { id: l.id, name: p.name, sold: p.sold, kg: l.kg, qty: l.qty, opts: l.opts, note: l.note, unit: unitPrice(p, l.opts), base: b.base, adds: b.adds, price: b.total }; });
+      const o = { id: orderId(), date: Date.now(), items, totals: t, address, slot, payment, plan: plan || null, status: "placed" };
       const l = read(K.orders, []); l.unshift(o); write(K.orders, l);
-      if (guides.length) grant(guides);
       emit("orders"); return o;
     },
-    /* الإلغاء متاح قبل بدء التجهيز فقط */
     cancel(id) { const l = read(K.orders, []); const o = l.find(x => x.id === id); if (!o || o.status !== "placed") return false; o.status = "cancelled"; write(K.orders, l); emit("orders"); return true; }
   };
 
   /* =========================================================
-     الاستشارات
+     خطط المستشار المحفوظة
      ========================================================= */
-  const consults = {
-    list: () => read(K.consults, []),
-    create(c) {
-      c.id = "C" + String(Date.now()).slice(-7); c.created = Date.now(); c.status = "confirmed";
-      const l = read(K.consults, []); l.unshift(c); write(K.consults, l); emit("consults"); return c;
-    },
-    cancel(id) { const l = read(K.consults, []); const c = l.find(x => x.id === id); if (c) c.status = "cancelled"; write(K.consults, l); emit("consults"); }
+  const plans = {
+    list: () => read(K.plans, []),
+    save(p) { const l = read(K.plans, []).filter(x => x.id !== p.id); p.saved = Date.now(); l.unshift(p); write(K.plans, l.slice(0, 20)); emit("plans"); return p; },
+    remove(id) { write(K.plans, read(K.plans, []).filter(x => x.id !== id)); emit("plans"); },
+    get: id => read(K.plans, []).find(x => x.id === id)
   };
 
   /* =========================================================
@@ -241,8 +230,8 @@ window.NUDJ_STORE = (function () {
   };
 
   return {
-    on, emit, unitPrice, fromPrice, boxValue, sizeOf,
-    cart: { get: getCart, addMeat, addGuide, guideInCart, setQty, remove: removeLine, clear: clearCart, count: cartCount, linePrice, totals },
-    wish, user, normPhone, fmtPhone, member, isMember, owned, grant, hasAccess, addr, orders, consults, recent, city
+    on, emit, sizeOf, unitPrice, fromPrice, breakdown, snapKg,
+    cart: { get: getCart, add, setAmount, setOpts, remove, clear, has, count, linePrice, totals },
+    wish, user, normPhone, fmtPhone, addr, orders, plans, recent, city
   };
 })();

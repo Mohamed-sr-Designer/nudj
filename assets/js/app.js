@@ -1,7 +1,7 @@
 /* =========================================================
    نُضْج — سلوك الواجهة المشترك
-   شريط التنقل بنمط iOS، الأوراق السفلية، الإضافة السريعة،
-   الشارات، المفضلة، وحالة الأدلة (مقفلة/متاحة).
+   شريط التنقل بنمط iOS، الأوراق السفلية، الميزان ونموذج الشراء،
+   الإضافة السريعة، الشارات، المفضلة، وزر المستشار العائم.
    ========================================================= */
 (function () {
   "use strict";
@@ -53,7 +53,7 @@
     sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
     if (o.title) sh.setAttribute("aria-label", o.title);
     sh.innerHTML = `<div class="sheet__grab" aria-hidden="true"></div>
-      <div class="sheet__head">${o.title ? `<h2 class="sheet__title">${o.title}</h2>` : "<span></span>"}<button class="sheet__x" type="button" aria-label="إغلاق">${U.icon("x", "", 2.2)}</button></div>
+      ${o.bare ? "" : `<div class="sheet__head">${o.title ? `<h2 class="sheet__title">${o.title}</h2>` : "<span></span>"}<button class="sheet__x" type="button" aria-label="إغلاق">${U.icon("x", "", 2.2)}</button></div>`}
       <div class="sheet__body"></div>${o.foot ? `<div class="sheet__foot"></div>` : ""}`;
     const body = $(".sheet__body", sh);
     if (typeof o.body === "string") body.innerHTML = o.body; else if (o.body) body.appendChild(o.body);
@@ -78,7 +78,7 @@
     };
     stack.push(ctl);
     back.addEventListener("click", () => ctl.close());
-    $(".sheet__x", sh).addEventListener("click", () => ctl.close());
+    if ($(".sheet__x", sh)) $(".sheet__x", sh).addEventListener("click", () => ctl.close());
     /* السحب للأسفل للإغلاق */
     let y0 = null, dy = 0, t0 = 0;
     const startDrag = e => {
@@ -96,7 +96,7 @@
       const v = dy / Math.max(1, Date.now() - t0);
       if (dy > 110 || v > 0.6) ctl.close(); else sh.style.transform = "";
     };
-    [$(".sheet__grab", sh), $(".sheet__head", sh)].forEach(h => {
+    [$(".sheet__grab", sh), $(".sheet__head", sh), $(".adv__head", sh)].filter(Boolean).forEach(h => {
       h.addEventListener("touchstart", startDrag, { passive: true });
       h.addEventListener("touchmove", moveDrag, { passive: true });
       h.addEventListener("touchend", endDrag);
@@ -180,32 +180,6 @@
     paintHearts();
   });
 
-  /* حالة الأدلة في كل مكان: متاح / في السلة / مقفل */
-  function paintGuides(scope) {
-    const member = S.isMember();
-    $$("[data-gstate]", scope).forEach(el => {
-      const g = el.dataset.gstate;
-      el.innerHTML = S.hasAccess(g) ? U.ownPill(member ? "ضمن نُضْج+" : "متاح لك")
-        : g === "lab" ? `<span class="pill pill--lock">${U.icon("lock")}نُضْج+</span>`
-          : S.cart.guideInCart(g) ? U.cartPill() : U.lockPill();
-    });
-    /* خيار الدليل في نموذج الشراء: يختفي إن كان الدليل متاحاً أو في السلة، ويظهر سطر يوضح الحالة */
-    $$("[data-guide-toggle]", scope).forEach(el => {
-      const g = el.dataset.guideToggle, hide = S.hasAccess(g) || S.cart.guideInCart(g);
-      el.hidden = hide; if (hide) { const i = el.querySelector("input"); if (i) i.checked = false; }
-    });
-    $$("[data-guide-owned]", scope).forEach(el => {
-      const g = el.dataset.guideOwned, acc = S.hasAccess(g), inCart = S.cart.guideInCart(g);
-      el.hidden = !(acc || inCart);
-      const t = el.querySelector("span"), a = el.querySelector("a");
-      if (t) t.textContent = acc ? "الدليل المصوّر متاح لك" : "الدليل المصوّر في سلتك";
-      if (a) { a.href = acc ? U.url.guide(g) : "cart.html"; a.textContent = acc ? "افتحه" : "السلة"; }
-    });
-    $$(".buy-form", scope).forEach(f => { if (f.update) f.update(); });
-    $$("[data-member-only]", scope).forEach(el => { el.hidden = !member; });
-    $$("[data-nonmember-only]", scope).forEach(el => { el.hidden = member; });
-  }
-
   function paintAuth() {
     const u = S.user.get();
     $$("[data-auth]").forEach(el => { el.hidden = (el.dataset.auth === "in") !== !!u; });
@@ -222,72 +196,117 @@
     });
   }
 
-  function refresh() { paintBadges(); paintHearts(); paintGuides(); paintAuth(); }
-  S.on("cart", () => { paintBadges(); paintGuides(); });
+  function refresh() { paintBadges(); paintHearts(); paintAuth(); }
+  S.on("cart", paintBadges);
   S.on("wish", () => paintHearts());
-  S.on("auth", () => { paintGuides(); paintAuth(); });
+  S.on("auth", paintAuth);
   S.on("city", paintAuth);
 
   /* =========================================================
-     نموذج الشراء (صفحة المنتج + ورقة الإضافة السريعة)
+     نموذج الشراء: الميزان + التقطيع + التتبيل + الخدمات
+     (صفحة المنتج + ورقة الإضافة السريعة)
      ========================================================= */
   function readForm(form, p) {
     const get = n => { const el = form.querySelector(`input[name$="-${n}"]:checked`); return el ? el.value : undefined; };
-    const opts = {};
-    if (p.sizes) opts.size = get("size");
-    if (p.parts) opts.part = get("part");
-    if (p.cuts) opts.cut = get("cut");
-    if (p.extras) { opts.extras = {}; p.extras.forEach(x => { opts.extras[x.k] = get("x-" + x.k); }); }
-    if (p.pack) opts.pack = get("pack");
+    const chk = n => { const el = form.querySelector(`input[name="${n}"]`); return !!(el && el.checked && !el.closest("[hidden]")); };
     const noteEl = form.querySelector("textarea[name=note]");
-    const qty = parseInt(form.querySelector("output[name=qty]").value || form.querySelector("output[name=qty]").textContent, 10) || 1;
-    const g = form.querySelector("input[name=withGuide]");
-    return { opts, note: noteEl ? noteEl.value.trim() : "", qty, withGuide: g && g.checked && !g.closest("[hidden]") ? g.value : null };
+    const qEl = form.querySelector("output[name=qty]");
+    const r = { note: noteEl ? noteEl.value.trim() : "", opts: {} };
+    if (p.sold === "kg") {
+      r.kg = parseFloat(form.dataset.kg || p.def);
+      r.opts = { prep: get("prep"), marinade: get("marinade"), skewer: chk("skewer"), vacuum: chk("vacuum") };
+    } else {
+      if (p.sold === "carcass") r.opts = { size: get("size"), part: get("part"), style: get("style"), vacuum: chk("vacuum") };
+      r.qty = qEl ? (parseInt(qEl.textContent, 10) || 1) : 1;
+    }
+    return r;
+  }
+  function setKg(form, p, kg) {
+    kg = S.snapKg(p, kg); form.dataset.kg = kg;
+    const out = form.querySelector(".scale__read"); if (out) out.textContent = kg.toFixed(2);
+    const nd = form.querySelector(".scale__needle"); if (nd) nd.style.transform = `rotate(${-90 + Math.min(1, kg / 5) * 180}deg)`;
+    $$("[data-kg]", form).forEach(b => b.classList.toggle("on", +b.dataset.kg === kg));
+    form.dispatchEvent(new Event("change"));
   }
   function bindBuyForm(form, o) {
     o = o || {};
     if (!form || form.dataset.bound) return; form.dataset.bound = "1";
     const p = D.byId(form.dataset.product); if (!p) return;
-    const out = form.querySelector("output[name=qty]");
-    const totalEl = form.querySelector("[data-total]");
+    const totalEl = form.querySelector("[data-total]"), sumEl = form.querySelector("[data-sum]");
     function update() {
+      /* سطر التسييخ يظهر فقط لأشكال التقطيع القابلة للتسييخ */
+      const sk = form.querySelector("[data-skew-row]");
+      if (sk) {
+        const pr = form.querySelector('input[name$="-prep"]:checked');
+        const ok = pr && D.PREPS[pr.value] && D.PREPS[pr.value].skew;
+        sk.hidden = !ok; if (!ok) { const i = sk.querySelector("input"); if (i) i.checked = false; }
+      }
       const r = readForm(form, p);
-      let t = S.unitPrice(p, r.opts) * r.qty + (r.withGuide ? C.guidePrice : 0);
-      if (totalEl) totalEl.textContent = U.money(t) + " " + C.currency;
-      $$(".opt", form).forEach(f => { const c = f.querySelector("input:checked"); f.classList.toggle("has-val", !!c); });
-      if (o.onChange) o.onChange(r, t);
+      const b = S.breakdown(p.sold === "kg" ? { id: p.id, kg: r.kg, opts: r.opts } : { id: p.id, qty: r.qty, opts: r.opts });
+      if (totalEl) totalEl.textContent = U.money(b.total) + " " + C.currency;
+      if (sumEl) sumEl.innerHTML = b.adds.length ? `<span>${p.sold === "kg" ? U.kgTxt(r.kg) + " × " + U.money(p.price) : "الأساس"} <b class="num">${U.money(b.base)}</b></span>${b.adds.map(a => `<span>+ ${a.n} <b class="num">${U.money(a.v)}</b></span>`).join("")}` : "";
+      $$(".opt", form).forEach(f => f.classList.toggle("has-val", !!f.querySelector("input:checked")));
+      if (o.onChange) o.onChange(r, b.total);
     }
     form.addEventListener("change", update);
     form.addEventListener("click", e => {
+      const k = e.target.closest("[data-kg]"); if (k) { setKg(form, p, +k.dataset.kg); return; }
+      const ks = e.target.closest("[data-kg-step]"); if (ks) { setKg(form, p, parseFloat(form.dataset.kg || p.def) + (+ks.dataset.kgStep) * (p.step || 0.5)); return; }
       const s = e.target.closest("[data-step]"); if (!s) return;
-      const v = Math.max(1, Math.min(99, (parseInt(out.textContent, 10) || 1) + parseInt(s.dataset.step, 10)));
-      out.textContent = v; out.value = v; update();
+      const out = form.querySelector("output[name=qty]");
+      out.textContent = Math.max(1, Math.min(99, (parseInt(out.textContent, 10) || 1) + parseInt(s.dataset.step, 10))); update();
     });
     form.addEventListener("submit", e => {
       e.preventDefault();
       const r = readForm(form, p);
-      S.cart.addMeat(p.id, r.opts, r.qty, r.note);
-      if (r.withGuide) S.cart.addGuide(r.withGuide);
+      S.cart.add(p.id, { kg: r.kg, qty: r.qty, opts: r.opts, note: r.note });
       bump();
-      toast(r.withGuide ? "أُضيف اللحم والدليل للسلة" : "أُضيف للسلة", { action: { label: "عرض السلة", href: "cart.html" } });
+      toast("أُضيف " + p.name + (p.sold === "kg" ? " · " + U.kgTxt(r.kg) : ""), { icon: "cart", action: { label: "السلة", href: "cart.html" } });
       if (o.onAdded) o.onAdded(r);
     });
-    paintGuides(form);
-    update();
-    form.update = update;
+    if (p.sold === "kg") setKg(form, p, p.def); else update();
+    form.update = update; form.setKg = kg => setKg(form, p, kg);
   }
 
-  /* الإضافة السريعة من البطاقات */
+  /* الإضافة السريعة من البطاقات: الإضافات مباشرة، واللحم بورقة الميزان */
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-quick]"); if (!b) return;
     e.preventDefault();
     const p = D.byId(b.dataset.quick); if (!p) return;
+    if (p.sold === "piece") { S.cart.add(p.id, { qty: 1 }); bump(); toast("أُضيف " + p.name, { icon: "cart", action: { label: "السلة", href: "cart.html" } }); return; }
     const body = document.createElement("div");
-    body.innerHTML = `<div class="qs-head">${U.productImg(p, "qs-head__img")}<div class="qs-head__b"><b>${U.esc(p.name)}</b><span>${U.priceTag(p)}</span>${p.weightNote ? `<small>${p.weightNote}</small>` : ""}</div></div>
+    body.innerHTML = `<div class="qs-head">${U.productImg(p, "qs-head__img")}<div class="qs-head__b"><span class="tag__code num">${p.code}</span><b>${U.esc(p.name)}</b><span>${U.priceTag(p)}</span></div></div>
       ${U.buyForm(p)}<a class="qs-more" href="${U.url.product(p.id)}">كل التفاصيل عن ${U.esc(p.name)} ${U.icon("chevL")}</a>`;
     const sh = openSheet({ title: "أضف للسلة", body, cls: "sheet--buy" });
     bindBuyForm($(".buy-form", body), { onAdded: () => sh.close(true) });
   });
+
+  /* =========================================================
+     المستشار: الزر العائم + الورقة
+     ========================================================= */
+  function openAdvisor(o) {
+    o = o || {};
+    const ADV = window.NUDJ_ADVISOR; if (!ADV) { location.href = "advisor.html"; return; }
+    if (o.occ) ADV.start(o.occ, o.hints); else if (o.ask) ADV.askAbout(o.ask);
+    /* إن كان المستشار موجوداً في الصفحة ننتقل له بدل فتح ورقة */
+    const inline = $("[data-advisor-inline]");
+    if (inline && !o.sheet) { inline.scrollIntoView({ behavior: "smooth", block: "center" }); const i = inline.querySelector(".adv__input input"); if (i && window.innerWidth >= 900) setTimeout(() => i.focus({ preventScroll: true }), 500); return; }
+    const body = document.createElement("div"); body.className = "adv-host";
+    const sh = openSheet({ body, cls: "sheet--advisor", full: true, bare: true });
+    ADV.mount(body, { close: true, cls: "adv--sheet", scroll: true, onClose: () => sh.close() });
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-advisor]"); if (!b) return;
+    e.preventDefault();
+    openAdvisor({ occ: b.dataset.advisor && b.dataset.advisor !== "open" ? b.dataset.advisor : null, ask: b.dataset.ask || null, hints: b.dataset.animal ? { animal: b.dataset.animal } : null, sheet: b.hasAttribute("data-sheet") });
+  });
+  function initFab() {
+    if (document.body.classList.contains("page-advisor") || $("[data-no-fab]") || $("[data-advisor-inline]")) return;
+    const f = document.createElement("button");
+    f.type = "button"; f.className = "fab"; f.setAttribute("data-advisor", "open"); f.setAttribute("data-sheet", ""); f.setAttribute("aria-label", "اسأل مستشار نُضْج");
+    f.innerHTML = `<span class="fab__av">${U.mark("fab__mark")}</span><span class="fab__t">اسأل المستشار</span>`;
+    document.body.appendChild(f);
+  }
 
   /* =========================================================
      تسجيل الدخول المطلوب
@@ -339,20 +358,6 @@
     .replace(/[ً-ٰٟـ]/g, "")
     .replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/ؤ/g, "و").replace(/ئ/g, "ي")
     .replace(/\s+/g, " ").trim();
-
-  /* مقياس درجة النضج */
-  function ruler(root, def) {
-    if (!root) return;
-    const pin = $("[data-rp]", root), n = $("[data-rn]", root), t = $("[data-rt]", root), note = $("[data-rnote]", root);
-    function pick(k) {
-      const d = D.DONENESS.find(x => x.k === k) || D.DONENESS[1];
-      n.textContent = d.n; t.textContent = d.t + "°م"; pin.style.right = d.pos + "%";
-      if (note) note.textContent = d.note;
-      $$("button", root).forEach(b => b.setAttribute("aria-checked", b.dataset.k === d.k ? "true" : "false"));
-    }
-    root.addEventListener("click", e => { const b = e.target.closest("button[data-k]"); if (b) pick(b.dataset.k); });
-    pick(def || "mr");
-  }
 
   /* أيام وفترات (للتوصيل والاستشارة) */
   const dayFmt = (d, o) => d.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", o);
@@ -480,12 +485,13 @@
      التشغيل
      ========================================================= */
   function init() {
-    fillSlots(); initAppBar(); refresh();
+    fillSlots(); initAppBar(); refresh(); initFab();
     $$(".buy-form").forEach(f => bindBuyForm(f));
+    $$("[data-advisor-inline]").forEach(el => { if (window.NUDJ_ADVISOR) window.NUDJ_ADVISOR.mount(el, { cls: el.dataset.advisorInline || "", scroll: true }); });
     html.classList.add("js-ready");
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 
-  window.NUDJ_APP = { toast, openSheet, confirmSheet, bindBuyForm, requireLogin, refresh, paintGuides, paintHearts, lockScroll, unlockScroll, bump,
-    norm, ruler, slotPicker, payMethods, busy, addressSheet, addrLine, $, $$ };
+  window.NUDJ_APP = { toast, openSheet, confirmSheet, bindBuyForm, requireLogin, refresh, paintHearts, lockScroll, unlockScroll, bump,
+    norm, slotPicker, payMethods, busy, addressSheet, addrLine, openAdvisor, $, $$ };
 })();

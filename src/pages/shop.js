@@ -1,84 +1,70 @@
-/* المتجر + مخطط الذبيحة */
+/* المتجر + خريطة القطيع + صفحة لكل ماشية */
 module.exports = function (ctx) {
   const { D, U, C, h } = ctx;
-  const { icon } = U;
-  const P = D.PRODUCTS;
-  const cuts = P.filter(p => p.type === "cut");
-  const count = f => cuts.filter(f).length;
+  const { icon, esc } = U;
+  const pages = [];
 
-  const fgroup = (title, name, items) => `<div class="fgroup"><h3>${title}</h3><div class="fopts">${items.map(([v, t, n]) =>
-    `<label class="fopt"><input type="checkbox" name="${name}" value="${v}"><span>${t}</span><small>${n}</small></label>`).join("")}</div></div>`;
-
-  const filters = `<div class="filters__in">
-  ${fgroup("المنطقة في الذبيحة", "z", D.ZONES.map(z => [z, D.PRIMALS["ضأن"][z].name, count(p => p.zone === z)]).filter(x => x[2]))}
-  ${fgroup("طريقة الطبخ", "m", Object.keys(D.METHODS).map(m => [m, D.METHODS[m].name, count(p => p.methods.indexOf(m) > -1)]).filter(x => x[2]))}
-  ${fgroup("الخصائص", "f", [["tender", "طرية جداً", count(p => p.spec[0] >= 4)], ["fat", "دهن عالٍ", count(p => p.spec[1] >= 4)], ["easy", "سهلة التحضير", count(p => p.spec[3] <= 2)]])}
-  <button class="btn btn--ghost btn--sm" type="button" data-clear>مسح التصفية</button>
-</div>`;
-
-  const shop = {
-    name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: "المتجر", trail: ["chart", "search"], scripts: ["shop"],
-    title: "المتجر — ذبائح وقطعيات ضأن وبقر ومفروم · نُضْج",
-    desc: "كل منتجات نُضْج: ذبائح ضأن كاملة ونصف وربع، قطعيات ضأن وبقر، مفروم، وبوكسات جاهزة. اختر الوزن والتقطيع حسب طبختك.",
+  /* ================= المتجر ================= */
+  const filters = [["all", "الكل"]].concat(D.ANIMALS.map(a => [a.k, a.n]), [["carcass", "الذبائح"], ["extra", "عدّة الشواء"]]);
+  const uses = Object.keys(D.USES);
+  pages.push({
+    name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: "المتجر", scripts: ["shop"], trail: ["search", "herd"],
+    title: "المتجر — قطعيات ضأن وماعز وحاشي وعجل وبقر وجاموس · نُضْج",
+    desc: "كل قطعيات نُضْج بالكيلو مع التقطيع المجاني، والذبائح الكاملة، وعدّة الشواء والبهارات.",
     main: `<div class="wrap">
   ${h.crumbs([["المتجر"]])}
-  <div class="page-head"><h1 class="large-title">المتجر</h1><p class="desk-only">اختر النوع، أو صفِّ حسب المنطقة وطريقة الطبخ. كل منتج تقدر تحدد وزنه وتقطيعه قبل الإضافة.</p></div>
-  <label class="search-bar mob-only" style="margin-bottom:12px">${icon("search")}<input type="search" id="shopQ" placeholder="ابحث في المتجر" aria-label="ابحث في المتجر" autocomplete="off"></label>
-  <div class="type-chips" id="typeChips" role="tablist" aria-label="نوع المنتج">
-    <button type="button" role="tab" class="on" aria-selected="true" data-t="">الكل</button>
-    ${D.TYPES.map(t => `<button type="button" role="tab" aria-selected="false" data-t="${t.k}">${t.n}</button>`).join("")}
-  </div>
-  <div class="shop">
-    <aside class="filters" id="filters" aria-label="تصفية">${filters}</aside>
-    <div>
-      <a class="chart-entry" href="cuts.html">${icon("map")}<span><b>تسوّق من مخطط الذبيحة</b><small>اختر المنطقة وشوف قطعياتها</small></span>${icon("chevL", "cell__chev")}</a>
-      <div class="toolbar">
-        <span class="toolbar__n"><b id="resN">${P.length}</b> منتج</span>
-        <div class="toolbar__btns">
-          <button class="tb-btn mob-only" type="button" id="openFilters">${icon("filter")}تصفية<span class="dot" hidden></span></button>
-          <select class="sort-select" id="sort" aria-label="الترتيب">
-            <option value="">الترتيب: المقترح</option><option value="low">السعر: الأقل أولاً</option><option value="high">السعر: الأعلى أولاً</option>
-            <option value="tender">الأطرى أولاً</option><option value="bold">الأغنى نكهة</option>
-          </select>
-        </div>
-      </div>
-      <div class="grid-p grid-p--shop" id="grid">${U.productGrid(P)}</div>
-      <div id="noRes" hidden>${U.empty("search", "ما لقينا منتجات بهذي التصفية", "جرّب تمسح بعض الخيارات أو تغيّر النوع.", `<button class="btn btn--ghost" type="button" data-clear>مسح التصفية</button>`)}</div>
+  <div class="page-head page-head--row"><div><h1 class="large-title">المتجر</h1><p><b class="num" id="shopCount">${D.PRODUCTS.length}</b> منتج · الأسعار شاملة الضريبة</p></div>
+    <button type="button" class="btn btn--line" data-advisor="open">${U.mark("btn__mark")}مو متأكد؟ اسأل المستشار</button></div>
+  <div class="filters" id="filters">
+    <div class="chips-row" role="radiogroup" aria-label="الماشية">${filters.map(([k, n], i) => `<button type="button" role="radio" aria-checked="${i === 0}" data-f-a="${k}">${k !== "all" && k !== "carcass" && k !== "extra" ? `<img src="assets/img/herd/${k}.png" alt="" aria-hidden="true">` : ""}${n}</button>`).join("")}</div>
+    <div class="filters__row">
+      <div class="chips-row chips-row--sm" role="radiogroup" aria-label="الطبخة"><button type="button" role="radio" aria-checked="true" data-f-u="all">كل الطبخات</button>${uses.map(u => `<button type="button" role="radio" aria-checked="false" data-f-u="${u}">${icon(D.USES[u].ic)}${D.USES[u].n}</button>`).join("")}</div>
+      <label class="sort">${icon("filter")}<select id="sort" aria-label="الترتيب"><option value="">الترتيب: حسب الماشية</option><option value="asc">السعر: من الأقل</option><option value="desc">السعر: من الأعلى</option></select></label>
     </div>
   </div>
+  <div class="grid" id="grid">${D.PRODUCTS.map(p => U.tagCard(p).replace('<article class="tag-card', `<article data-a="${p.sold === "carcass" ? "carcass " + p.animal : p.animal}" data-u="${(p.uses || []).join(" ")}" data-p="${p.sold === "carcass" ? p.sizes[0].p : p.price}" class="tag-card`)).join("")}</div>
+  <div id="shopEmpty" hidden>${U.empty("search", "ما في منتجات بهذا الفلتر", "جرّب ماشية أو طبخة ثانية.", `<button class="btn btn--line" type="button" data-f-reset>عرض الكل</button>`)}</div>
 </div>`
-  };
+  });
 
-  /* فهرس ثابت لكل المناطق (للمحركات ولمن لا يستخدم المخطط) */
-  const zoneIndex = ["ضأن", "بقر"].map(a => `<div class="zi" data-zi="${a}"${a === "بقر" ? " hidden" : ""}>${D.ZONES.map(z => {
-    const list = D.productsInZone(a, z); if (!list.length) return "";
-    const pr = D.PRIMALS[a][z];
-    return `<h3 class="group__head">${pr.name} — <span class="muted">${pr.note}</span></h3><div class="rows">${list.map(p => U.productRow(p)).join("")}</div>`;
-  }).join("")}</div>`).join("");
-
-  const chart = {
-    name: "chart", file: "cuts.html", tab: "shop", nav: "cuts", mode: "push", back: ["shop.html", "المتجر"], appTitle: "مخطط الذبيحة", trail: ["share"], scripts: ["chart"],
-    title: "مخطط الذبيحة — تسوّق قطعيات الضأن والبقر حسب المنطقة · نُضْج",
-    desc: "مخطط تفاعلي للذبيحة: اضغط على الرقبة أو الكتف أو الريش أو الخاصرة أو الفخذ أو الصدر أو الموزة لتشوف قطعياتها وأسعارها وطريقة الطبخ المناسبة.",
+  /* ================= خريطة القطيع ================= */
+  pages.push({
+    name: "herd", file: "cuts.html", tab: "shop", nav: "herd", mode: "push", back: ["shop.html", "المتجر"], appTitle: "القطيع",
+    title: "القطيع — خريطة قطعيات الضأن والماعز والحاشي والعجل والبقر والجاموس · نُضْج",
+    desc: "خريطة القطعيات لكل ماشية: اضغط على أي رقم لتشوف القطعة وسعرها والتقطيع المتاح.",
     main: `<div class="wrap">
-  ${h.crumbs([["المتجر", "shop.html"], ["مخطط الذبيحة"]])}
-  <div class="page-head"><h1 class="large-title">مخطط الذبيحة</h1><p>اضغط على أي منطقة لتشوف قطعياتها وأسعارها.</p></div>
-  <div class="seg" id="species" role="tablist" aria-label="نوع الذبيحة" style="margin-bottom:14px">
-    <button type="button" role="tab" class="on" aria-selected="true" data-a="ضأن">ضأن</button><button type="button" role="tab" aria-selected="false" data-a="بقر">بقر</button>
-  </div>
-  <div class="chart-page">
-    <div class="chart-stage">${U.chartSVG()}<p class="chart-hint">المخطط تقريبي لتوضيح مواقع القطعيات.</p></div>
-    <aside class="zone-panel desk-only" id="zonePanel" aria-live="polite">
-      <div class="zone-panel__head"><h2>اختر منطقة</h2><p>كل منطقة لها قوام ونسبة دهن وطريقة طبخ تختلف عن غيرها.</p></div>
-      <div class="rows" id="zoneRows"></div>
-    </aside>
-  </div>
-  <section class="section">
-    ${h.secHead("كل القطعيات حسب المنطقة", "", "", "")}
-    ${zoneIndex}
-  </section>
+  ${h.crumbs([["القطيع"]])}
+  <div class="page-head"><h1 class="large-title">القطيع</h1><p>ست مواشي، كل قطعة لها رقم على الرسم. اختر الماشية.</p></div>
+  <div class="herd-index">${D.ANIMALS.map((a, i) => `<a class="herd-tile" href="${U.url.animal(a.k)}">
+    <span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile" })}
+    <span class="herd-tile__b"><b>${a.n}</b><i class="num">${a.en}</i><small>${esc(a.note)}</small><span class="seeall">${D.cutsOf(a.k).length} منتجات ${icon("chevL")}</span></span></a>`).join("")}</div>
 </div>`
-  };
+  });
 
-  return [shop, chart];
+  /* ================= صفحة كل ماشية ================= */
+  D.ANIMALS.forEach((a, i) => {
+    const list = D.cutsOf(a.k), kg = list.filter(p => p.sold === "kg"), car = list.filter(p => p.sold === "carcass");
+    const from = Math.min.apply(null, kg.map(p => p.price));
+    pages.push({
+      name: "animal", file: a.k + ".html", tab: "shop", nav: "herd", mode: "push", back: ["cuts.html", "القطيع"], appTitle: a.n, scripts: ["animal"], trail: ["share"],
+      title: `${a.n} — قطعيات ${a.n} وأسعارها بالكيلو · نُضْج`,
+      desc: `${a.note} ${kg.length} قطعيات ${a.n} من ${from} ر.س للكيلو، والتقطيع مجاني.`,
+      ogImage: kg[0] && kg[0].img,
+      main: `<div class="wrap">
+  ${h.crumbs([["القطيع", "cuts.html"], [a.n]])}
+  <section class="animal-hero">
+    <div class="animal-hero__t"><span class="animal-hero__n num">0${i + 1} / 06</span><h1 class="animal-hero__name">${a.n}<i class="num">${a.en}</i></h1><p>${esc(a.note)}</p>
+      <dl class="hero__stats"><div><dt class="num">${kg.length}</dt><dd>قطعيات</dd></div><div><dt class="num">${from}</dt><dd>ر.س/كجم يبدأ من</dd></div>${car.length ? `<div><dt class="num">${car.length}</dt><dd>ذبائح</dd></div>` : ""}</dl>
+      <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="ask" data-animal="${a.k}">${U.mark("btn__mark")}اسأل عن قطعيات ${a.n}</button></div></div>
+    <div class="animal-hero__map">${U.herdMap(a)}</div>
+  </section>
+  <ol class="cut-index">${list.map(p => `<li><a href="${U.url.product(p.id)}" data-row="${p.id}"><span class="num">${p.code.slice(2)}</span><b>${esc(p.name)}</b><small>${p.zone ? D.ZONES[p.zone] : p.sold === "carcass" ? "ذبيحة" : "بدون موقع"}</small><em>${U.priceTag(p)}</em></a></li>`).join("")}</ol>
+  ${car.length ? `<section class="section"><div class="sec-head"><h2>ذبائح ${a.n}</h2><p>التقطيع مجاني بأي أسلوب: ثلاجة، كبسة، مندي، أو حسب الطبخة.</p></div><div class="grid">${U.grid(car)}</div></section>` : ""}
+  <section class="section"><div class="sec-head"><h2>قطعيات ${a.n} بالكيلو</h2></div><div class="grid">${U.grid(kg)}</div></section>
+  <section class="section"><div class="sec-head"><h2>مواشي ثانية</h2></div><div class="herd-rail herd-rail--sm">${D.ANIMALS.map((x, j) => x.k === a.k ? "" : U.herdCard(x, j)).join("")}</div></section>
+</div>`
+    });
+  });
+
+  return pages;
 };

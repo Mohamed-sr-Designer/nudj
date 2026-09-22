@@ -1,63 +1,67 @@
-/* تفاصيل الطلب: تأكيد (new=1) + مراحل الطلب + التوصيل + المحتوى + إعادة الطلب/الإلغاء */
+/* الفاتورة المطبوعة + حالة الطلب + الإلغاء وإعادة الطلب والطباعة */
 (function () {
   "use strict";
   const D = window.NUDJ, S = window.NUDJ_STORE, A = window.NUDJ_APP, U = window.NUDJ_UI;
   const { $ } = A;
-  const C = D.CONFIG;
   const root = $("#orderRoot"); if (!root) return;
   const q = new URLSearchParams(location.search);
-  const cur = n => U.money(n) + " " + C.currency;
+  const isNew = q.get("new") === "1";
+  const STEPS = [["placed", "استلمنا الطلب", "receipt"], ["cutting", "على طاولة الجزّار", "knife"], ["onway", "في الطريق إليك", "truck"], ["done", "وصل", "check"]];
 
   function render() {
     const o = S.orders.get(q.get("id"));
-    if (!o) { root.innerHTML = U.empty("search", "ما لقينا هذا الطلب", "تأكد من الرابط أو افتح طلباتك من حسابك.", `<a class="btn btn--brand" href="account.html?s=orders">طلباتي</a>`); return; }
-    const isNew = q.get("new") === "1";
-    const t = o.totals, meat = o.items.filter(i => i.kind === "meat"), dig = o.items.filter(i => i.kind === "guide");
-    const steps = o.status === "cancelled"
-      ? [["تم إلغاء الطلب", "لن يُجهّز هذا الطلب", "now"]]
-      : t.hasMeat
-        ? [["تم استلام الطلب", U.fmtDate(o.date, { hour: "numeric", minute: "2-digit" }), "done"], ["التقطيع والتجهيز", "يبدأ قبل موعد التوصيل", o.status === "placed" ? "now" : "done"],
-          ["في الطريق إليك", o.slot ? o.slot.dateLabel + " · " + o.slot.time : "", ""], ["تم التوصيل", "", ""]]
-        : [["تم الدفع", U.fmtDate(o.date, { hour: "numeric", minute: "2-digit" }), "done"], ["الأدلة متاحة في حسابك", "افتحها من هنا أو من «أدلتي»", "done"]];
-    root.innerHTML = `
-      ${isNew ? `<div class="order-hero"><div class="tick">${U.icon("check", "", 2.6)}</div><h1>${t.hasMeat ? "تم استلام طلبك" : "تم الدفع — أدلتك جاهزة"}</h1>
-        <p>${t.hasMeat ? "بنرسل لك رسالة عند كل مرحلة." : "افتح الأدلة الآن أو من «أدلتي» في حسابك متى ما بغيت."}</p><div class="order-no">${U.icon("doc")}${o.id}</div></div>`
-        : `<div class="page-head"><h1 class="large-title">طلب ${o.id}</h1><p>${U.fmtDate(o.date)}</p></div>`}
-      <div class="co">
-        <div>
-          ${dig.length ? `<h2 class="group__head">أدلتك</h2><div class="rows">${dig.map(i => { const g = D.guideById(i.id); return `<a class="prow" href="${g.href}"><span class="gcard__ic">${U.icon("video")}</span><span class="prow__b"><b>${U.esc(g.title)}</b><small>متاح لك الآن</small></span>${U.ownPill("افتح")}</a>`; }).join("")}</div>` : ""}
-          <h2 class="group__head">حالة الطلب</h2>
-          <div class="card"><div class="timeline">${steps.map(s => `<div class="tl${s[2] === "done" ? " is-done" : s[2] === "now" ? " is-now" : ""}"><span class="tl__dot">${s[2] === "done" ? U.icon("check", "", 3) : ""}</span><span class="tl__b"><b>${s[0]}</b>${s[1] ? `<small>${U.esc(s[1])}</small>` : ""}</span></div>`).join("")}</div></div>
-          ${o.address ? `<h2 class="group__head">التوصيل</h2><div class="card"><dl class="kv"><div><dt>العنوان</dt><dd>${U.esc(o.address.label)} — ${U.esc(A.addrLine(o.address))}</dd></div><div><dt>الموعد</dt><dd>${U.esc(o.slot.dateLabel)} · ${U.esc(o.slot.time)}</dd></div>${o.address.notes ? `<div><dt>ملاحظات</dt><dd>${U.esc(o.address.notes)}</dd></div>` : ""}</dl></div>` : ""}
-          ${meat.length ? `<h2 class="group__head">اللحوم</h2><div class="rows">${meat.map(i => { const p = D.byId(i.id); return `<a class="prow" href="${U.url.product(i.id)}">${p ? U.productImg(p, "prow__img") : ""}<span class="prow__b"><b>${U.esc(i.name)} × ${i.qty}</b><small>${U.esc(U.optsText(i))}${i.note ? " · «" + U.esc(i.note) + "»" : ""}</small></span><span class="prow__p num">${cur(i.price)}</span></a>`; }).join("")}</div>` : ""}
-        </div>
-        <aside class="summary">
-          <h2>الفاتورة</h2>
-          ${t.hasMeat ? `<div class="sum-line"><span>اللحوم</span><span>${cur(t.meat)}</span></div>` : ""}
-          ${t.discount ? `<div class="sum-line is-disc"><span>خصم (${U.esc(t.coupon)})</span><span>−${cur(t.discount)}</span></div>` : ""}
-          ${t.digital ? `<div class="sum-line"><span>الخدمات الرقمية</span><span>${cur(t.digital)}</span></div>` : ""}
-          ${t.hasMeat ? `<div class="sum-line${t.delivery ? "" : " is-free"}"><span>التوصيل</span><span>${t.delivery ? cur(t.delivery) : "مجاني"}</span></div>` : ""}
-          <div class="sum-total"><b>الإجمالي</b><strong>${cur(t.total)}</strong></div>
-          <p class="sum-vat">شامل ضريبة القيمة المضافة (${cur(t.vat)}) · الدفع: ${U.esc(o.payment || "")}</p>
-          <div style="display:grid;gap:8px;margin-top:14px">
-            ${meat.length ? `<button class="btn btn--brand btn--block" type="button" id="reorder">${U.icon("refresh")}اطلب نفس الطلب مرة ثانية</button>` : ""}
-            ${o.status === "placed" ? `<button class="btn btn--ghost btn--block" type="button" id="cancelO">إلغاء الطلب</button>` : ""}
-            <a class="btn btn--ghost btn--block" href="contact.html">تحتاج مساعدة؟ تواصل معنا</a>
+    if (!o) { root.innerHTML = U.empty("receipt", "ما لقينا هذي الفاتورة", "يمكن الرابط قديم أو الطلب محفوظ على جهاز ثاني.", `<a class="btn btn--ember" href="account.html?s=orders">طلباتي</a>`); return; }
+    const t = o.totals, cancelled = o.status === "cancelled";
+    const cod = o.payment && (o.payment.k === "cod" || o.payment === "الدفع عند الاستلام");
+    const payName = typeof o.payment === "string" ? o.payment : (o.payment && o.payment.n) || "";
+    const lines = o.items.map(it => U.lineForReceipt(Object.assign({}, it, { base: it.base, adds: it.adds }))).filter(Boolean);
+    const rc = U.receipt({
+      cls: "receipt--order" + (isNew ? " is-printing" : "") + (cancelled ? " is-void" : ""),
+      kicker: "فاتورة ضريبية مبسّطة",
+      meta: [["رقم الطلب", `<span class="num">${U.esc(o.id)}</span>`], ["التاريخ", U.fmtDate(o.date, { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + U.fmtTime(o.date)],
+        ["التوصيل", o.slot ? U.esc(o.slot.dateLabel + " · " + o.slot.time) : "—"], ["الدفع", U.esc(payName)], ["الرقم الضريبي", D.CONFIG.contact.vatNo]],
+      lines,
+      totals: [
+        ["اللحم", U.money2(t.meat)],
+        t.discount ? ["خصم " + U.esc(t.coupon || ""), "−" + U.money2(t.discount), "is-disc"] : null,
+        t.services ? ["الخدمات", U.money2(t.services)] : null,
+        t.extras ? ["عدّة الشواء", U.money2(t.extras)] : null,
+        ["التوصيل", t.delivery ? U.money2(t.delivery) : "مجاني"],
+        ["الإجمالي", U.money2(t.total), "is-total"],
+        ["منها ضريبة 15٪", U.money2(t.vat), "is-muted"]
+      ].filter(Boolean),
+      code: o.id,
+      stamp: cancelled ? "ملغي" : cod ? "الدفع عند الاستلام" : "مدفوع",
+      foot: "شكراً لك — نقطّعها لك على طبختك."
+    });
+    const cur = cancelled ? -1 : 0;
+    const a = o.address;
+    root.innerHTML = `${isNew && !cancelled ? `<div class="order-hero"><span class="order-hero__tick">${U.icon("check", "", 2.6)}</span><div><h1>طُبعت فاتورتك</h1><p>وصلنا طلبك وبنبدأ التقطيع قبل موعد التوصيل. ${D.CONFIG.demo ? "<small>(نسخة تجريبية: لم يُخصم أي مبلغ)</small>" : ""}</p></div></div>` : `<div class="page-head"><h1 class="large-title">الفاتورة</h1></div>`}
+      <div class="order">
+        <div class="order__rc"><div class="printer" aria-hidden="true"><span></span></div>${rc}</div>
+        <aside class="order__side">
+          <div class="card track"><h2>حالة الطلب</h2>${cancelled ? `<p class="track__void">${U.icon("x", "", 2.4)}أُلغي هذا الطلب</p>` : `<ol>${STEPS.map((s, i) => `<li class="${i < cur ? "done" : i === cur ? "now" : ""}"><span>${U.icon(s[2])}</span><b>${s[1]}</b>${i === 0 ? `<small>${U.fmtTime(o.date)}</small>` : i === 2 && o.slot ? `<small>${U.esc(o.slot.time)}</small>` : ""}</li>`).join("")}</ol>`}</div>
+          ${a ? `<div class="card"><h2>${U.icon("pin")}التوصيل إلى</h2><p><b>${U.esc(a.label)}</b><br>${U.esc(A.addrLine(a))}${a.notes ? `<br><small class="muted">${U.esc(a.notes)}</small>` : ""}</p></div>` : ""}
+          <div class="row-btns row-btns--col">
+            <button type="button" class="btn btn--ember" data-reorder>${U.icon("refresh")}اطلبها مرة ثانية</button>
+            <button type="button" class="btn btn--line" data-print>${U.icon("receipt")}اطبع الفاتورة</button>
+            ${o.status === "placed" ? `<button type="button" class="btn btn--ghost btn--danger-t" data-cancel>إلغاء الطلب</button>` : ""}
           </div>
         </aside>
       </div>`;
-    const ro = $("#reorder");
-    if (ro) ro.addEventListener("click", () => {
-      meat.forEach(i => { if (D.byId(i.id)) S.cart.addMeat(i.id, i.opts, i.qty, i.note); });
-      A.bump(); A.toast("أُضيفت المنتجات للسلة", { action: { label: "عرض السلة", href: "cart.html" } });
-    });
-    const co = $("#cancelO");
-    if (co) co.addEventListener("click", async () => {
-      const ok = await A.confirmSheet({ title: "إلغاء الطلب؟", text: "سيُلغى الطلب قبل تجهيزه. الأدلة الرقمية المشتراة تبقى في حسابك.", ok: "نعم، ألغِ الطلب", cancel: "تراجع", danger: true });
-      if (!ok) return;
-      if (S.orders.cancel(o.id)) { A.toast("أُلغي الطلب", { icon: "info" }); render(); }
-    });
     if (isNew) try { history.replaceState(null, "", "order.html?id=" + encodeURIComponent(o.id)); } catch (e) { }
   }
+  root.addEventListener("click", async e => {
+    const o = S.orders.get(q.get("id")); if (!o) return;
+    if (e.target.closest("[data-print]")) { window.print(); return; }
+    if (e.target.closest("[data-reorder]")) {
+      let n = 0; o.items.forEach(it => { if (D.byId(it.id) && S.cart.add(it.id, { kg: it.kg, qty: it.qty, opts: it.opts, note: it.note })) n++; });
+      A.bump(); A.toast("أُضيف " + n + " أسطر للسلة", { icon: "cart", action: { label: "السلة", href: "cart.html" } }); return;
+    }
+    if (e.target.closest("[data-cancel]")) {
+      const ok = await A.confirmSheet({ title: "إلغاء الطلب؟", text: "سيُلغى الطلب " + o.id + " قبل بدء التقطيع.", ok: "نعم، ألغِ الطلب", cancel: "تراجع", danger: true });
+      if (ok && S.orders.cancel(o.id)) { A.toast("أُلغي الطلب", { icon: "x" }); render(); }
+    }
+  });
   render();
 })();

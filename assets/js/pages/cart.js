@@ -1,73 +1,116 @@
-/* السلة: اللحوم + الخدمات الرقمية + الملخص — وفرصة ثانية لإضافة الدليل */
+/* السلة = فاتورة حرارية حيّة: عدّل الوزن، الخدمات، واسمع ملاحظات المستشار */
 (function () {
   "use strict";
-  const D = window.NUDJ, S = window.NUDJ_STORE, A = window.NUDJ_APP, U = window.NUDJ_UI;
+  const D = window.NUDJ, S = window.NUDJ_STORE, A = window.NUDJ_APP, U = window.NUDJ_UI, ADV = window.NUDJ_ADVISOR;
   const { $ } = A;
   const C = D.CONFIG;
   const root = $("#cartRoot"); if (!root) return;
   const bar = $("#actionBar");
   const cur = n => U.money(n) + " " + C.currency;
 
-  function line(l) {
-    if (l.kind === "guide") {
-      const g = D.guideById(l.id);
-      return `<div class="citem citem--digital"><div class="citem__img ph">${U.icon("video")}</div>
-        <div class="citem__b"><div class="citem__t"><a href="${g.href}">${U.esc(g.title)}</a><button class="citem__x" type="button" data-rm="${l.key}" aria-label="حذف">${U.icon("trash")}</button></div>
-        <span class="citem__o">دليل مصوّر · يُفتح في حسابك فور الدفع</span>
-        <div class="citem__row"><span class="pill pill--ghost">${U.icon("video")}رقمي</span><span class="citem__p num">${cur(C.guidePrice)}</span></div></div></div>`;
-    }
-    const p = D.byId(l.id); const gid = D.guideIdFor(p);
-    const up = gid && !S.hasAccess(gid) && !S.cart.guideInCart(gid)
-      ? `<button class="citem__up" type="button" data-up="${gid}">${U.icon("plus", "", 2.4)}أضف ${gid === "carcass" ? "دليل تقطيع الذبيحة" : "الدليل المصوّر"} · ${C.guidePrice} ${C.currency}</button>` : "";
-    return `<div class="citem"><a href="${U.url.product(p.id)}" tabindex="-1" aria-hidden="true">${U.productImg(p, "citem__img")}</a>
-      <div class="citem__b"><div class="citem__t"><a href="${U.url.product(p.id)}">${U.esc(p.name)}</a><button class="citem__x" type="button" data-rm="${l.key}" aria-label="حذف ${U.esc(p.name)}">${U.icon("trash")}</button></div>
-      <span class="citem__o">${U.esc(U.optsText(l))}${l.note ? " · «" + U.esc(l.note) + "»" : ""}</span>
-      <div class="citem__row"><div class="stepper stepper--sm"><button type="button" data-q="${l.key}" data-d="-1" aria-label="إنقاص">${U.icon(l.qty > 1 ? "minus" : "trash", "", 2.2)}</button><output class="num">${l.qty}</output><button type="button" data-q="${l.key}" data-d="1" aria-label="زيادة">${U.icon("plus", "", 2.2)}</button></div>
-      <span class="citem__p num">${cur(S.cart.linePrice(l))}</span></div>${up}</div></div>`;
+  function lineTools(l) {
+    const p = D.byId(l.id);
+    const val = p.sold === "kg" ? U.kgTxt(l.kg) : l.qty + " " + (p.sold === "carcass" ? "ذبيحة" : p.unitName || "حبة");
+    const svc = p.sold !== "piece";
+    return `<div class="rc__tools">
+      <div class="rc__adj"><button type="button" data-amt="-1" aria-label="أنقص">${U.icon("minus", "", 2.4)}</button><span class="num">${val}</span><button type="button" data-amt="1" aria-label="زد">${U.icon("plus", "", 2.4)}</button></div>
+      ${svc ? `<button type="button" class="rc__tool" data-svc>${U.icon("spark")}خدمات</button>` : ""}
+      <a class="rc__tool" href="${U.url.product(p.id)}">${U.icon("edit")}القطعة</a>
+      <button type="button" class="rc__tool rc__tool--x" data-rm aria-label="احذف ${U.esc(p.name)}">${U.icon("trash")}</button>
+    </div>`;
+  }
+
+  function tipsHTML(ls) {
+    if (!ADV) return "";
+    const tips = ADV.cartTips(ls); if (!tips.length) return "";
+    return `<div class="tips"><div class="tips__h">${U.mark("tips__mark")}<b>المستشار لاحظ</b></div>${tips.map((t, i) => {
+      const p = t.id ? D.byId(t.id) : null;
+      return `<div class="tip"><p>${U.esc(t.t)}</p>${p ? `<button type="button" class="btn btn--line btn--sm" data-tip="${i}">${U.icon("plus", "", 2.4)}${t.qty} × ${U.esc(p.name)} <span class="num">${U.money(p.price * t.qty)}</span></button>` : `<button type="button" class="btn btn--line btn--sm" data-tip="${i}">${U.icon("spark")}أضف التتبيلة</button>`}</div>`;
+    }).join("")}</div>`;
   }
 
   function render() {
-    const lines = S.cart.get();
-    if (!lines.length) {
-      root.innerHTML = U.empty("cart", "سلتك فاضية", "تصفّح المتجر وأضف اللي يعجبك — ذبائح، قطعيات، أو بوكسات.", `<a class="btn btn--brand btn--lg" href="shop.html">تسوّق الآن</a>`);
-      if (bar) bar.hidden = true; document.body.classList.remove("has-actionbar");
-      return;
+    const ls = S.cart.get();
+    const t = S.cart.totals(ls);
+    $("#cartSub").textContent = ls.length ? `${ls.length} ${ls.length === 1 ? "سطر" : "أسطر"}${t.kg ? " · " + U.kgTxt(t.kg) + " لحم" : ""}` : "";
+    if (!ls.length) {
+      root.innerHTML = `<div class="cart cart--empty">${U.receipt({ title: "السلة فاضية", lines: [], empty: "ما في شي على الميزان بعد.", foot: "ابدأ من المستشار أو من القطيع." })}
+        <div class="row-btns" style="justify-content:center"><a class="btn btn--ember btn--lg" href="advisor.html">${U.mark("btn__mark")}خطّط مع المستشار</a><a class="btn btn--line btn--lg" href="shop.html">تسوّق القطعيات</a></div></div>`;
+      if (bar) bar.hidden = true; document.body.classList.remove("has-actionbar"); return;
     }
-    const t = S.cart.totals(lines);
-    const meat = lines.filter(l => l.kind === "meat"), dig = lines.filter(l => l.kind === "guide");
-    const pct = t.hasMeat ? Math.min(100, Math.round((t.meat - t.discount) / C.delivery.freeOver * 100)) : 0;
-    const nudge = !S.isMember() && dig.length >= 2
-      ? `<div class="member-nudge">${U.icon("spark")}<span><b>${dig.length} أدلة = ${cur(t.digital)}</b><small>نُضْج+ يفتح كل الأدلة (${D.GUIDES.length}) بـ ${cur(C.plans.monthly.price)} شهرياً</small></span><a class="btn btn--light btn--sm" href="subscribe.html">اشترك</a></div>` : "";
-    root.innerHTML = `<div class="cart-page">
-      <div>
-        ${meat.length ? `<h2 class="group__head">اللحوم (${meat.reduce((n, l) => n + l.qty, 0)})</h2><div class="rows">${meat.map(line).join("")}</div>` : ""}
-        ${t.hasMeat ? (t.delivery ? `<div class="cart-note">${U.icon("truck")}<span>أضف <b class="num">${cur(t.toFree)}</b> للحصول على توصيل مجاني<div class="freebar"><i style="width:${pct}%"></i></div></span></div>`
-          : `<div class="cart-note">${U.icon("truck")}<span>طلبك مؤهل <b>للتوصيل المجاني</b></span></div>`) : ""}
-        ${dig.length ? `<h2 class="group__head">خدمات رقمية</h2><div class="rows">${dig.map(line).join("")}</div>${nudge}` : ""}
-        <a class="link" href="shop.html" style="display:inline-block;margin-top:16px">${U.icon("chevR")} متابعة التسوّق</a>
-      </div>
-      <aside class="summary" aria-label="ملخص السلة">
-        <h2>الملخص</h2>
-        ${t.hasMeat ? `<div class="sum-line"><span>اللحوم</span><span>${cur(t.meat)}</span></div>` : ""}
-        ${t.digital ? `<div class="sum-line"><span>الخدمات الرقمية</span><span>${cur(t.digital)}</span></div>` : ""}
-        ${t.hasMeat ? `<div class="sum-line${t.delivery ? "" : " is-free"}"><span>التوصيل</span><span>${t.delivery ? cur(t.delivery) : "مجاني"}</span></div>` : ""}
-        <div class="sum-total"><b>الإجمالي</b><strong>${cur(t.total)}</strong></div>
-        <p class="sum-vat">شامل ضريبة القيمة المضافة (${cur(t.vat)}). كود الخصم في الخطوة التالية.</p>
-        <a class="btn btn--brand btn--lg btn--block desk-cta" href="checkout.html" style="margin-top:14px">إتمام الطلب</a>
+    const lines = ls.map(l => { const x = U.lineForReceipt(l); x.tools = lineTools(l); return x; });
+    const now = new Date();
+    const rc = U.receipt({
+      cls: "receipt--cart", kicker: "فاتورة مبدئية",
+      meta: [["التاريخ", U.fmtDate(now, { day: "2-digit", month: "2-digit", year: "numeric" }) + " · " + U.fmtTime(now)], ["التوصيل إلى", S.city.get()]],
+      lines,
+      totals: [
+        ["اللحم", U.money2(t.meat)],
+        t.services ? ["خدمات (تتبيل/تسييخ/تغليف)", U.money2(t.services)] : null,
+        t.extras ? ["عدّة الشواء والبهارات", U.money2(t.extras)] : null,
+        ["التوصيل", t.delivery ? U.money2(t.delivery) : "مجاني"],
+        ["الإجمالي", U.money2(t.total), "is-total"],
+        ["منها ضريبة 15٪", U.money2(t.vat), "is-muted"]
+      ].filter(Boolean),
+      foot: "الأسعار شاملة الضريبة · التقطيع مجاني"
+    });
+    const pct = Math.min(100, Math.round((t.sub / C.delivery.freeOver) * 100));
+    root.innerHTML = `<div class="cart">
+      <div class="cart__rc">${rc}</div>
+      <aside class="cart__side">
+        <div class="card sum-card">
+          <div class="free${t.delivery ? "" : " is-done"}"><p>${t.delivery ? `باقي <b class="num">${cur(t.toFree)}</b> على التوصيل المجاني` : `${U.icon("check", "", 2.4)}التوصيل مجاني لطلبك`}</p><span class="free__bar"><i style="width:${pct}%"></i></span></div>
+          <div class="sum-total"><span>الإجمالي</span><b class="num">${cur(t.total)}</b></div>
+          <a class="btn btn--ember btn--lg btn--block" href="checkout.html">إتمام الطلب ${U.icon("chevL", "", 2.2)}</a>
+          <a class="btn btn--ghost btn--block" href="shop.html">أكمل التسوق</a>
+        </div>
+        ${tipsHTML(ls)}
       </aside>
     </div>`;
-    if (bar) { bar.hidden = false; $("#abTotal").textContent = cur(t.total); }
-    document.body.classList.add("has-actionbar");
+    if (bar) { bar.hidden = false; document.body.classList.add("has-actionbar"); $("#abTotal").textContent = cur(t.total); }
+  }
+
+  function servicesSheet(key) {
+    const l = S.cart.get().find(x => x.key === key); if (!l) return;
+    const p = D.byId(l.id), o = l.opts || {};
+    const body = document.createElement("form");
+    const skewOk = p.sold === "kg" && D.PREPS[o.prep] && D.PREPS[o.prep].skew;
+    body.innerHTML = p.sold === "kg" ? `${U.chips("svc-marinade", "التتبيل", D.MARINADES.map(m => ({ k: m.k, n: m.n, d: m.d, p: m.p, per: "/كجم" })), o.marinade || "none", { cls: "opt--paid" })}
+      <div class="opt opt--paid"><span class="opt__label">خدمات</span>
+        ${skewOk ? `<label class="toggle"><input type="checkbox" name="skewer"${o.skewer ? " checked" : ""}><span class="toggle__sw"></span><span class="toggle__b"><b>${D.SERVICES.skewer.n}</b><small>${D.SERVICES.skewer.d}</small></span><em class="num">+${D.SERVICES.skewer.p}/كجم</em></label>` : ""}
+        <label class="toggle"><input type="checkbox" name="vacuum"${o.vacuum ? " checked" : ""}><span class="toggle__sw"></span><span class="toggle__b"><b>${D.SERVICES.vacuum.n}</b><small>${D.SERVICES.vacuum.d}</small></span><em class="num">+${D.SERVICES.vacuum.p}/كجم</em></label></div>`
+      : `<div class="opt opt--paid"><label class="toggle"><input type="checkbox" name="vacuum"${o.vacuum ? " checked" : ""}><span class="toggle__sw"></span><span class="toggle__b"><b>${D.SERVICES.vacuum.n}</b><small>كل وجبة في كيس مفرّغ</small></span><em class="num">+${D.SERVICES.vacuum.carcass}</em></label></div>`;
+    const foot = document.createElement("div");
+    foot.innerHTML = `<button class="btn btn--ember btn--block btn--lg" type="button" data-ok>حفظ</button>`;
+    const sh = A.openSheet({ title: "خدمات · " + p.name, body, foot });
+    $("[data-ok]", foot).addEventListener("click", () => {
+      const m = body.querySelector('input[name="svc-marinade"]:checked');
+      S.cart.setOpts(key, { marinade: m ? m.value : o.marinade, skewer: !!(body.elements.skewer && body.elements.skewer.checked), vacuum: !!(body.elements.vacuum && body.elements.vacuum.checked) });
+      sh.close(true); A.toast("حُدّثت الخدمات", { icon: "spark" });
+    });
   }
 
   root.addEventListener("click", e => {
-    const q = e.target.closest("[data-q]");
-    if (q) { const l = S.cart.get().find(x => x.key === q.dataset.q); if (l) S.cart.setQty(l.key, l.qty + parseInt(q.dataset.d, 10)); return; }
-    const rm = e.target.closest("[data-rm]");
-    if (rm) { S.cart.remove(rm.dataset.rm); A.toast("أُزيل من السلة", { icon: "trash" }); return; }
-    const up = e.target.closest("[data-up]");
-    if (up) { S.cart.addGuide(up.dataset.up); A.toast("أُضيف الدليل", { icon: "video" }); }
+    const line = e.target.closest("[data-key]"); const key = line && line.dataset.key;
+    const amt = e.target.closest("[data-amt]");
+    if (amt && key) {
+      const l = S.cart.get().find(x => x.key === key); if (!l) return;
+      const p = D.byId(l.id), d = +amt.dataset.amt;
+      S.cart.setAmount(key, p.sold === "kg" ? l.kg + d * (p.step || 0.5) : l.qty + d);
+      return;
+    }
+    if (e.target.closest("[data-svc]") && key) { servicesSheet(key); return; }
+    if (e.target.closest("[data-rm]") && key) {
+      const l = S.cart.get().find(x => x.key === key); S.cart.remove(key);
+      A.toast("حُذف " + D.byId(l.id).name, { icon: "trash" }); return;
+    }
+    const tip = e.target.closest("[data-tip]");
+    if (tip && ADV) {
+      const t = ADV.cartTips(S.cart.get())[+tip.dataset.tip]; if (!t) return;
+      if (t.id) { S.cart.add(t.id, { qty: t.qty, src: "advisor" }); A.bump(); A.toast("أُضيف " + D.byId(t.id).name, { icon: "cart" }); }
+      else if (t.key) { S.cart.setOpts(t.key, { marinade: t.marinade }); A.toast("أُضيفت التتبيلة", { icon: "spark" }); }
+    }
   });
-  S.on("cart", render); S.on("auth", render);
+  S.on("cart", render);
   render();
 })();

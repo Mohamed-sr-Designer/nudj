@@ -2,3 +2,6 @@ node_modules/
 .DS_Store
 Thumbs.db
 *.log
+
+# مسودة مركونة محلياً (نسختها في GitHub عبر الوسم idea/expertise-v1)
+فكرة جديدة/

@@ -1,52 +1,86 @@
 # نُضْج — NUDJ
 
-> ملحمة إلكترونية سعودية تبيع الذبائح وقطعيات الضأن والبقر والمفروم والبوكسات، مقطّعة ومغلّفة حسب طبخة العميل وتوصل مبرّدة. ومعها خدمة إضافية اختيارية مدفوعة اسمها «الخبرة»: أدلة مصوّرة للتقطيع والطبخ، مختبر الطبخ، واستشارة مع جزّار.
+> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
-- كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪).
+- كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
+- التقطيع مجاني. خدمات مدفوعة بالكيلو: تتبيل (كلاسيكي 8، مشاوي حار 10، ليمون وأعشاب 10، زبادي وبهارات 12 ر.س)، تسييخ 6 ر.س، تغليف مفرّغ 3 ر.س (35 ر.س للذبيحة).
 - التوصيل 25 ر.س، ومجاني من 300 ر.س. المدن: الرياض، جدة، الدمام، الخبر، مكة المكرمة، المدينة المنورة.
-- الخبرة: الدليل الواحد 9 ر.س، اشتراك نُضْج+ 29 ر.س شهرياً أو 249 ر.س سنوياً، الاستشارة 49 ر.س (25 ر.س للأعضاء).
-- ملاحظة: الموقع حالياً نسخة عرض؛ الصور مستطيلات رمادية مؤقتة والأسعار تقريبية.
+- قواعد المستشار: 350 جم للشخص مشاوي بدون عظم، 450 جم كبسة ومندي بالعظم، 300 جم ستيك، 250 جم مرق.
 
-## المتجر
-- [كل المنتجات](https://mohamed-sr-designer.github.io/nudj/shop.html)
-- [مخطط الذبيحة](https://mohamed-sr-designer.github.io/nudj/cuts.html): تسوّق حسب المنطقة (الرقبة، الكتف، الريش، الخاصرة، الفخذ، الصدر، الموزة)
-- [رقبة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-neck.html): أغنى قطعة للمرق والقرصان — 55 ر.س للكيلو
-- [كتف ضأن بالعظم](https://mohamed-sr-designer.github.io/nudj/lamb-shoulder.html): دهن داخلي ونكهة غنية — للكبسة والمندي — 165 ر.س للحبة
-- [ريش ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-rack.html): طرية بدهن خارجي — للشوي والمقلاة — 98 ر.س للكيلو
-- [خاصرة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-loin.html): أطرى قطعة في الذبيحة — طبخ سريع — 105 ر.س للكيلو
-- [فخذ ضأن بالعظم](https://mohamed-sr-designer.github.io/nudj/lamb-leg.html): شرائح نظيفة للكبسة والشوي الكامل — 189 ر.س للحبة
-- [فخذ ضأن منزوع العظم](https://mohamed-sr-designer.github.io/nudj/lamb-leg-boneless.html): نضج متساوٍ وتقطيع سهل للعزائم — 175 ر.س للحبة
-- [موزة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-shank.html): كولاجين عالٍ — قوام حريري بالطبخ البطيء — 32 ر.س للحبة
-- [صدر وضلوع ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-breast.html): أعلى دهن في الذبيحة — نتيجة غنية بسعر أقل — 52 ر.س للكيلو
-- [لحم ضأن مفروم](https://mohamed-sr-designer.github.io/nudj/lamb-mince.html): دهن 15–20٪ — للكباب والكفتة والحشو — 65 ر.س للكيلو
-- [ريب آي](https://mohamed-sr-designer.github.io/nudj/beef-ribeye.html): دهن متداخل عالٍ — أكثر ستيك يسامح الأخطاء — 62 ر.س للشريحة
-- [تندرلوين (فيليه)](https://mohamed-sr-designer.github.io/nudj/beef-tenderloin.html): أطرى قطعة في البقرة — تُطبخ للقوام — 58 ر.س للشريحة
-- [ستربلوين](https://mohamed-sr-designer.github.io/nudj/beef-striploin.html): طراوة عالية ونكهة بقرية واضحة — 52 ر.س للشريحة
-- [كتف بقري مكعبات](https://mohamed-sr-designer.github.io/nudj/beef-chuck.html): للإيدامات واليخنات والكبسة — 58 ر.س للكيلو
-- [بريسكت (صدر بقري)](https://mohamed-sr-designer.github.io/nudj/beef-brisket.html): للطبخ البطيء والتدخين — 72 ر.س للكيلو
-- [توب سايد](https://mohamed-sr-designer.github.io/nudj/beef-round.html): قليل الدهن — شرائح سريعة أو طبخ رطب — 62 ر.س للكيلو
-- [موزة بقري (أوسو بوكو)](https://mohamed-sr-designer.github.io/nudj/beef-shank.html): نخاع وكولاجين — مرق دسم — 55 ر.س للكيلو
-- [لحم بقري مفروم](https://mohamed-sr-designer.github.io/nudj/beef-mince.html): دهن 15–20٪ — للبرجر وصلصة اللحم — 49 ر.س للكيلو
-- [ذبيحة ضأن كاملة](https://mohamed-sr-designer.github.io/nudj/lamb-whole.html): تُقطّع وتُغلّف حسب طبختك — من 1,150 ر.س
-- [نصف ذبيحة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-half.html): مناسب لعائلة أو طبخة كبيرة واحدة — من 620 ر.س
-- [ربع ذبيحة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-quarter.html): أمامي أو خلفي — لطبخة واحدة — من 330 ر.س
-- [بوكس الشواء](https://mohamed-sr-designer.github.io/nudj/box-grill.html): ريش وخاصرة وكباب لطلعة شواء — 199 ر.س
-- [بوكس الستيك](https://mohamed-sr-designer.github.io/nudj/box-steak.html): ست شرائح من ثلاث قطعيات للمقارنة — 319 ر.س
-- [بوكس العائلة](https://mohamed-sr-designer.github.io/nudj/box-family.html): مكعبات ومفروم وفخذ — لأسبوع كامل — 369 ر.س
+## المستشار
+- [مستشار نُضْج](https://mohamed-sr-designer.github.io/nudj/advisor.html)
 
-## وش تطبخ؟ (أي قطعة لأي طبخة)
-- [كبسة](https://mohamed-sr-designer.github.io/nudj/dish-kabsa.html): قطعة بالعظم، دهن متوسط، تتحمل 60–90 دقيقة سلق. 400–500 جم بالعظم للشخص. القطعيات: فخذ ضأن بالعظم، كتف ضأن بالعظم، كتف بقري مكعبات.
-- [مندي](https://mohamed-sr-designer.github.io/nudj/dish-mandi.html): قطعة بالعظم، دهن مرتفع نسبياً، صبورة على الحرارة الطويلة. 400–500 جم بالعظم للشخص. القطعيات: كتف ضأن بالعظم، فخذ ضأن بالعظم، صدر وضلوع ضأن.
-- [مشاوي](https://mohamed-sr-designer.github.io/nudj/dish-mashawi.html): قطعة طرية، نسيج ضام منخفض، دهن خارجي يحميها. 300–350 جم للشخص. القطعيات: ريش ضأن، خاصرة ضأن، ريب آي، لحم ضأن مفروم.
-- [ستيك](https://mohamed-sr-designer.github.io/nudj/dish-steak.html): شريحة 2.5–4 سم، دهن متداخل، سطح جاف تماماً. 250–350 جم للشخص. القطعيات: ريب آي، ستربلوين، تندرلوين (فيليه).
-- [طبخ بطيء](https://mohamed-sr-designer.github.io/nudj/dish-slow.html): قطعة عاملة، كولاجين مرتفع، عظم إن أمكن. 350–450 جم بالعظم للشخص. القطعيات: موزة ضأن، رقبة ضأن، موزة بقري (أوسو بوكو)، بريسكت (صدر بقري).
-- [برجر](https://mohamed-sr-designer.github.io/nudj/dish-burger.html): مفروم دهن 18–20٪، بارد، قليل العجن. 150–180 جم للقرص الواحد. القطعيات: لحم بقري مفروم، لحم ضأن مفروم.
+## ضأن
+- [قطعيات ضأن](https://mohamed-sr-designer.github.io/nudj/lamb.html): لحم وردي بدهن أبيض متوازن — الأساس في الكبسة والمندي والمشاوي.
+- [ذبيحة ضأن كاملة](https://mohamed-sr-designer.github.io/nudj/lamb-whole.html): تُقطّع مجاناً على طبختك — صغيرة ≈12 كجم 1,150 ر.س، وسط ≈15 كجم 1,390 ر.س، كبيرة ≈19 كجم 1,690 ر.س
+- [نصف ذبيحة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-half.html): فخذ وكتف وريش ورقبة — صغيرة ≈6 كجم 620 ر.س، وسط ≈7.5 كجم 750 ر.س، كبيرة ≈9.5 كجم 910 ر.س
+- [ربع ذبيحة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-quarter.html): أمامي أو خلفي — صغيرة ≈3 كجم 330 ر.س، وسط ≈3.8 كجم 400 ر.س، كبيرة ≈4.7 كجم 485 ر.س
+- [رقبة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-neck.html): أغنى قطعة للمرق — 55 ر.س للكيلو
+- [كتف ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-shoulder.html): دهن داخلي ونكهة غنية — 72 ر.س للكيلو
+- [ريش ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-rack.html): طرية بدهن خارجي — 98 ر.س للكيلو
+- [خاصرة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-loin.html): أطرى قطعة في الذبيحة — 88 ر.س للكيلو
+- [فخذ ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-leg.html): لحم كثير ودهن أقل — 76 ر.س للكيلو
+- [موزة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-shank.html): تنفصل عن العظم بالطبخ البطيء — 70 ر.س للكيلو
+- [صدر وضلوع ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-breast.html): طبقات لحم ودهن — 52 ر.س للكيلو
+- [مفروم ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-mince.html): للكباب والكفتة — 65 ر.س للكيلو
+- [كبدة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-liver.html): للفطور والمشاوي — 45 ر.س للكيلو
 
-## الخبرة
-- [مركز الخبرة ونُضْج+](https://mohamed-sr-designer.github.io/nudj/expertise.html)
-- [مختبر الطبخ](https://mohamed-sr-designer.github.io/nudj/cook.html)
-- [استشارة جزّار](https://mohamed-sr-designer.github.io/nudj/consult.html)
-- [دليل تقطيع الذبيحة](https://mohamed-sr-designer.github.io/nudj/guide-carcass.html)
+## ماعز
+- [قطعيات ماعز](https://mohamed-sr-designer.github.io/nudj/goat.html): أحمر داكن وقليل الدهن ونكهته أوضح — يحبّه أهل المندي والمظبي.
+- [ذبيحة ماعز كاملة](https://mohamed-sr-designer.github.io/nudj/goat-whole.html): تُقطّع مجاناً على طبختك — صغيرة ≈9 كجم 850 ر.س، وسط ≈12 كجم 1,050 ر.س، كبيرة ≈15 كجم 1,250 ر.س
+- [نصف ذبيحة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-half.html): فخذ وكتف وريش — صغيرة ≈4.5 كجم 460 ر.س، وسط ≈6 كجم 570 ر.س، كبيرة ≈7.5 كجم 680 ر.س
+- [كتف ماعز](https://mohamed-sr-designer.github.io/nudj/goat-shoulder.html): للمندي والمظبي — 68 ر.س للكيلو
+- [فخذ ماعز](https://mohamed-sr-designer.github.io/nudj/goat-leg.html): ألحم قطعة في الماعز — 72 ر.س للكيلو
+- [ريش ماعز](https://mohamed-sr-designer.github.io/nudj/goat-rack.html): ريش قليلة الدهن — 88 ر.س للكيلو
+- [رقبة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-neck.html): للمرق والإيدام — 52 ر.س للكيلو
+- [مفروم ماعز](https://mohamed-sr-designer.github.io/nudj/goat-mince.html): مفروم قليل الدهن — 62 ر.س للكيلو
+
+## حاشي
+- [قطعيات حاشي](https://mohamed-sr-designer.github.io/nudj/camel.html): ألياف خشنة ونكهة خاصة وسنام دهني — للكبسة والطبخ الطويل.
+- [حاشي بالعظم](https://mohamed-sr-designer.github.io/nudj/camel-bone.html): للكبسة والمندي — 58 ر.س للكيلو
+- [فخذ حاشي](https://mohamed-sr-designer.github.io/nudj/camel-leg.html): لحم أحمر بلا عظم — 64 ر.س للكيلو
+- [ضلوع حاشي](https://mohamed-sr-designer.github.io/nudj/camel-ribs.html): ضلوع بطبقة دهن — 60 ر.س للكيلو
+- [سنام حاشي](https://mohamed-sr-designer.github.io/nudj/camel-hump.html): دهن نقي للكباب والطبخ — 45 ر.س للكيلو
+- [مفروم حاشي](https://mohamed-sr-designer.github.io/nudj/camel-mince.html): مفروم أحمر قليل الدهن — 56 ر.س للكيلو
+- [كبدة حاشي](https://mohamed-sr-designer.github.io/nudj/camel-liver.html): للمشاوي والفطور — 52 ر.س للكيلو
+
+## عجل
+- [قطعيات عجل](https://mohamed-sr-designer.github.io/nudj/veal.html): لحم فاتح ناعم الألياف قليل الدهن — إسكالوب وستيك خفيف ومفروم.
+- [مكعبات كتف عجل](https://mohamed-sr-designer.github.io/nudj/veal-cubes.html): للقدر والأوصال — 62 ر.س للكيلو
+- [انتركوت عجل](https://mohamed-sr-designer.github.io/nudj/veal-entrecote.html): ستيك خفيف طري — 110 ر.س للكيلو
+- [فيليه عجل](https://mohamed-sr-designer.github.io/nudj/veal-fillet.html): أنعم قطعة في العجل — 140 ر.س للكيلو
+- [إسكالوب عجل](https://mohamed-sr-designer.github.io/nudj/veal-escalope.html): شرائح رفيعة جاهزة — 85 ر.س للكيلو
+- [موزة عجل](https://mohamed-sr-designer.github.io/nudj/veal-shank.html): حلقات بالنخاع — 58 ر.س للكيلو
+- [مفروم عجل](https://mohamed-sr-designer.github.io/nudj/veal-mince.html): مفروم فاتح متوازن — 56 ر.س للكيلو
+- [كبدة عجل](https://mohamed-sr-designer.github.io/nudj/veal-liver.html): ناعمة وطعمها هادئ — 48 ر.س للكيلو
+
+## بقر
+- [قطعيات بقر](https://mohamed-sr-designer.github.io/nudj/beef.html): دهن متداخل ونكهة عميقة — منطقة الستيك والبريسكت والمكعبات.
+- [كتف بقر مكعبات](https://mohamed-sr-designer.github.io/nudj/beef-chuck.html): أساس اليخنات — 58 ر.س للكيلو
+- [ريب آي](https://mohamed-sr-designer.github.io/nudj/beef-ribeye.html): أغنى ستيك بالدهن المتداخل — 175 ر.س للكيلو
+- [ستربلوين](https://mohamed-sr-designer.github.io/nudj/beef-striploin.html): ستيك متماسك بحافة دهن — 160 ر.س للكيلو
+- [تندرلوين](https://mohamed-sr-designer.github.io/nudj/beef-tenderloin.html): الأطرى في الذبيحة — 210 ر.س للكيلو
+- [توب سايد](https://mohamed-sr-designer.github.io/nudj/beef-topside.html): روست قليل الدهن — 62 ر.س للكيلو
+- [بريسكت](https://mohamed-sr-designer.github.io/nudj/beef-brisket.html): للتدخين والطبخ الطويل — 72 ر.س للكيلو
+- [موزة بقر](https://mohamed-sr-designer.github.io/nudj/beef-shank.html): حلقات للمرق — 55 ر.س للكيلو
+- [مفروم بقر](https://mohamed-sr-designer.github.io/nudj/beef-mince.html): للبرجر والكفتة — 49 ر.س للكيلو
+
+## جاموس
+- [قطعيات جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo.html): أحمر قاتم وكثيف وقليل الدهن — يعطي أفضل ما عنده في الطبخ الطويل.
+- [كتف جاموس مكعبات](https://mohamed-sr-designer.github.io/nudj/buffalo-cubes.html): للطواجن والقدر — 52 ر.س للكيلو
+- [ضلوع جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo-ribs.html): ضلوع للطبخ الطويل — 44 ر.س للكيلو
+- [فخذ جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo-leg.html): لحم أحمر قاتم بلا عظم — 58 ر.س للكيلو
+- [موزة جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo-shank.html): حلقات بالنخاع للمرق — 48 ر.س للكيلو
+- [مفروم جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo-mince.html): مفروم قليل الدهن — 46 ر.س للكيلو
+
+## عدّة الشواء والبهارات
+- [فحم طبيعي 3 كجم](https://mohamed-sr-designer.github.io/nudj/charcoal.html): يكفي لشوي 4.5 كجم لحم تقريباً — 22 ر.س للكيس
+- [مكعبات إشعال](https://mohamed-sr-designer.github.io/nudj/starters.html): تشعل الفحم بلا كيروسين — 8 ر.س للعلبة
+- [أسياخ ستيل · 10](https://mohamed-sr-designer.github.io/nudj/skewers.html): طقم 10 أسياخ مسطّحة — 25 ر.س للطقم
+- [صواني ألمنيوم · 5](https://mohamed-sr-designer.github.io/nudj/trays.html): للتقديم والتتبيل — 15 ر.س للطقم
+- [بهارات كبسة 100 جم](https://mohamed-sr-designer.github.io/nudj/spice-kabsa.html): خلطة كاملة حبّ ومطحون — 12 ر.س للكيس
+- [بهارات مندي 100 جم](https://mohamed-sr-designer.github.io/nudj/spice-mandi.html): خلطة ذهبية بالكركم — 12 ر.س للكيس
+- [بهارات مشاوي 100 جم](https://mohamed-sr-designer.github.io/nudj/spice-grill.html): بابريكا مدخّنة وشطة — 12 ر.س للكيس
 
 ## المساعدة
 - [الأسئلة الشائعة](https://mohamed-sr-designer.github.io/nudj/help.html) · [تواصل معنا](https://mohamed-sr-designer.github.io/nudj/contact.html) · [من نحن](https://mohamed-sr-designer.github.io/nudj/about.html)

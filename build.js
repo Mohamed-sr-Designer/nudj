@@ -2,13 +2,12 @@
    نُضْج — المولّد الوحيد للموقع
    node build.js
    يبني كل الصفحات من src/ ومن assets/js/data.js، ويولّد:
-   sitemap.xml · robots.txt · llms.txt · manifest.webmanifest · أيقونات التطبيق
+   sitemap.xml · robots.txt · llms.txt · manifest.webmanifest
    ========================================================= */
 "use strict";
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
-const zlib = require("zlib");
 const crypto = require("crypto");
 
 const ROOT = __dirname;
@@ -17,27 +16,22 @@ const read = p => fs.readFileSync(rel(p), "utf8");
 const write = (p, s) => { fs.mkdirSync(path.dirname(rel(p)), { recursive: true }); fs.writeFileSync(rel(p), s); };
 
 /* ---------- تحميل البيانات ودوال العرض في بيئة معزولة ---------- */
-const sandbox = { window: {}, console };
+const sandbox = { window: { addEventListener() { } }, console };
 vm.createContext(sandbox);
 vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
 
 /* ---------- اكتشاف الصور من أسماء الملفات → assets/js/images.js ----------
-   site/<key>.ext · products/<id>-1|2|3.ext · posters/guide-<id>.ext · posters/dish-<slug>.ext */
+   site/<key>.ext · products/<id>-1|2|3.ext */
 {
   const EXT = /\.(jpe?g|png|webp)$/i;
   const list = dir => { try { return fs.readdirSync(rel(dir)).filter(f => EXT.test(f)).sort(); } catch (e) { return []; } };
-  const M = { site: {}, products: {}, posters: {} };
-  list("assets/img/site").forEach(f => { M.site[f.replace(EXT, "")] = "assets/img/site/" + f; });
+  const M = { site: {}, products: {} };
+  list("assets/img/site").forEach(f => { const k = f.replace(EXT, ""); if (!M.site[k] || /\.webp$/i.test(f)) M.site[k] = "assets/img/site/" + f; });
   list("assets/img/products").forEach(f => {
     const m = f.replace(EXT, "").match(/^(.+)-([123])$/); if (!m) return;
     (M.products[m[1]] = M.products[m[1]] || [])[+m[2] - 1] = "assets/img/products/" + f;
   });
-  list("assets/img/posters").forEach(f => {
-    const k = f.replace(EXT, "");
-    if (k.indexOf("guide-") === 0) M.posters[k.slice(6)] = "assets/img/posters/" + f;
-    else if (k.indexOf("dish-") === 0) M.posters[k] = "assets/img/posters/" + f;
-  });
-  const n = Object.keys(M.site).length + Object.keys(M.products).reduce((t, k) => t + M.products[k].filter(Boolean).length, 0) + Object.keys(M.posters).length;
+  const n = Object.keys(M.site).length + Object.keys(M.products).reduce((t, k) => t + M.products[k].filter(Boolean).length, 0);
   write("assets/js/images.js", `/* مولّد تلقائياً بواسطة build.js — لا تعدّله يدوياً (${n} صورة مكتشفة).
    يربط الصور المحفوظة بأسمائها الصحيحة بخاناتها في الموقع. */
 (function (D) {
@@ -47,17 +41,15 @@ vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
   D.PRODUCTS.forEach(function (p) {
     var f = (M.products[p.id] || []).filter(Boolean);
     if (f.length) { if (!p.img) p.img = f[0]; if (!p.gallery || !p.gallery.length) p.gallery = p.img === f[0] ? f.slice(1) : f; }
-    if (!p.poster && M.posters[p.id]) p.poster = M.posters[p.id];
   });
-  if (!D.CARCASS_GUIDE.poster && M.posters.carcass) D.CARCASS_GUIDE.poster = M.posters.carcass;
-  D.DISHES.forEach(function (d) { if (!d.poster && M.posters["dish-" + d.slug]) d.poster = M.posters["dish-" + d.slug]; });
 })(window.NUDJ);
 `);
-  if (n) console.log("  images: " + n + " detected");
+  console.log("  images: " + n + " detected");
 }
 vm.runInContext(read("assets/js/images.js"), sandbox, { filename: "images.js" });
+vm.runInContext(read("assets/js/store.js"), sandbox, { filename: "store.js" });
 vm.runInContext(read("assets/js/ui.js"), sandbox, { filename: "ui.js" });
-const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, C = D.CONFIG;
+const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, S = sandbox.window.NUDJ_STORE, C = D.CONFIG;
 
 /* ---------- إصدار الملفات (بصمة المحتوى) لكسر الكاش ---------- */
 const vcache = {};
@@ -73,53 +65,53 @@ const h = {
       return (i ? icon("chevL") : "") + (last || !c[1] ? `<span${last ? ' aria-current="page"' : ""}>${esc(c[0])}</span>` : `<a href="${c[1]}">${esc(c[0])}</a>`);
     }).join("")}</nav>`;
   },
-  secHead(title, sub, href, label, id) {
-    return `<div class="sec-head"><div><h2${id ? ` id="${id}"` : ""}>${title}</h2>${sub ? `<p>${sub}</p>` : ""}</div>${href ? `<a class="seeall" href="${href}">${label}${icon("chevL")}</a>` : ""}</div>`;
-  },
-  faq(q, a) { return `<details><summary>${q}${icon("chevD")}</summary><div class="a">${a}</div></details>`; }
+  faq(q, a) { return `<details><summary>${q}${icon("plus", "faq__ic", 2)}</summary><div class="a">${a}</div></details>`; }
 };
-const ctx = { D, U, C, V, h };
+const ctx = { D, U, C, S, V, h };
 const render = require("./src/shell.js")(ctx);
 
 /* ---------- الصفحات ---------- */
-const MODULES = ["home", "shop", "product", "expertise", "commerce", "info"];
+const MODULES = ["home", "shop", "product", "commerce", "info"];
 let pages = [];
-MODULES.forEach(m => { const r = require("./src/pages/" + m + ".js")(ctx); pages = pages.concat(r); });
+MODULES.forEach(m => { pages = pages.concat(require("./src/pages/" + m + ".js")(ctx)); });
 
 const produced = [];
-pages.forEach(p => {
-  const html = render(p, p.main);
-  write(p.file, html);
-  produced.push(p.file);
-});
+pages.forEach(p => { write(p.file, render(p, p.main)); produced.push(p.file); });
 
-/* ---------- صفحة 404 (مسارات مطلقة لأنها قد تُعرض من أي مسار) ---------- */
+/* ---------- صفحة 404 (مسارات مطلقة) + تحويل الروابط القديمة ---------- */
 {
+  const ids = D.PRODUCTS.map(p => p.id);
+  const OLD = { "lamb-leg-boneless": "lamb-leg", "beef-round": "beef-topside", "box-family": "shop.html", "box-grill": "shop.html?a=extra", "box-steak": "beef-ribeye" };
+  const DISH = { kabsa: "feast", mandi: "feast", slow: "feast", mashawi: "grill", burger: "grill", steak: "steak" };
   const p = { name: "notfound", file: "404.html", tab: "", mode: "push", back: ["index.html", "الرئيسية"], appTitle: "غير موجودة", noindex: true,
     title: "الصفحة غير موجودة · نُضْج", desc: "الصفحة المطلوبة غير موجودة." };
   let html = render(p, `<div class="wrap"><div class="nf">
-  <div class="code">404</div><h1 style="margin-top:12px">الصفحة غير موجودة</h1>
-  <p class="muted" style="margin:8px 0 22px">يمكن الرابط قديم أو فيه خطأ. جرّب واحدة من هذي:</p>
-  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><a class="btn btn--brand" href="shop.html">المتجر</a><a class="btn btn--ghost" href="index.html">الرئيسية</a><a class="btn btn--ghost" href="search.html">البحث</a></div>
+  <div class="nf__code num">404</div><h1>الصفحة غير موجودة</h1>
+  <p class="muted">يمكن الرابط قديم أو فيه خطأ. جرّب واحدة من هذي:</p>
+  <div class="row-btns" style="justify-content:center"><a class="btn btn--ember" href="shop.html">المتجر</a><a class="btn btn--line" href="advisor.html">المستشار</a><a class="btn btn--line" href="index.html">الرئيسية</a></div>
 </div></div>`);
-  html = html.replace("<head>", `<head>\n<base href="${C.base}">`);
+  /* الروابط القديمة (أدلة، أطباق، منتجات أُعيدت تسميتها) تنتقل تلقائياً لبديلها */
+  const redirect = `<script>(function(){var f=location.pathname.split("/").pop().replace(/\\.html$/,""),ids=${JSON.stringify(ids)},old=${JSON.stringify(OLD)},dish=${JSON.stringify(DISH)},t="";
+if(f.indexOf("guide-")===0){var g=f.slice(6);t=ids.indexOf(g)>-1?g+".html":old[g]?(old[g].indexOf(".html")>-1?old[g]:old[g]+".html"):"advisor.html";}
+else if(f.indexOf("dish-")===0){t="advisor.html?o="+(dish[f.slice(5)]||"feast");}
+else if(old[f]){t=old[f].indexOf(".html")>-1?old[f]:old[f]+".html";}
+if(t)location.replace(t);})();</script>`;
+  html = html.replace("<head>", `<head>\n<base href="${C.base}">\n${redirect}`);
   write("404.html", html); produced.push("404.html");
 }
-
-/* ---------- تحويل الروابط القديمة ---------- */
 const stub = (file, js, fallback) => {
   write(file, `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="robots" content="noindex, follow">
 <title>انتقال · نُضْج</title><meta http-equiv="refresh" content="1;url=${fallback}"><link rel="canonical" href="${C.base}${fallback}">
 <script>(function(){var q=new URLSearchParams(location.search);${js}location.replace(t||"${fallback}");})();</script></head>
-<body style="font-family:system-ui;padding:40px;text-align:center">جارٍ نقلك… <a href="${fallback}">اضغط هنا إن لم يحدث تلقائياً</a></body></html>`);
+<body style="font-family:system-ui;padding:40px;text-align:center;background:#0E1216;color:#EDE8E1">جارٍ نقلك… <a style="color:#FF5A36" href="${fallback}">اضغط هنا إن لم يحدث تلقائياً</a></body></html>`);
   produced.push(file);
 };
-const ids = JSON.stringify(D.PRODUCTS.map(p => p.id));
-stub("category.html", `var a=q.get("a"),m=q.get("m"),t=a==="ضأن"?"shop.html?t=lamb":a==="بقر"?"shop.html?t=beef":m?"shop.html?m="+encodeURIComponent(m):"";`, "shop.html");
-stub("cut.html", `var c=q.get("c");if(c==="beef-neck")c="beef-mince";var t=${ids}.indexOf(c)>-1?c+".html":"";`, "shop.html");
-stub("product.html", `var c=q.get("id");var t=${ids}.indexOf(c)>-1?c+".html":"";`, "shop.html");
-stub("dish.html", `var d=q.get("d");var t=${JSON.stringify(D.DISHES.map(d => d.slug))}.indexOf(d)>-1?"dish-"+d+".html":"";`, "expertise.html");
-stub("library.html", `var t="";`, "expertise.html");
+const idsJ = JSON.stringify(D.PRODUCTS.map(p => p.id));
+stub("category.html", `var a=q.get("a"),t=a==="ضأن"?"lamb.html":a==="بقر"?"beef.html":"";`, "shop.html");
+stub("cut.html", `var c=q.get("c");var t=${idsJ}.indexOf(c)>-1?c+".html":"";`, "shop.html");
+stub("product.html", `var c=q.get("id");var t=${idsJ}.indexOf(c)>-1?c+".html":"";`, "shop.html");
+stub("dish.html", `var d=q.get("d"),m={kabsa:"feast",mandi:"feast",mashawi:"grill",steak:"steak",burger:"grill",slow:"feast"};var t="advisor.html?o="+(m[d]||"feast");`, "advisor.html");
+["library.html", "expertise.html", "cook.html", "subscribe.html", "consult.html"].forEach(f => stub(f, `var t="";`, "advisor.html"));
 
 /* ---------- حذف الصفحات المولّدة سابقاً ولم تعد موجودة ---------- */
 const MAN = ".build-manifest.json";
@@ -144,38 +136,35 @@ Disallow: /src/
 Sitemap: ${C.base}sitemap.xml
 `);
 const money = U.money;
+const priceTxt = p => p.sold === "carcass" ? p.sizes.map(s => `${s.l} ≈${s.kg} كجم ${money(s.p)} ر.س`).join("، ") : money(p.price) + " ر.س " + (p.sold === "kg" ? "للكيلو" : "لل" + (p.unitName || "حبة"));
 write("llms.txt", `# نُضْج — NUDJ
 
-> ملحمة إلكترونية سعودية تبيع الذبائح وقطعيات الضأن والبقر والمفروم والبوكسات، مقطّعة ومغلّفة حسب طبخة العميل وتوصل مبرّدة. ومعها خدمة إضافية اختيارية مدفوعة اسمها «الخبرة»: أدلة مصوّرة للتقطيع والطبخ، مختبر الطبخ، واستشارة مع جزّار.
+> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
-- كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪).
+- كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
+- التقطيع مجاني. خدمات مدفوعة بالكيلو: تتبيل (${D.MARINADES.filter(m => m.p).map(m => m.n + " " + m.p).join("، ")} ر.س)، تسييخ ${D.SERVICES.skewer.p} ر.س، تغليف مفرّغ ${D.SERVICES.vacuum.p} ر.س (${D.SERVICES.vacuum.carcass} ر.س للذبيحة).
 - التوصيل ${C.delivery.fee} ر.س، ومجاني من ${C.delivery.freeOver} ر.س. المدن: ${C.cities.join("، ")}.
-- الخبرة: الدليل الواحد ${C.guidePrice} ر.س، اشتراك نُضْج+ ${C.plans.monthly.price} ر.س شهرياً أو ${C.plans.annual.price} ر.س سنوياً، الاستشارة ${C.consult.price} ر.س (${C.consult.memberPrice} ر.س للأعضاء).
-- ملاحظة: الموقع حالياً نسخة عرض؛ الصور مستطيلات رمادية مؤقتة والأسعار تقريبية.
+- قواعد المستشار: ${D.ADVISOR.grams.grill} جم للشخص مشاوي بدون عظم، ${D.ADVISOR.grams.kabsa} جم كبسة ومندي بالعظم، ${D.ADVISOR.grams.steak} جم ستيك، ${D.ADVISOR.grams.stew} جم مرق.
 
-## المتجر
-- [كل المنتجات](${C.base}shop.html)
-- [مخطط الذبيحة](${C.base}cuts.html): تسوّق حسب المنطقة (الرقبة، الكتف، الريش، الخاصرة، الفخذ، الصدر، الموزة)
-${D.PRODUCTS.map(p => `- [${p.name}](${C.base}${p.id}.html): ${p.short} — ${p.type === "carcass" ? "من " + money(Math.min.apply(null, p.sizes.map(s => s.p))) + " ر.س" : money(p.price) + " ر.س" + (p.unit === "kg" ? " للكيلو" : p.type === "box" ? "" : " لل" + (p.unitName || "حبة"))}`).join("\n")}
+## المستشار
+- [مستشار نُضْج](${C.base}advisor.html)
 
-## وش تطبخ؟ (أي قطعة لأي طبخة)
-${D.DISHES.map(d => `- [${d.name}](${C.base}dish-${d.slug}.html): ${d.needs}. ${d.perPerson}. القطعيات: ${d.cuts.map(c => D.byId(c).name).join("، ")}.`).join("\n")}
+${D.ANIMALS.map(a => `## ${a.n}
+- [قطعيات ${a.n}](${C.base}${a.k}.html): ${a.note}
+${D.cutsOf(a.k).map(p => `- [${p.name}](${C.base}${p.id}.html): ${p.short} — ${priceTxt(p)}`).join("\n")}`).join("\n\n")}
 
-## الخبرة
-- [مركز الخبرة ونُضْج+](${C.base}expertise.html)
-- [مختبر الطبخ](${C.base}cook.html)
-- [استشارة جزّار](${C.base}consult.html)
-- [دليل تقطيع الذبيحة](${C.base}guide-carcass.html)
+## عدّة الشواء والبهارات
+${D.extras().map(p => `- [${p.name}](${C.base}${p.id}.html): ${p.short} — ${priceTxt(p)}`).join("\n")}
 
 ## المساعدة
 - [الأسئلة الشائعة](${C.base}help.html) · [تواصل معنا](${C.base}contact.html) · [من نحن](${C.base}about.html)
 `);
 
-/* ---------- تطبيق الويب (PWA) ---------- */
+/* ---------- تطبيق الويب (PWA) — الأيقونات ملفات ثابتة في assets/icons ---------- */
 write("manifest.webmanifest", JSON.stringify({
-  name: "نُضْج — لحم طازج مقطّع على طبختك", short_name: "نُضْج", lang: "ar", dir: "rtl",
+  name: "نُضْج — ملحمة ومستشار طبخ", short_name: "نُضْج", lang: "ar", dir: "rtl",
   start_url: "./index.html", scope: "./", display: "standalone", orientation: "portrait",
-  background_color: "#F4F1EA", theme_color: "#F4F1EA",
+  background_color: "#0E1216", theme_color: "#0E1216",
   icons: [
     { src: "assets/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },
@@ -183,49 +172,4 @@ write("manifest.webmanifest", JSON.stringify({
   ]
 }, null, 2));
 
-/* ---------- أيقونات PNG (بدون مكتبات): خطوط القطع على مربع بلون الهوية ---------- */
-function crc32(buf) {
-  let c, crc = 0xFFFFFFFF;
-  for (let n = 0; n < buf.length; n++) { c = (crc ^ buf[n]) & 0xFF; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; crc = (crc >>> 8) ^ c; }
-  return (crc ^ 0xFFFFFFFF) >>> 0;
-}
-function pngChunk(type, data) {
-  const len = Buffer.alloc(4); len.writeUInt32BE(data.length);
-  const td = Buffer.concat([Buffer.from(type, "ascii"), data]);
-  const crc = Buffer.alloc(4); crc.writeUInt32BE(crc32(td));
-  return Buffer.concat([len, td, crc]);
-}
-function drawIcon(S) {
-  const bg = [0x6B, 0x1D, 0x24], fg = [0xF4, 0xF1, 0xEA];
-  const curves = [[[6.5, 16.5], [8.5, 12.5], [10.7, 9.9], [12.1, 7.5]], [[10.4, 18.2], [12.3, 14.3], [14.2, 11.8], [15.6, 9.4]], [[14.6, 18.6], [16, 15.7], [17, 14.2], [17.9, 12.8]]];
-  const k = S * 0.56 / 11.4, cx = 12.2, cy = 13.05;
-  const pts = curves.map(cv => { const a = []; for (let i = 0; i <= 40; i++) { const t = i / 40, u = 1 - t;
-    const x = u * u * u * cv[0][0] + 3 * u * u * t * cv[1][0] + 3 * u * t * t * cv[2][0] + t * t * t * cv[3][0];
-    const y = u * u * u * cv[0][1] + 3 * u * u * t * cv[1][1] + 3 * u * t * t * cv[2][1] + t * t * t * cv[3][1];
-    a.push([S / 2 + (x - cx) * k, S / 2 + (y - cy) * k]); } return a; });
-  const half = 1.05 * k;
-  const segDist = (px, py, a, b) => { const dx = b[0] - a[0], dy = b[1] - a[1]; const t = Math.max(0, Math.min(1, ((px - a[0]) * dx + (py - a[1]) * dy) / (dx * dx + dy * dy)));
-    const x = a[0] + t * dx - px, y = a[1] + t * dy - py; return Math.sqrt(x * x + y * y); };
-  const raw = Buffer.alloc((S * 4 + 1) * S);
-  for (let y = 0; y < S; y++) {
-    raw[y * (S * 4 + 1)] = 0;
-    for (let x = 0; x < S; x++) {
-      let d = 1e9; const px = x + .5, py = y + .5;
-      for (const line of pts) for (let i = 0; i < line.length - 1; i++) { const v = segDist(px, py, line[i], line[i + 1]); if (v < d) d = v; }
-      const cov = Math.max(0, Math.min(1, half - d + .5));
-      const o = y * (S * 4 + 1) + 1 + x * 4;
-      for (let c = 0; c < 3; c++) raw[o + c] = Math.round(bg[c] + (fg[c] - bg[c]) * cov);
-      raw[o + 3] = 255;
-    }
-  }
-  const ihdr = Buffer.alloc(13); ihdr.writeUInt32BE(S, 0); ihdr.writeUInt32BE(S, 4); ihdr[8] = 8; ihdr[9] = 6; ihdr[10] = 0; ihdr[11] = 0; ihdr[12] = 0;
-  return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), pngChunk("IHDR", ihdr), pngChunk("IDAT", zlib.deflateSync(raw, { level: 9 })), pngChunk("IEND", Buffer.alloc(0))]);
-}
-fs.mkdirSync(rel("assets/icons"), { recursive: true });
-[["icon-192.png", 192], ["icon-512.png", 512], ["apple-touch-icon.png", 180]].forEach(([f, s]) => {
-  const out = rel("assets/icons/" + f);
-  if (!fs.existsSync(out)) fs.writeFileSync(out, drawIcon(s));
-});
-write("assets/icons/icon.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="4" fill="#6B1D24"/><g fill="none" stroke="#F4F1EA" stroke-width="1.7" stroke-linecap="round"><path d="M6.5 16.5c2-4 4.2-6.6 5.6-9M10.4 18.2c1.9-3.9 3.8-6.4 5.2-8.8M14.6 18.6c1.4-2.9 2.4-4.4 3.3-5.8"/></g></svg>`);
-
-console.log(`✓ ${pages.length} pages + 404 + 5 redirects · sitemap ${indexable.length} urls`);
+console.log(`✓ ${pages.length} pages + 404 + redirects · sitemap ${indexable.length} urls`);

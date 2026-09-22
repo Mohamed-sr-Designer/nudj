@@ -14,7 +14,7 @@
   if (S.user.get()) { location.replace(next); return; }
 
   /* زر الرجوع يسمّي الشاشة التي جئت منها — مثل iOS */
-  const TITLES = { "checkout.html": "إتمام الطلب", "subscribe.html": "نُضْج+", "consult.html": "استشارة جزّار", "account.html": "حسابي", "cart.html": "السلة" };
+  const TITLES = { "checkout.html": "إتمام الطلب", "advisor.html": "المستشار", "account.html": "حسابي", "cart.html": "السلة" };
   const back = $(".ab-back");
   if (back) { const f = next.split("?")[0]; back.setAttribute("href", next); const sp = $("span", back); if (sp) sp.textContent = TITLES[f] || "رجوع"; }
 
@@ -22,7 +22,7 @@
     root.innerHTML = `<h1>تسجيل الدخول</h1><p class="lead">أدخل رقم جوالك ونرسل لك رمز تحقق. لا تحتاج كلمة مرور.</p>
       <form id="fPhone" novalidate>
         <label class="field"><span class="field__l">رقم الجوال</span><div class="phone-field"><span>+966</span><input id="ph" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="5X XXX XXXX" maxlength="12" autofocus></div><span class="field__err" id="phErr" hidden>أدخل رقماً سعودياً صحيحاً يبدأ بـ 5</span></label>
-        <button class="btn btn--brand btn--lg btn--block" type="submit">إرسال الرمز</button>
+        <button class="btn btn--ember btn--lg btn--block" type="submit">إرسال الرمز</button>
       </form>
       <p class="auth__hint" style="margin-top:16px">بتسجيل الدخول أنت توافق على <a class="link" href="terms.html">الشروط</a> و<a class="link" href="privacy.html">سياسة الخصوصية</a>.</p>`;
     const inp = $("#ph");
@@ -41,7 +41,7 @@
       <form id="fOtp" novalidate>
         <div class="otp" id="otp">${[0, 1, 2, 3].map(i => `<input inputmode="numeric" autocomplete="${i === 0 ? "one-time-code" : "off"}" maxlength="1" aria-label="الرقم ${i + 1}">`).join("")}</div>
         <p class="field__err" id="otpErr" hidden style="text-align:center">أدخل الرمز كاملاً</p>
-        <button class="btn btn--brand btn--lg btn--block" type="submit">تأكيد</button>
+        <button class="btn btn--ember btn--lg btn--block" type="submit">تأكيد</button>
       </form>
       <p class="auth__hint" style="margin-top:14px"><button class="auth__resend" type="button" id="resend" disabled>إعادة الإرسال بعد <span class="num" id="sec">30</span> ث</button></p>
       ${C.demo ? `<p class="demo-banner" style="margin-top:14px">${U.icon("info")}نسخة تجريبية: اكتب أي 4 أرقام.</p>` : ""}`;
@@ -77,7 +77,7 @@
     root.innerHTML = `<h1>أهلاً بك في نُضْج</h1><p class="lead">وش نسمّيك؟ نستخدم الاسم في الطلبات والتوصيل.</p>
       <form id="fName" novalidate>
         <label class="field"><span class="field__l">الاسم</span><input class="input" id="nm" autocomplete="name" placeholder="اسمك" autofocus></label>
-        <button class="btn btn--brand btn--lg btn--block" type="submit">متابعة</button>
+        <button class="btn btn--ember btn--lg btn--block" type="submit">متابعة</button>
       </form>`;
     setTimeout(() => $("#nm").focus(), 50);
     $("#fName").addEventListener("submit", e => {
