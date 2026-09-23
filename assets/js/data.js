@@ -9,6 +9,16 @@
 window.NUDJ = (function () {
   "use strict";
 
+  /* ================= اللغة =================
+     الصفحات العربية في الجذر، والإنجليزية في /en/ (نفس أسماء الملفات).
+     L(عربي، إنجليزي) تختار النص حسب لغة الصفحة · R بادئة مسارات الملفات من /en/ */
+  const LANG = (function () {
+    try { if (window.NUDJ_LANG) return window.NUDJ_LANG; } catch (e) { }
+    try { return document.documentElement.lang === "en" ? "en" : "ar"; } catch (e) { return "ar"; }
+  })();
+  const L = (ar, en) => LANG === "en" && en != null ? en : ar;
+  const R = LANG === "en" ? "../" : "";
+
   /* ================= الإعدادات التجارية ================= */
   const CONFIG = {
     demo: true, /* true = الدفع ورمز التحقق محاكاة (لا يُخصم أي مبلغ) */
@@ -417,7 +427,34 @@ window.NUDJ = (function () {
     ["هل أستطيع إلغاء الطلب؟", "يمكن إلغاء الطلب من صفحة الطلب قبل بدء تجهيزه. [تُضاف سياسة الاسترجاع الفعلية]."]
   ];
 
+  /* أسئلة الرئيسية بالإنجليزي (تُملأ من en.js وتتعدل من لوحة التحكم) */
+  const FAQ_en = [];
+
   /* المنتجات المخفية من لوحة التحكم لا تظهر في المتجر لكنها تبقى صالحة في السلات والطلبات القديمة */
   const live = list => (list || PRODUCTS).filter(p => !p.hidden);
-  return { CONFIG, IMAGES, ANIMALS, animal, PREPS, MARINADES, marinade, SERVICES, STYLES, style, USES, PRODUCTS, byId, cutsOf, carcasses, extras, live, ZONES, ADVISOR, FAQ, COPY, HOME, HELP, THEME, ORDER_STEPS };
+
+  /* ---------- تحويل البيانات للإنجليزي (صفحات /en/ فقط) ----------
+     كل حقل له نسخة «_en» (من en.js أو لوحة التحكم) يحل محله، ويُحفظ الأصل في «_ar».
+     ومسارات الملفات assets/… تُسبق بـ ../ لأن الصفحات في مجلد فرعي. */
+  const DATA = { CONFIG, IMAGES, ANIMALS, PREPS, MARINADES, SERVICES, STYLES, USES, PRODUCTS, ZONES, ADVISOR, FAQ, COPY, HOME, HELP, THEME, ORDER_STEPS };
+  let localized = false;
+  function localize() {
+    if (LANG !== "en" || localized) return; localized = true;
+    const has = v => v != null && v !== "" && !(Array.isArray(v) && !v.length);
+    const fix = v => typeof v === "string" && v.indexOf("assets/") === 0 ? R + v : v;
+    function walk(o) {
+      if (Array.isArray(o)) { for (let i = 0; i < o.length; i++) { if (o[i] && typeof o[i] === "object") walk(o[i]); else o[i] = fix(o[i]); } return; }
+      Object.keys(o).forEach(k => {
+        if (/_(en|ar)$/.test(k)) return;
+        const t = o[k + "_en"];
+        if (has(t)) { if (o[k + "_ar"] === undefined) o[k + "_ar"] = o[k]; o[k] = JSON.parse(JSON.stringify(t)); }
+        const v = o[k];
+        if (v && typeof v === "object") walk(v); else o[k] = fix(v);
+      });
+    }
+    Object.keys(DATA).forEach(k => walk(DATA[k]));
+    if (FAQ_en.length) { FAQ.length = 0; FAQ_en.forEach(x => FAQ.push(x)); }
+  }
+
+  return { lang: LANG, L, R, localize, CONFIG, IMAGES, ANIMALS, animal, PREPS, MARINADES, marinade, SERVICES, STYLES, style, USES, PRODUCTS, byId, cutsOf, carcasses, extras, live, ZONES, ADVISOR, FAQ, FAQ_en, COPY, HOME, HELP, THEME, ORDER_STEPS };
 })();

@@ -14,7 +14,7 @@
   function plans() {
     if (!box) return;
     const l = S.plans.list();
-    box.innerHTML = l.length ? `<h2 class="adv-side__h">خططك المحفوظة</h2><div class="plan-list">${l.slice(0, 4).map(p => `<a class="plan-mini" href="account.html?s=plans"><b>${U.esc(p.title)}</b><span class="num">${U.money2(p.total)} ر.س</span></a>`).join("")}</div>` : "";
+    box.innerHTML = l.length ? `<h2 class="adv-side__h">${D.L("خططك المحفوظة", "Your saved plans")}</h2><div class="plan-list">${l.slice(0, 4).map(p => `<a class="plan-mini" href="account.html?s=plans"><b>${U.esc(p.title)}</b><span class="num">${U.money2(p.total)} ${D.CONFIG.currency}</span></a>`).join("")}</div>` : "";
   }
   S.on("plans", plans); plans();
 })();

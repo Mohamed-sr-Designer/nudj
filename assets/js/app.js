@@ -9,6 +9,7 @@
   if (window.NUDJ_CMS && window.NUDJ_CMS.rerender && window.NUDJ_TPL) { try { window.NUDJ_TPL.rerender(); } catch (e) { console.error(e); } }
   const D = window.NUDJ, S = window.NUDJ_STORE, U = window.NUDJ_UI;
   const C = D.CONFIG;
+  const L = D.L || (ar => ar);
   const $ = (s, r) => (r || document).querySelector(s);
   const $$ = (s, r) => Array.prototype.slice.call((r || document).querySelectorAll(s));
   const html = document.documentElement;
@@ -55,7 +56,7 @@
     sh.setAttribute("role", "dialog"); sh.setAttribute("aria-modal", "true");
     if (o.title) sh.setAttribute("aria-label", o.title);
     sh.innerHTML = `<div class="sheet__grab" aria-hidden="true"></div>
-      ${o.bare ? "" : `<div class="sheet__head">${o.title ? `<h2 class="sheet__title">${o.title}</h2>` : "<span></span>"}<button class="sheet__x" type="button" aria-label="إغلاق">${U.icon("x", "", 2.2)}</button></div>`}
+      ${o.bare ? "" : `<div class="sheet__head">${o.title ? `<h2 class="sheet__title">${o.title}</h2>` : "<span></span>"}<button class="sheet__x" type="button" aria-label="${L("إغلاق", "Close")}">${U.icon("x", "", 2.2)}</button></div>`}
       <div class="sheet__body"></div>${o.foot ? `<div class="sheet__foot"></div>` : ""}`;
     const body = $(".sheet__body", sh);
     if (typeof o.body === "string") body.innerHTML = o.body; else if (o.body) body.appendChild(o.body);
@@ -112,7 +113,7 @@
   function confirmSheet(o) {
     return new Promise(res => {
       const foot = document.createElement("div"); foot.className = "sheet__actions";
-      foot.innerHTML = `<button class="btn ${o.danger ? "btn--danger" : "btn--brand"} btn--block" type="button" data-ok>${o.ok || "تأكيد"}</button><button class="btn btn--ghost btn--block" type="button" data-no>${o.cancel || "تراجع"}</button>`;
+      foot.innerHTML = `<button class="btn ${o.danger ? "btn--danger" : "btn--brand"} btn--block" type="button" data-ok>${o.ok || L("تأكيد", "Confirm")}</button><button class="btn btn--ghost btn--block" type="button" data-no>${o.cancel || L("تراجع", "Cancel")}</button>`;
       const sh = openSheet({ title: o.title, body: o.text ? `<p class="sheet__text">${o.text}</p>` : "", foot, cls: "sheet--alert", onClose: r => res(!!r) });
       $("[data-ok]", foot).addEventListener("click", () => sh.close(true));
       $("[data-no]", foot).addEventListener("click", () => sh.close(false));
@@ -178,16 +179,16 @@
     e.preventDefault(); e.stopPropagation();
     const added = S.wish.toggle(b.dataset.wish);
     const p = D.byId(b.dataset.wish);
-    toast(added ? "أُضيف للمفضلة" : "أُزيل من المفضلة", { icon: "heart", action: added ? { label: "عرض", href: "wishlist.html" } : null });
+    toast(added ? L("أُضيف للمفضلة", "Added to wishlist") : L("أُزيل من المفضلة", "Removed from wishlist"), { icon: "heart", action: added ? { label: L("عرض", "View"), href: "wishlist.html" } : null });
     paintHearts();
   });
 
   function paintAuth() {
     const u = S.user.get();
     $$("[data-auth]").forEach(el => { el.hidden = (el.dataset.auth === "in") !== !!u; });
-    $$("[data-user-name]").forEach(el => { el.textContent = u ? (u.name || "أهلاً بك") : "ضيف"; });
+    $$("[data-user-name]").forEach(el => { el.textContent = u ? (u.name || L("أهلاً بك", "Welcome")) : L("ضيف", "Guest"); });
     $$("[data-user-phone]").forEach(el => { el.textContent = u ? S.fmtPhone(u.phone) : ""; });
-    $$("[data-city-label]").forEach(el => { el.textContent = S.city.get(); });
+    $$("[data-city-label]").forEach(el => { el.textContent = S.cityLabel(S.city.get()); });
   }
 
   /* خانات الصور التي أُضيفت لاحقاً في IMAGES */
@@ -246,7 +247,7 @@
       const r = readForm(form, p);
       const b = S.breakdown(p.sold === "kg" ? { id: p.id, kg: r.kg, opts: r.opts } : { id: p.id, qty: r.qty, opts: r.opts });
       if (totalEl) totalEl.textContent = U.money(b.total) + " " + C.currency;
-      if (sumEl) sumEl.innerHTML = b.adds.length ? `<span>${p.sold === "kg" ? U.kgTxt(r.kg) + " × " + U.money(p.price) : "الأساس"} <b class="num">${U.money(b.base)}</b></span>${b.adds.map(a => `<span>+ ${a.n} <b class="num">${U.money(a.v)}</b></span>`).join("")}` : "";
+      if (sumEl) sumEl.innerHTML = b.adds.length ? `<span>${p.sold === "kg" ? U.kgTxt(r.kg) + " × " + U.money(p.price) : L("الأساس", "Base")} <b class="num">${U.money(b.base)}</b></span>${b.adds.map(a => `<span>+ ${a.n} <b class="num">${U.money(a.v)}</b></span>`).join("")}` : "";
       $$(".opt", form).forEach(f => f.classList.toggle("has-val", !!f.querySelector("input:checked")));
       if (o.onChange) o.onChange(r, b.total);
     }
@@ -263,7 +264,7 @@
       const r = readForm(form, p);
       S.cart.add(p.id, { kg: r.kg, qty: r.qty, opts: r.opts, note: r.note });
       bump();
-      toast("أُضيف " + p.name + (p.sold === "kg" ? " · " + U.kgTxt(r.kg) : ""), { icon: "cart", action: { label: "السلة", href: "cart.html" } });
+      toast(L("أُضيف ", "Added ") + p.name + (p.sold === "kg" ? " · " + U.kgTxt(r.kg) : ""), { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } });
       if (o.onAdded) o.onAdded(r);
     });
     if (p.sold === "kg") setKg(form, p, p.def); else update();
@@ -275,11 +276,11 @@
     const b = e.target.closest("[data-quick]"); if (!b) return;
     e.preventDefault();
     const p = D.byId(b.dataset.quick); if (!p) return;
-    if (p.sold === "piece") { S.cart.add(p.id, { qty: 1 }); bump(); toast("أُضيف " + p.name, { icon: "cart", action: { label: "السلة", href: "cart.html" } }); return; }
+    if (p.sold === "piece") { S.cart.add(p.id, { qty: 1 }); bump(); toast(L("أُضيف ", "Added ") + p.name, { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } }); return; }
     const body = document.createElement("div");
     body.innerHTML = `<div class="qs-head">${U.productImg(p, "qs-head__img")}<div class="qs-head__b"><span class="tag__code num">${p.code}</span><b>${U.esc(p.name)}</b><span>${U.priceTag(p)}</span></div></div>
-      ${U.buyForm(p)}<a class="qs-more" href="${U.url.product(p.id)}">كل التفاصيل عن ${U.esc(p.name)} ${U.icon("chevL")}</a>`;
-    const sh = openSheet({ title: "أضف للسلة", body, cls: "sheet--buy" });
+      ${U.buyForm(p)}<a class="qs-more" href="${U.url.product(p.id)}">${L("كل التفاصيل عن", "Full details:")} ${U.esc(p.name)} ${U.icon("chevL")}</a>`;
+    const sh = openSheet({ title: L("أضف للسلة", "Add to cart"), body, cls: "sheet--buy" });
     bindBuyForm($(".buy-form", body), { onAdded: () => sh.close(true) });
   });
 
@@ -305,8 +306,8 @@
   function initFab() {
     if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]") || $("[data-advisor-inline]")) return;
     const f = document.createElement("button");
-    f.type = "button"; f.className = "fab"; f.setAttribute("data-advisor", "open"); f.setAttribute("data-sheet", ""); f.setAttribute("aria-label", "اسأل مستشار نُضْج");
-    f.innerHTML = `<span class="fab__av">${U.mark("fab__mark")}</span><span class="fab__t">اسأل المستشار</span>`;
+    f.type = "button"; f.className = "fab"; f.setAttribute("data-advisor", "open"); f.setAttribute("data-sheet", ""); f.setAttribute("aria-label", L("اسأل مستشار نُضْج", "Ask the NUDJ advisor"));
+    f.innerHTML = `<span class="fab__av">${U.mark("fab__mark")}</span><span class="fab__t">${L("اسأل المستشار", "Ask the advisor")}</span>`;
     document.body.appendChild(f);
   }
 
@@ -334,11 +335,21 @@
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-city]"); if (!b) return;
     e.preventDefault();
-    const cur = S.city.get();
-    const body = `<p class="sheet__text">نعرض لك مواعيد التوصيل المتاحة حسب مدينتك.</p><div class="group">${C.cities.map(c =>
+    const cur = S.cityLabel(S.city.get());
+    const body = `<p class="sheet__text">${L("نعرض لك مواعيد التوصيل المتاحة حسب مدينتك.", "We show the delivery slots available in your city.")}</p><div class="group">${C.cities.map(c =>
       `<button class="cell" type="button" data-pick-city="${U.esc(c)}"><span class="cell__b"><span class="cell__t">${c}</span></span>${c === cur ? U.icon("check", "cell__check", 2.4) : ""}</button>`).join("")}</div>`;
-    const sh = openSheet({ title: "التوصيل إلى", body });
-    sh.body.addEventListener("click", ev => { const c = ev.target.closest("[data-pick-city]"); if (!c) return; S.city.set(c.dataset.pickCity); sh.close(); toast("التوصيل إلى " + c.dataset.pickCity, { icon: "pin" }); });
+    const sh = openSheet({ title: L("التوصيل إلى", "Deliver to"), body });
+    sh.body.addEventListener("click", ev => { const c = ev.target.closest("[data-pick-city]"); if (!c) return; S.city.set(c.dataset.pickCity); sh.close(); toast(L("التوصيل إلى ", "Delivering to ") + c.dataset.pickCity, { icon: "pin" }); });
+  });
+
+  /* تبديل اللغة: نفس الصفحة بنفس البحث — العربية في الجذر والإنجليزية في /en/ */
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-lang-switch]"); if (!b) return;
+    e.preventDefault();
+    const path = location.pathname, en = D.lang === "en";
+    const to = en ? path.replace(/\/en\/([^/]*)$/, "/$1") : path.replace(/\/([^/]*)$/, "/en/$1");
+    try { localStorage.setItem("nudj_lang", en ? "ar" : "en"); } catch (x) { }
+    location.href = to + location.search + location.hash;
   });
 
   /* المشاركة */
@@ -348,7 +359,7 @@
     const data = { title: document.title, url: location.href };
     try {
       if (navigator.share) { await navigator.share(data); return; }
-      await navigator.clipboard.writeText(location.href); toast("نُسخ الرابط", { icon: "share" });
+      await navigator.clipboard.writeText(location.href); toast(L("نُسخ الرابط", "Link copied"), { icon: "share" });
     } catch (x) { }
   });
 
@@ -362,7 +373,7 @@
     .replace(/\s+/g, " ").trim();
 
   /* أيام وفترات (للتوصيل والاستشارة) */
-  const dayFmt = (d, o) => d.toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", o);
+  const dayFmt = (d, o) => d.toLocaleDateString(L("ar-SA-u-ca-gregory-nu-latn", "en-GB"), o);
   function slotPicker(daysEl, timesEl, o) {
     o = o || {};
     const list = o.times || C.windows, n = o.days || C.deliveryDays, lead = o.leadHours == null ? 2 : o.leadHours;
@@ -374,7 +385,7 @@
       if (open) days.push({ d, i });
     }
     const state = { day: null, time: null };
-    daysEl.innerHTML = days.map((x, k) => `<button class="day" type="button" role="radio" aria-checked="${k === 0}" data-i="${k}"><small>${x.i === 0 ? "اليوم" : x.i === 1 ? "غداً" : dayFmt(x.d, { weekday: "long" })}</small><b>${x.d.getDate()}</b><small>${dayFmt(x.d, { month: "short" })}</small></button>`).join("");
+    daysEl.innerHTML = days.map((x, k) => `<button class="day" type="button" role="radio" aria-checked="${k === 0}" data-i="${k}"><small>${x.i === 0 ? L("اليوم", "Today") : x.i === 1 ? L("غداً", "Tomorrow") : dayFmt(x.d, { weekday: "long" })}</small><b>${x.d.getDate()}</b><small>${dayFmt(x.d, { month: "short" })}</small></button>`).join("");
     function paintTimes() {
       const x = days[state.dayIdx];
       timesEl.innerHTML = list.map((w, k) => {
@@ -398,8 +409,8 @@
     function get() {
       if (!state.day || !state.time) return null;
       const x = days[state.dayIdx];
-      return { date: state.day.getTime(), dayLabel: x.i === 0 ? "اليوم" : x.i === 1 ? "غداً" : dayFmt(state.day, { weekday: "long" }),
-        dateLabel: dayFmt(state.day, { weekday: "long", day: "numeric", month: "long" }), time: state.time.l };
+      return { date: state.day.getTime(), dayLabel: x.i === 0 ? L("اليوم", "Today") : x.i === 1 ? L("غداً", "Tomorrow") : dayFmt(state.day, { weekday: "long" }),
+        dateLabel: dayFmt(state.day, { weekday: "long", day: "numeric", month: "long" }), time: state.time.l, h: state.time.h };
     }
     daysEl.addEventListener("click", e => { const b = e.target.closest(".day"); if (b) pickDay(+b.dataset.i); });
     timesEl.addEventListener("click", e => { const b = e.target.closest(".time"); if (b && !b.disabled) pickTime(+b.dataset.k); });
@@ -412,13 +423,13 @@
     o = o || {};
     const list = U.payments().filter(p => o.cod || !p.cod);
     const name = "pay" + Math.random().toString(36).slice(2, 6);
-    box.innerHTML = `${C.demo ? `<p class="demo-banner">${U.icon("info")}نسخة تجريبية: الدفع محاكاة ولا يُخصم أي مبلغ.</p>` : ""}
+    box.innerHTML = `${C.demo ? `<p class="demo-banner">${U.icon("info")}${L("نسخة تجريبية: الدفع محاكاة ولا يُخصم أي مبلغ.", "Demo version: payment is simulated and nothing is charged.")}</p>` : ""}
       <div class="pay-list">${list.map((p, i) => `<label class="radio-card"><input type="radio" name="${name}" value="${p.k}"${i === 0 ? " checked" : ""}><span class="radio-card__b"><b>${U.esc(p.n)}</b><small>${U.esc(p.s)}</small></span>${U.payLogos(p)}</label>`).join("")}</div>
       <div class="card card-fields" hidden>
-        <label class="field"><span class="field__l">رقم البطاقة</span><input class="input num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23" dir="ltr" data-cc="num"></label>
+        <label class="field"><span class="field__l">${L("رقم البطاقة", "Card number")}</span><input class="input num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23" dir="ltr" data-cc="num"></label>
         <div class="form-grid">
-          <label class="field"><span class="field__l">تاريخ الانتهاء</span><input class="input num" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / YY" maxlength="7" dir="ltr" data-cc="exp"></label>
-          <label class="field"><span class="field__l">رمز الأمان</span><input class="input num" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" maxlength="4" dir="ltr" data-cc="cvv"></label>
+          <label class="field"><span class="field__l">${L("تاريخ الانتهاء", "Expiry date")}</span><input class="input num" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / YY" maxlength="7" dir="ltr" data-cc="exp"></label>
+          <label class="field"><span class="field__l">${L("رمز الأمان", "Security code")}</span><input class="input num" inputmode="numeric" autocomplete="cc-csc" placeholder="CVV" maxlength="4" dir="ltr" data-cc="cvv"></label>
         </div>
       </div>`;
     const fields = $(".card-fields", box);
@@ -445,38 +456,41 @@
   /* ورقة العنوان (إضافة/تعديل) — مشتركة بين الدفع والحساب */
   function addressSheet(a, onSaved) {
     a = a || {};
+    /* نوع العنوان يُحفظ بالعربي (ثابت) ويُعرض بلغة الصفحة */
     const labels = ["المنزل", "العمل", "أخرى"];
     const body = document.createElement("form");
     body.noValidate = true;
     body.innerHTML = `
-      <div class="seg seg--full" role="radiogroup" aria-label="نوع العنوان" style="margin-bottom:14px">${labels.map(l => `<button type="button" role="radio" data-l="${l}" aria-checked="${(a.label || "المنزل") === l}" class="${(a.label || "المنزل") === l ? "on" : ""}">${l}</button>`).join("")}</div>
-      <label class="field"><span class="field__l">المدينة</span><select class="select" name="city">${C.cities.map(c => `<option${(a.city || S.city.get()) === c ? " selected" : ""}>${c}</option>`).join("")}</select></label>
-      <label class="field"><span class="field__l">الحي</span><input class="input" name="district" value="${U.esc(a.district || "")}" placeholder="مثال: حي الملقا" required></label>
-      <label class="field"><span class="field__l">الشارع</span><input class="input" name="street" value="${U.esc(a.street || "")}" placeholder="اسم الشارع" required></label>
+      <div class="seg seg--full" role="radiogroup" aria-label="${L("نوع العنوان", "Address type")}" style="margin-bottom:14px">${labels.map(l => `<button type="button" role="radio" data-l="${l}" aria-checked="${(a.label || "المنزل") === l}" class="${(a.label || "المنزل") === l ? "on" : ""}">${addrLabel(l)}</button>`).join("")}</div>
+      <label class="field"><span class="field__l">${L("المدينة", "City")}</span><select class="select" name="city">${C.cities.map(c => `<option value="${U.esc(S.cityKey(c))}"${(a.city || S.city.get()) === S.cityKey(c) ? " selected" : ""}>${c}</option>`).join("")}</select></label>
+      <label class="field"><span class="field__l">${L("الحي", "District")}</span><input class="input" name="district" value="${U.esc(a.district || "")}" placeholder="${L("مثال: حي الملقا", "e.g. Al Malqa")}" required></label>
+      <label class="field"><span class="field__l">${L("الشارع", "Street")}</span><input class="input" name="street" value="${U.esc(a.street || "")}" placeholder="${L("اسم الشارع", "Street name")}" required></label>
       <div class="form-grid">
-        <label class="field"><span class="field__l">رقم المبنى</span><input class="input num" name="building" inputmode="numeric" value="${U.esc(a.building || "")}" placeholder="0000" required></label>
-        <label class="field"><span class="field__l">العنوان الوطني المختصر <small>(اختياري)</small></span><input class="input num" name="short" value="${U.esc(a.short || "")}" placeholder="ABCD1234" maxlength="8" dir="ltr"></label>
+        <label class="field"><span class="field__l">${L("رقم المبنى", "Building no.")}</span><input class="input num" name="building" inputmode="numeric" value="${U.esc(a.building || "")}" placeholder="0000" required></label>
+        <label class="field"><span class="field__l">${L("العنوان الوطني المختصر", "Short national address")} <small>${L("(اختياري)", "(optional)")}</small></span><input class="input num" name="short" value="${U.esc(a.short || "")}" placeholder="ABCD1234" maxlength="8" dir="ltr"></label>
       </div>
-      <label class="field"><span class="field__l">ملاحظات للمندوب <small>(اختياري)</small></span><input class="input" name="notes" value="${U.esc(a.notes || "")}" placeholder="أقرب معلم، رقم الشقة…"></label>
-      <label class="check"><input type="checkbox" name="isDefault"${a.isDefault || !S.addr.list().length ? " checked" : ""}><span>اجعله العنوان الافتراضي</span></label>`;
+      <label class="field"><span class="field__l">${L("ملاحظات للمندوب", "Notes for the driver")} <small>${L("(اختياري)", "(optional)")}</small></span><input class="input" name="notes" value="${U.esc(a.notes || "")}" placeholder="${L("أقرب معلم، رقم الشقة…", "Nearest landmark, flat number…")}"></label>
+      <label class="check"><input type="checkbox" name="isDefault"${a.isDefault || !S.addr.list().length ? " checked" : ""}><span>${L("اجعله العنوان الافتراضي", "Make this my default address")}</span></label>`;
     const foot = document.createElement("div");
-    foot.innerHTML = `<button class="btn btn--brand btn--block btn--lg" type="button" data-save>حفظ العنوان</button>`;
-    const sh = openSheet({ title: a.id ? "تعديل العنوان" : "عنوان جديد", body, foot });
+    foot.innerHTML = `<button class="btn btn--brand btn--block btn--lg" type="button" data-save>${L("حفظ العنوان", "Save address")}</button>`;
+    const sh = openSheet({ title: a.id ? L("تعديل العنوان", "Edit address") : L("عنوان جديد", "New address"), body, foot });
     let label = a.label || "المنزل";
     $(".seg", body).addEventListener("click", e => { const b = e.target.closest("button[data-l]"); if (!b) return; label = b.dataset.l; $$(".seg button", body).forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", on); }); });
     $("[data-save]", foot).addEventListener("click", () => {
       const f = new FormData(body);
       let bad = null;
       ["district", "street", "building"].forEach(n => { const el = body.elements[n]; const ok = String(el.value).trim().length > 0; el.classList.toggle("is-err", !ok); if (!ok && !bad) bad = el; });
-      if (bad) { bad.focus(); toast("أكمل الحقول المطلوبة", { icon: "info" }); return; }
+      if (bad) { bad.focus(); toast(L("أكمل الحقول المطلوبة", "Please fill in the required fields"), { icon: "info" }); return; }
       const saved = S.addr.save({ id: a.id, label, city: f.get("city"), district: f.get("district").trim(), street: f.get("street").trim(), building: f.get("building").trim(),
         short: (f.get("short") || "").trim().toUpperCase(), notes: (f.get("notes") || "").trim(), isDefault: !!f.get("isDefault") });
-      sh.close(true); toast("حُفظ العنوان", { icon: "pin" });
+      sh.close(true); toast(L("حُفظ العنوان", "Address saved"), { icon: "pin" });
       if (onSaved) onSaved(saved);
     });
     return sh;
   }
-  const addrLine = a => a ? `${a.district}، ${a.street}، مبنى ${a.building} — ${a.city}` : "";
+  const ADDRL = { "المنزل": "Home", "العمل": "Work", "أخرى": "Other" };
+  const addrLabel = l => L(l, ADDRL[l] || l);
+  const addrLine = a => a ? L(`${a.district}، ${a.street}، مبنى ${a.building} — ${S.cityLabel(a.city)}`, `${a.district}, ${a.street}, Building ${a.building} — ${S.cityLabel(a.city)}`) : "";
 
   /* زر يعرض حالة المعالجة ثم ينفّذ */
   function busy(btn, ms) {
@@ -491,7 +505,7 @@
     /* شريط «أنت تشاهد المسودة» للمدير فقط */
     if (window.NUDJ_CMS && window.NUDJ_CMS.preview && document.body.dataset.file !== "admin.html") {
       const b = document.createElement("div"); b.className = "preview-bar";
-      b.innerHTML = `<span>${U.icon("edit")}تشاهد مسودة لوحة التحكم — غير منشورة</span><a href="admin.html">لوحة التحكم</a><button type="button" data-stop-preview>إيقاف المعاينة</button>`;
+      b.innerHTML = `<span>${U.icon("edit")}${L("تشاهد مسودة لوحة التحكم — غير منشورة", "You're viewing the dashboard draft — not published")}</span><a href="${D.R || ""}admin.html">${L("لوحة التحكم", "Dashboard")}</a><button type="button" data-stop-preview>${L("إيقاف المعاينة", "Stop preview")}</button>`;
       document.body.appendChild(b);
       b.querySelector("[data-stop-preview]").addEventListener("click", () => { try { localStorage.removeItem("nudj_cms_preview"); } catch (e) { } location.reload(); });
     }
@@ -502,5 +516,5 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init); else init();
 
   window.NUDJ_APP = { toast, openSheet, confirmSheet, bindBuyForm, requireLogin, refresh, paintHearts, lockScroll, unlockScroll, bump,
-    norm, slotPicker, payMethods, busy, addressSheet, addrLine, openAdvisor, $, $$ };
+    norm, slotPicker, payMethods, busy, addressSheet, addrLine, addrLabel, openAdvisor, L, $, $$ };
 })();

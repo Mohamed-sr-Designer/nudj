@@ -1,8 +1,9 @@
 /* =========================================================
    نُضْج — المولّد الوحيد للموقع
    node build.js
-   يبني كل الصفحات من src/ ومن assets/js/data.js، ويولّد:
-   sitemap.xml · robots.txt · llms.txt · manifest.webmanifest
+   يبني كل الصفحات من src/ ومن assets/js/data.js بلغتين:
+   العربية في الجذر، والإنجليزية في en/ (نصوصها من assets/js/en.js)، ويولّد:
+   sitemap.xml · robots.txt · llms.txt · manifest.webmanifest (لكل لغة)
    ========================================================= */
 "use strict";
 const fs = require("fs");
@@ -15,10 +16,11 @@ const rel = p => path.join(ROOT, p);
 const read = p => fs.readFileSync(rel(p), "utf8");
 const write = (p, s) => { fs.mkdirSync(path.dirname(rel(p)), { recursive: true }); fs.writeFileSync(rel(p), s); };
 
-/* ---------- تحميل البيانات ودوال العرض في بيئة معزولة ---------- */
+/* ---------- تحميل البيانات ودوال العرض في بيئة معزولة (واحدة لكل لغة) ---------- */
+const run = (sb, f) => vm.runInContext(read(f), sb, { filename: f.split("/").pop() });
 const sandbox = { window: { addEventListener() { } }, console };
 vm.createContext(sandbox);
-vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
+run(sandbox, "assets/js/data.js");
 
 /* ---------- اكتشاف الصور من أسماء الملفات → assets/js/images.js ----------
    site/<key>.ext · products/<id>-1|2|3.ext */
@@ -46,16 +48,24 @@ vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
 `);
   console.log("  images: " + n + " detected");
 }
-vm.runInContext(read("assets/js/images.js"), sandbox, { filename: "images.js" });
-/* المحتوى المنشور من لوحة التحكم يُطبع داخل الصفحات الثابتة */
-vm.runInContext(read("assets/js/content.js"), sandbox, { filename: "content.js" });
-vm.runInContext(read("assets/js/cms.js"), sandbox, { filename: "cms.js" });
-const PUB = sandbox.window.NUDJ_CONTENT || null;
-if (PUB) { sandbox.window.NUDJ_CMS.apply(PUB); console.log("  content: published edits applied"); }
+/* المحتوى المنشور من لوحة التحكم يُطبع داخل الصفحات الثابتة — نفس الترتيب في المتصفح:
+   data → (en) → images → content → cms (+ تحويل الإنجليزي) → store → ui */
+function loadLang(lang) {
+  const sb = lang === "ar" ? sandbox : vm.createContext({ window: { addEventListener() { }, NUDJ_LANG: lang }, console });
+  if (lang !== "ar") run(sb, "assets/js/data.js");
+  if (lang === "en") run(sb, "assets/js/en.js");
+  ["assets/js/images.js", "assets/js/content.js", "assets/js/cms.js"].forEach(f => run(sb, f));
+  const W = sb.window, pub = W.NUDJ_CONTENT || null;
+  if (pub) W.NUDJ_CMS.apply(pub);
+  W.NUDJ_CMS.localize();
+  ["assets/js/store.js", "assets/js/ui.js"].forEach(f => run(sb, f));
+  return { D: W.NUDJ, U: W.NUDJ_UI, S: W.NUDJ_STORE, C: W.NUDJ.CONFIG, pub };
+}
+const AR = loadLang("ar"), EN = loadLang("en");
+const PUB = AR.pub;
+if (PUB) console.log("  content: published edits applied");
 const contentHash = PUB ? sandbox.window.NUDJ_CMS.hash(PUB) : "0";
-vm.runInContext(read("assets/js/store.js"), sandbox, { filename: "store.js" });
-vm.runInContext(read("assets/js/ui.js"), sandbox, { filename: "ui.js" });
-const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, S = sandbox.window.NUDJ_STORE, C = D.CONFIG;
+const { D, U, S, C } = AR;
 
 /* ---------- إصدار الملفات (بصمة المحتوى) لكسر الكاش ---------- */
 const vcache = {};
@@ -76,7 +86,7 @@ ${wrap("shell", "src/shell.js")}
 ${MODULES.map(n => wrap(n, "src/pages/" + n + ".js")).join(String.fromCharCode(10))}
   function rerender() {
     var D = window.NUDJ, U = window.NUDJ_UI, S = window.NUDJ_STORE;
-    var ctx = { D: D, U: U, C: D.CONFIG, S: S, V: function () { return ""; }, h: U.h, contentHash: "" };
+    var ctx = { D: D, U: U, C: D.CONFIG, S: S, V: function () { return ""; }, h: U.h, R: D.R || "", contentHash: "" };
     var render = M.shell(ctx);
     var cur = document.body.getAttribute("data-file"), is404 = cur === "404.html";
     var file = is404 ? (decodeURIComponent(location.pathname.split("/").pop() || "") || "index.html") : cur;
@@ -93,22 +103,27 @@ ${MODULES.map(n => wrap(n, "src/pages/" + n + ".js")).join(String.fromCharCode(1
     document.title = doc.title;
     var md = document.querySelector('meta[name="description"]'), nd = doc.querySelector('meta[name="description"]'); if (md && nd) md.setAttribute("content", nd.getAttribute("content"));
     Array.prototype.forEach.call(doc.body.attributes, function (at) { document.body.setAttribute(at.name, at.value); });
-    if (is404) (page.scripts || []).forEach(function (s) { var el = document.createElement("script"); el.src = "assets/js/pages/" + s + ".js"; el.async = false; document.body.appendChild(el); });
+    if (is404) (page.scripts || []).forEach(function (s) { var el = document.createElement("script"); el.src = (D.R || "") + "assets/js/pages/" + s + ".js"; el.async = false; document.body.appendChild(el); });
     return true;
   }
   return { M: M, rerender: rerender };
 })();
 `);
 }
-const ctx = { D, U, C, S, V, h: U.h, contentHash };
+const ctx = { D, U, C, S, V, h: U.h, R: "", contentHash };
 const render = require("./src/shell.js")(ctx);
 
-/* ---------- الصفحات ---------- */
+/* ---------- الصفحات: العربية في الجذر + لوحة التحكم، والإنجليزية في en/ ---------- */
 let pages = [];
 MODULES.concat(["admin"]).forEach(m => { pages = pages.concat(require("./src/pages/" + m + ".js")(ctx)); });
-
 const produced = [];
 pages.forEach(p => { write(p.file, render(p, p.main)); produced.push(p.file); });
+
+const ctxEn = { D: EN.D, U: EN.U, C: EN.C, S: EN.S, V, h: EN.U.h, R: "../", contentHash };
+const renderEn = require("./src/shell.js")(ctxEn);
+let pagesEn = [];
+MODULES.forEach(m => { pagesEn = pagesEn.concat(require("./src/pages/" + m + ".js")(ctxEn)); });
+pagesEn.forEach(p => { write("en/" + p.file, renderEn(p, p.main)); produced.push("en/" + p.file); });
 
 /* ---------- صفحة 404 (مسارات مطلقة) + تحويل الروابط القديمة ---------- */
 {
@@ -117,8 +132,9 @@ pages.forEach(p => { write(p.file, render(p, p.main)); produced.push(p.file); })
   const DISH = { kabsa: "feast", mandi: "feast", slow: "feast", mashawi: "grill", burger: "grill", steak: "steak" };
   const p = { name: "notfound", file: "404.html", tab: "", mode: "push", back: ["index.html", "الرئيسية"], appTitle: "غير موجودة", noindex: true,
     title: "الصفحة غير موجودة · نُضْج", desc: "الصفحة المطلوبة غير موجودة." };
-  let html = render(p, `<div class="wrap"><div class="nf">
-  <div class="nf__code num">404</div><h1>الصفحة غير موجودة</h1>
+  const render404 = require("./src/shell.js")(Object.assign({}, ctx, { R: C.base }));
+  let html = render404(p, `<div class="wrap"><div class="nf">
+  <div class="nf__code num">404</div><h1>الصفحة غير موجودة <small lang="en" dir="ltr">Page not found</small></h1>
   <p class="muted">يمكن الرابط قديم أو فيه خطأ. جرّب واحدة من هذي:</p>
   <div class="row-btns" style="justify-content:center"><a class="btn btn--ember" href="shop.html">المتجر</a><a class="btn btn--line" href="advisor.html">المستشار</a><a class="btn btn--line" href="index.html">الرئيسية</a></div>
 </div></div>`);
@@ -128,7 +144,9 @@ if(f.indexOf("guide-")===0){var g=f.slice(6);t=ids.indexOf(g)>-1?g+".html":old[g
 else if(f.indexOf("dish-")===0){t="advisor.html?o="+(dish[f.slice(5)]||"feast");}
 else if(old[f]){t=old[f].indexOf(".html")>-1?old[f]:old[f]+".html";}
 if(t)location.replace(t);})();</script>`;
-  html = html.replace("<head>", `<head>\n<base href="${C.base}">\n${redirect}`);
+  /* /en/…: الصفحة تصير إنجليزية (ltr) وقاعدة الروابط en/ قبل تحميل أي ملف */
+  const langBase = `<script>(function(){var en=/\\/en\\//.test(location.pathname),h=document.documentElement;if(en){h.lang="en";h.dir="ltr";}document.write('<base href="${C.base}'+(en?"en/":"")+'">');})();</script>`;
+  html = html.replace("<head>", `<head>\n${langBase}\n${redirect}`);
   write("404.html", html); produced.push("404.html");
 }
 const stub = (file, js, fallback) => {
@@ -157,9 +175,12 @@ write(MAN, JSON.stringify(produced.sort(), null, 1));
 /* ---------- sitemap / robots / llms ---------- */
 const today = new Date().toISOString().slice(0, 10);
 const indexable = pages.filter(p => !p.noindex).map(p => p.file);
+const loc = (f, en) => C.base + (en ? "en/" : "") + (f === "index.html" ? "" : f);
+const alts = f => `<xhtml:link rel="alternate" hreflang="ar" href="${loc(f)}"/><xhtml:link rel="alternate" hreflang="en" href="${loc(f, 1)}"/>`;
 write("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${indexable.map(f => `  <url><loc>${C.base}${f === "index.html" ? "" : f}</loc><lastmod>${today}</lastmod></url>`).join("\n")}
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${indexable.map(f => `  <url><loc>${loc(f)}</loc><lastmod>${today}</lastmod>${alts(f)}</url>
+  <url><loc>${loc(f, 1)}</loc><lastmod>${today}</lastmod>${alts(f)}</url>`).join("\n")}
 </urlset>
 `);
 write("robots.txt", `User-agent: *
@@ -172,6 +193,7 @@ const money = U.money;
 const priceTxt = p => p.sold === "carcass" ? p.sizes.map(s => `${s.l} ≈${s.kg} كجم ${money(s.p)} ر.س`).join("، ") : money(p.price) + " ر.س " + (p.sold === "kg" ? "للكيلو" : "لل" + (p.unitName || "حبة"));
 write("llms.txt", `# نُضْج — NUDJ
 
+> English version: ${C.base}en/
 > ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
 - كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
@@ -205,4 +227,15 @@ write("manifest.webmanifest", JSON.stringify({
   ]
 }, null, 2));
 
-console.log(`✓ ${pages.length} pages + 404 + redirects · sitemap ${indexable.length} urls`);
+write("en/manifest.webmanifest", JSON.stringify({
+  name: "NUDJ — Butcher & cooking advisor", short_name: "NUDJ", lang: "en", dir: "ltr",
+  start_url: "./index.html", scope: "./", display: "standalone", orientation: "portrait",
+  background_color: "#0E1216", theme_color: "#0E1216",
+  icons: [
+    { src: "../assets/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    { src: "../assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    { src: "../assets/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+  ]
+}, null, 2));
+
+console.log(`✓ ${pages.length} AR + ${pagesEn.length} EN pages + 404 + redirects · sitemap ${indexable.length * 2} urls`);

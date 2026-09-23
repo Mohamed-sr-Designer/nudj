@@ -14,6 +14,19 @@
   const lsGet = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
 
+  /* لغة المحتوى الذي تعدّله: العربية (الأصل) أو الإنجليزية (نسخ «_en» بجانب كل نص) */
+  let CL = lsGet("nudj_adm_lang") === "en" ? "en" : "ar";
+  const TR = () => CL === "en";
+  /* PRODUCTS.3.name ← PRODUCTS.3.name_en · FAQ.2.0 ← FAQ_en.2.0 · CONFIG.cities.1 ← CONFIG.cities_en.1 */
+  function enPath(path) {
+    const ks = path.split(".");
+    if (ks.some(k => /_en$/.test(k))) return path;
+    for (let i = ks.length - 1; i >= 0; i--) if (!/^\d+$/.test(ks[i])) { ks[i] += "_en"; return ks.join("."); }
+    return path;
+  }
+  const isMeta = k => /_(en|ar)$/.test(k);
+  const zoneKeys = () => Object.keys(draft.ZONES).filter(k => !isMeta(k));
+
   /* ---------------- المسودة ---------------- */
   let draft = null;
   try { draft = JSON.parse(lsGet(LS.draft) || "null"); } catch (e) { }
@@ -49,10 +62,16 @@
   /* ---------------- حقول عامة ---------------- */
   const F = {
     text(path, label, o) {
-      o = o || {}; const v = get(path); const long = o.rows || (typeof v === "string" && (v.length > 70 || /[<\n]/.test(v)));
-      return `<label class="af${o.cls ? " " + o.cls : ""}"><span class="af__l">${label}${o.hint ? `<small>${o.hint}</small>` : ""}</span>${long
-        ? `<textarea class="input af__ta" rows="${o.rows || (/</.test(v) ? 8 : 3)}" data-p="${P(path)}"${o.dir ? ` dir="${o.dir}"` : ""}>${esc(v == null ? "" : v)}</textarea>`
-        : `<input class="input" data-p="${P(path)}" value="${esc(v == null ? "" : v)}"${o.dir ? ` dir="${o.dir}"` : ""}${o.ph ? ` placeholder="${esc(o.ph)}"` : ""}>`}</label>`;
+      o = o || {};
+      /* في وضع الإنجليزي: الحقل يكتب في نسخة «_en» ويعرض العربي كتلميح (الأكواد والأرقام تبقى كما هي) */
+      const tr = TR() && !o.raw && o.dir !== "ltr";
+      const src = get(path.split(".").map(k => k.replace(/_en$/, "")).join(".")), p = tr ? enPath(path) : path, v = get(p);
+      const ph = tr ? (typeof src === "string" ? src : "") : o.ph;
+      const dir = tr ? "ltr" : o.dir;
+      const long = o.rows || [v, src].some(x => typeof x === "string" && (x.length > 70 || /[<\n]/.test(x)));
+      return `<label class="af${o.cls ? " " + o.cls : ""}${tr ? " af--en" : ""}"><span class="af__l">${label}${tr ? '<em class="af__lang">EN</em>' : ""}${o.hint ? `<small>${o.hint}</small>` : ""}</span>${long
+        ? `<textarea class="input af__ta" rows="${o.rows || (/</.test(v || src) ? 8 : 3)}" data-p="${P(p)}"${dir ? ` dir="${dir}"` : ""}${ph ? ` placeholder="${esc(ph)}"` : ""}>${esc(v == null ? "" : v)}</textarea>`
+        : `<input class="input" data-p="${P(p)}" value="${esc(v == null ? "" : v)}"${dir ? ` dir="${dir}"` : ""}${ph ? ` placeholder="${esc(ph)}"` : ""}>`}</label>`;
     },
     num(path, label, o) {
       o = o || {}; const v = get(path);
@@ -80,7 +99,14 @@
   };
   /* قائمة قابلة للإضافة والحذف والترتيب */
   function list(path, label, row, blank, o) {
-    o = o || {}; const arr = get(path) || [];
+    o = o || {};
+    /* قوائم النصوص المترجمة (الأسئلة، المدن، الشريط…) لها قائمة إنجليزية موازية */
+    if (o.tr && TR()) {
+      const src = path; path = enPath(path);
+      if (get(path) == null) return `<div class="af-list"><div class="af-list__h"><b>${label} <em class="af__lang">EN</em></b></div><p class="muted small">لا توجد نسخة إنجليزية بعد — تظهر العربية في الموقع الإنجليزي.</p><button type="button" class="btn btn--line btn--sm" data-copy-ar="${P(src)}">${icon("plus")}ابدأ الترجمة (انسخ العربي)</button></div>`;
+      label += ' <em class="af__lang">EN</em>';
+    }
+    const arr = get(path) || [];
     return `<div class="af-list"${o.id ? ` id="${o.id}"` : ""}><div class="af-list__h"><b>${label}</b><button type="button" class="btn btn--ghost btn--sm" data-add="${P(path)}" data-blank='${esc(JSON.stringify(blank))}'>${icon("plus")}إضافة</button></div>
       ${arr.map((it, i) => `<div class="af-row">${row(path + "." + i, it, i)}<span class="af-row__act"><button type="button" class="icon-btn" data-move="${P(path)}" data-i="${i}" data-d="-1" aria-label="لأعلى"${i ? "" : " disabled"}>${icon("chevU")}</button><button type="button" class="icon-btn" data-move="${P(path)}" data-i="${i}" data-d="1" aria-label="لأسفل"${i < arr.length - 1 ? "" : " disabled"}>${icon("chevD")}</button><button type="button" class="icon-btn is-del" data-del="${P(path)}" data-i="${i}" aria-label="حذف">${icon("trash")}</button></span></div>`).join("") || `<p class="muted small">لا شيء بعد.</p>`}</div>`;
   }
@@ -101,16 +127,17 @@
   const lbl = (k, path) => path === "COPY.footer.about" ? "نبذة الفوتر" : LBL[k] || k;
   function tree(path, v, depth) {
     const k = path.split(".").pop();
+    if (isMeta(k)) return "";
     if (k === "forms" && Array.isArray(v)) return F.checks(path, lbl(k, path), Object.keys(draft.PREPS).map(x => [x, draft.PREPS[x].n]));
     if (typeof v === "string") return F.text(path, lbl(k, path), { rows: /body$/.test(path) ? 12 : null });
     if (typeof v === "number") return F.num(path, lbl(k, path));
     if (Array.isArray(v)) {
-      if (!v.length || typeof v[0] === "string") return list(path, lbl(k, path), p => F.text(p, "النص"), "");
-      const keys = Object.keys(v[0]);
+      if (!v.length || typeof v[0] === "string") return list(path, lbl(k, path), p => F.text(p, "النص"), "", { tr: true });
+      const keys = Object.keys(v[0]).filter(x => !isMeta(x));
       return list(path, lbl(k, path), p => keys.map(x => F.text(p + "." + x, lbl(x, x))).join(""), keys.reduce((o, x) => (o[x] = "", o), {}));
     }
     if (v && typeof v === "object") {
-      const inner = Object.keys(v).map(x => tree(path + "." + x, v[x], depth + 1)).join("");
+      const inner = Object.keys(v).filter(x => !isMeta(x)).map(x => tree(path + "." + x, v[x], depth + 1)).join("");
       return depth ? `<details class="adm-sub"${depth > 1 ? "" : " open"}><summary>${lbl(k, path)}</summary><div class="adm-sub__b">${inner}</div></details>` : inner;
     }
     return "";
@@ -195,10 +222,10 @@
       <div class="af"><span class="af__l">مواقع القطعيات على الرسم<small>اسحب أي نقطة لمكانها</small></span>
       <div class="pins-ed" data-pins="${i}" style="aspect-ratio:${(a.ratio || 1.3).toFixed(3)}"><img src="${esc(a.art || "assets/img/herd/" + a.k + ".png")}" alt="">
         ${Object.keys(a.pins || {}).map(z => `<span class="pins-ed__p" data-zone="${esc(z)}" style="left:${a.pins[z][0]}%;top:${a.pins[z][1]}%">${esc(draft.ZONES[z] || z)}</span>`).join("")}</div>
-      <div class="af__checks">${Object.keys(draft.ZONES).map(z => `<label class="af-c"><input type="checkbox" data-zone-toggle="${i}" value="${z}"${a.pins && a.pins[z] ? " checked" : ""}><span>${esc(draft.ZONES[z])}</span></label>`).join("")}</div></div>
+      <div class="af__checks">${zoneKeys().map(z => `<label class="af-c"><input type="checkbox" data-zone-toggle="${i}" value="${z}"${a.pins && a.pins[z] ? " checked" : ""}><span>${esc(draft.ZONES[z])}</span></label>`).join("")}</div></div>
       <div class="row-btns"><button type="button" class="btn btn--ghost btn--sm btn--danger-t" data-del-animal="${i}">${icon("trash")}حذف الماشية</button></div>`)).join("") +
       card("إضافة ماشية", `<div class="row-btns"><button type="button" class="btn btn--line" data-act="new-animal">${icon("plus")}ماشية جديدة</button></div>`) +
-      card("أسماء مناطق الذبيحة", grid2(...Object.keys(draft.ZONES).map(z => F.text(`ZONES.${z}`, z))));
+      card("أسماء مناطق الذبيحة", grid2(...zoneKeys().map(z => F.text(`ZONES.${z}`, z))));
   }
 
   function vServices() {
@@ -229,9 +256,9 @@
   }
   const vCopy = () => card("نصوص الصفحات", TOKENS + tree("COPY", draft.COPY, 0));
   function vFaq() {
-    return card("أسئلة الرئيسية", list("FAQ", "الأسئلة", p => F.text(p + ".0", "السؤال") + F.text(p + ".1", "الإجابة", { rows: 3 }), ["", ""])) +
+    return card("أسئلة الرئيسية", list("FAQ", "الأسئلة", p => F.text(p + ".0", "السؤال") + F.text(p + ".1", "الإجابة", { rows: 3 }), ["", ""], { tr: true })) +
       card("صفحة المساعدة", TOKENS + draft.HELP.map((g, i) => `<details class="adm-sub"><summary>${esc(g.t)}</summary><div class="adm-sub__b">${grid2(F.text(`HELP.${i}.t`, "عنوان المجموعة"), F.text(`HELP.${i}.k`, "المعرّف (للرابط)", { dir: "ltr" }))}
-        ${list(`HELP.${i}.items`, "الأسئلة", p => F.text(p + ".0", "السؤال") + F.text(p + ".1", "الإجابة", { rows: 3 }), ["", ""])}</div></details>`).join("") +
+        ${list(`HELP.${i}.items`, "الأسئلة", p => F.text(p + ".0", "السؤال") + F.text(p + ".1", "الإجابة", { rows: 3 }), ["", ""], { tr: true })}</div></details>`).join("") +
         `<div class="row-btns"><button type="button" class="btn btn--line btn--sm" data-add="HELP" data-blank='${esc(JSON.stringify({ k: "g" + Date.now().toString(36).slice(-4), ic: "help", t: "مجموعة جديدة", items: [] }))}'>${icon("plus")}مجموعة جديدة</button></div>`);
   }
   function vImages() {
@@ -241,15 +268,16 @@
   }
   function vCheckout() {
     const C = "CONFIG";
-    const coupons = Object.keys(draft.CONFIG.coupons || {}).map(code => ({ code, pct: draft.CONFIG.coupons[code].pct, label: draft.CONFIG.coupons[code].label }));
+    const coupons = Object.keys(draft.CONFIG.coupons || {}).map(code => ({ code, pct: draft.CONFIG.coupons[code].pct, label: draft.CONFIG.coupons[code].label, label_en: draft.CONFIG.coupons[code].label_en }));
+    const LF = TR() ? "label_en" : "label";
     return card("طرق الدفع", draft.CONFIG.payments.map((p, i) => `<div class="adm-pay">${grid2(F.bool(`${C}.payments.${i}.on`, "مفعّلة"), F.text(`${C}.payments.${i}.n`, "الاسم"), F.text(`${C}.payments.${i}.s`, "الوصف"))}
         <div class="adm-pay__logos">${(p.logos || []).map((l, j) => F.img(`${C}.payments.${i}.logos.${j}`, "شعار " + (j + 1), { logo: true })).join("")}<button type="button" class="btn btn--ghost btn--sm" data-add="${C}.payments.${i}.logos" data-blank='""'>${icon("plus")}شعار</button></div>
         ${grid2(F.bool(`${C}.payments.${i}.card`, "تطلب بيانات بطاقة"), F.bool(`${C}.payments.${i}.cod`, "دفع عند الاستلام"))}</div>`).join("")) +
       card("التوصيل والضريبة", grid2(F.num(`${C}.delivery.fee`, "رسوم التوصيل", { suf: "ر.س" }), F.num(`${C}.delivery.freeOver`, "مجاني من", { suf: "ر.س" }), F.num(`${C}.vat`, "الضريبة", { hint: "0.15 = 15٪", step: .01 }), F.num(`${C}.deliveryDays`, "أيام التوصيل المعروضة", { step: 1 })) +
-        list(`${C}.cities`, "المدن", p => F.text(p, "المدينة"), "") +
+        list(`${C}.cities`, "المدن", p => F.text(p, "المدينة"), "", { tr: true }) +
         list(`${C}.windows`, "فترات التوصيل", p => grid2(F.text(p + ".l", "الفترة"), F.num(p + ".h", "ساعة البداية", { step: 1, hint: "24 ساعة" })), { l: "", h: 9 })) +
-      card("أكواد الخصم", `<div class="af-list"><div class="af-list__h"><b>الأكواد</b><button type="button" class="btn btn--ghost btn--sm" data-act="coupon-add">${icon("plus")}كود</button></div>${coupons.map((c, i) => `<div class="af-row">${grid2(`<label class="af"><span class="af__l">الكود</span><input class="input num" dir="ltr" data-coupon="${i}" data-f="code" value="${esc(c.code)}"></label>`, `<label class="af"><span class="af__l">الخصم ٪</span><input class="input num" type="number" data-coupon="${i}" data-f="pct" value="${c.pct}"></label>`, `<label class="af"><span class="af__l">الوصف</span><input class="input" data-coupon="${i}" data-f="label" value="${esc(c.label)}"></label>`)}<span class="af-row__act"><button type="button" class="icon-btn is-del" data-coupon-del="${esc(c.code)}">${icon("trash")}</button></span></div>`).join("")}</div>`) +
-      card("بيانات التواصل والمنشأة", grid2(...[["phone", "الهاتف"], ["whatsapp", "واتساب"], ["email", "البريد"], ["city", "المدينة"], ["address", "العنوان"], ["hours", "ساعات العمل"], ["cr", "السجل التجاري"], ["vatNo", "الرقم الضريبي"]].map(x => F.text(`${C}.contact.${x[0]}`, x[1])))) +
+      card("أكواد الخصم", `<div class="af-list"><div class="af-list__h"><b>الأكواد</b><button type="button" class="btn btn--ghost btn--sm" data-act="coupon-add">${icon("plus")}كود</button></div>${coupons.map((c, i) => `<div class="af-row">${grid2(`<label class="af"><span class="af__l">الكود</span><input class="input num" dir="ltr" data-coupon="${i}" data-f="code" value="${esc(c.code)}"></label>`, `<label class="af"><span class="af__l">الخصم ٪</span><input class="input num" type="number" data-coupon="${i}" data-f="pct" value="${c.pct}"></label>`, `<label class="af"><span class="af__l">الوصف${TR() ? ' <em class="af__lang">EN</em>' : ""}</span><input class="input" data-coupon="${i}" data-f="${LF}" value="${esc(c[LF] || "")}"${TR() ? ` dir="ltr" placeholder="${esc(c.label)}"` : ""}></label>`)}<span class="af-row__act"><button type="button" class="icon-btn is-del" data-coupon-del="${esc(c.code)}">${icon("trash")}</button></span></div>`).join("")}</div>`) +
+      card("بيانات التواصل والمنشأة", grid2(...[["phone", "الهاتف", 1], ["whatsapp", "واتساب", 1], ["email", "البريد", 1], ["city", "المدينة"], ["address", "العنوان"], ["hours", "ساعات العمل"], ["cr", "السجل التجاري", 1], ["vatNo", "الرقم الضريبي", 1]].map(x => F.text(`${C}.contact.${x[0]}`, x[1], { raw: !!x[2] })))) +
       card("إعدادات", grid2(F.bool(`${C}.demo`, "نسخة عرض", { hint: "تظهر تنبيهات «الدفع محاكاة»" }), F.text(`${C}.adminPin`, "رمز دخول لوحة التحكم", { dir: "ltr" })));
   }
   const vTheme = () => card("الألوان", `${F.color("THEME.accent", "لون الفعل الأساسي (الجمرة)")}<p class="muted small">يُطبّق على الأزرار والمستشار والأسعار المميزة وكل العناصر البرتقالية.</p>
@@ -258,7 +286,7 @@
   function vPublish() {
     const gh = (() => { try { return JSON.parse(lsGet(LS.gh) || "{}"); } catch (e) { return {}; } })();
     const size = (JSON.stringify(draft).length / 1024).toFixed(0);
-    return card("المعاينة", `<p class="muted">شاهد الموقع الحقيقي بالمسودة — في هذا المتصفح فقط.</p><div class="row-btns">${lsGet(LS.preview) === "1" ? `<button type="button" class="btn btn--line" data-act="preview-off">إيقاف المعاينة</button><a class="btn btn--ember" href="index.html" target="_blank">افتح الموقع ↗</a>` : `<button type="button" class="btn btn--ember" data-act="preview-on">${icon("share")}عاين الموقع بالمسودة</button>`}</div>`) +
+    return card("المعاينة", `<p class="muted">شاهد الموقع الحقيقي بالمسودة — في هذا المتصفح فقط.</p><div class="row-btns">${lsGet(LS.preview) === "1" ? `<button type="button" class="btn btn--line" data-act="preview-off">إيقاف المعاينة</button><a class="btn btn--ember" href="index.html" target="_blank">افتح الموقع ↗</a><a class="btn btn--line" href="en/index.html" target="_blank">English ↗</a>` : `<button type="button" class="btn btn--ember" data-act="preview-on">${icon("share")}عاين الموقع بالمسودة</button>`}</div>`) +
       card("النشر على الموقع (GitHub)", `<p class="muted small">ينشر المسودة كملف <code>assets/js/content.js</code> ويرفع الصور الجديدة في مستودع الموقع؛ يتحدث الموقع خلال دقيقة تقريباً. تحتاج <b>رمز وصول شخصي (Fine-grained token)</b> بصلاحية Contents: Read and write على المستودع — يُحفظ في هذا المتصفح فقط إذا اخترت ذلك.</p>
         <form id="ghForm" class="af-grid">${[["repo", "المستودع", gh.repo || "Mohamed-sr-Designer/nudj"], ["branch", "الفرع", gh.branch || "main"]].map(x => `<label class="af"><span class="af__l">${x[1]}</span><input class="input num" dir="ltr" name="${x[0]}" value="${esc(x[2])}"></label>`).join("")}
         <label class="af"><span class="af__l">رمز الوصول</span><input class="input num" dir="ltr" type="password" name="token" autocomplete="off" value="${esc(gh.token || "")}"></label>
@@ -277,8 +305,9 @@
     root.innerHTML = `<div class="adm-shell">
       <aside class="adm-nav"><a class="adm-nav__logo" href="index.html" target="_blank">${U.logo()}<span>لوحة التحكم</span></a>
         <nav>${VIEWS.map(v => `<button type="button" data-go="${v[0]}"${v[0] === view ? ' aria-current="page"' : ""}>${icon(v[2])}<span>${v[1]}</span></button>`).join("")}</nav>
-        <a class="adm-nav__site" href="index.html" target="_blank">${icon("share")}فتح الموقع</a></aside>
+        <a class="adm-nav__site" href="index.html" target="_blank">${icon("share")}فتح الموقع</a><a class="adm-nav__site" href="en/index.html" target="_blank">${icon("share")}English site</a></aside>
       <div class="adm-main"><header class="adm-top"><h1>${(VIEWS.find(v => v[0] === view) || VIEWS[0])[1]}</h1><span class="adm-status"></span><span class="adm-save" aria-hidden="true">${icon("check", "", 2.4)}حُفظ</span>
+        <span class="adm-lang" role="group" aria-label="لغة المحتوى"><button type="button" data-cl="ar">عربي</button><button type="button" data-cl="en">English</button></span>
         <button type="button" class="btn btn--line btn--sm" data-act="preview-on">${icon("share")}معاينة</button><button type="button" class="btn btn--ember btn--sm" data-go="publish">نشر</button></header>
         <div class="adm-body" id="admBody"></div></div></div>`;
   }
@@ -287,7 +316,9 @@
     $$(".adm-nav button[data-go]").forEach(b => b.toggleAttribute("aria-current", b.dataset.go === view));
     $(".adm-top h1").textContent = (VIEWS.find(v => v[0] === view) || VIEWS[0])[1];
     const body = $("#admBody"), y = window.scrollY;
-    body.innerHTML = (VIEWFN[view] || vDash)();
+    $$(".adm-lang [data-cl]").forEach(b => b.setAttribute("aria-pressed", b.dataset.cl === CL ? "true" : "false"));
+    document.documentElement.classList.toggle("adm-en", TR());
+    body.innerHTML = (TR() ? `<p class="adm-tip adm-tip--en">${icon("info")}تعدّل الآن <b>النسخة الإنجليزية</b> (الموقع في /en/). النص العربي يظهر كتلميح داخل كل حقل، والحقل الفارغ يعرض العربي في الموقع الإنجليزي. الأسعار والصور والإعدادات مشتركة بين اللغتين.</p>` : "") + (VIEWFN[view] || vDash)();
     paintStatus();
     return y;
   }
@@ -412,6 +443,8 @@
     root.addEventListener("click", async e => {
       const t = e.target;
       const g = t.closest("[data-go]"); if (g) { go(g.dataset.go); return; }
+      const cl = t.closest("[data-cl]"); if (cl) { CL = cl.dataset.cl; lsSet("nudj_adm_lang", CL); render(); return; }
+      const ca = t.closest("[data-copy-ar]"); if (ca) { set(enPath(ca.dataset.copyAr), clone(get(ca.dataset.copyAr) || [])); render(); return; }
       const ep = t.closest("[data-edit-product]"); if (ep) { openProduct(+ep.dataset.editProduct); return; }
       const dp = t.closest("[data-del-product]"); if (dp) {
         if (!(await A.confirmSheet({ title: "حذف المنتج؟", text: "الأفضل إخفاؤه إن كان في طلبات سابقة.", ok: "حذف", danger: true }))) return;
@@ -430,7 +463,7 @@
       else if (k === "new-animal") newAnimal();
       else if (k === "coupon-add") { draft.CONFIG.coupons = draft.CONFIG.coupons || {}; draft.CONFIG.coupons["CODE" + (Object.keys(draft.CONFIG.coupons).length + 1)] = { pct: 10, label: "خصم 10٪" }; save(); render(); }
       else if (k === "accent-reset") { set("THEME.accent", (CMS.original.THEME || {}).accent || "#FF5A36"); document.documentElement.style.setProperty("--ember", draft.THEME.accent); render(); }
-      else if (k === "preview-on") { lsSet(LS.draft, JSON.stringify(draft)); lsSet(LS.preview, "1"); window.open("index.html", "_blank"); if (view === "publish") render(); }
+      else if (k === "preview-on") { lsSet(LS.draft, JSON.stringify(draft)); lsSet(LS.preview, "1"); window.open(TR() ? "en/index.html" : "index.html", "_blank"); if (view === "publish") render(); }
       else if (k === "preview-off") { try { localStorage.removeItem(LS.preview); } catch (x) { } render(); }
       else if (k === "export") download("content.js", contentFile(draft));
       else if (k === "publish") publish();
@@ -456,10 +489,10 @@
       const t = e.target;
       if (t.matches("[data-psearch]")) { pSearch = t.value.trim(); const pos = t.selectionStart; render(); const n = $("[data-psearch]"); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }
       if (t.matches("[data-coupon]")) {
-        const list = Object.keys(draft.CONFIG.coupons).map(code => ({ code, pct: draft.CONFIG.coupons[code].pct, label: draft.CONFIG.coupons[code].label }));
+        const list = Object.keys(draft.CONFIG.coupons).map(code => ({ code, pct: draft.CONFIG.coupons[code].pct, label: draft.CONFIG.coupons[code].label, label_en: draft.CONFIG.coupons[code].label_en }));
         const c = list[+t.dataset.coupon]; if (!c) return;
         c[t.dataset.f] = t.dataset.f === "pct" ? +t.value : t.dataset.f === "code" ? t.value.toUpperCase().replace(/\s/g, "") : t.value;
-        draft.CONFIG.coupons = {}; list.forEach(x => { if (x.code) draft.CONFIG.coupons[x.code] = { pct: x.pct, label: x.label }; }); save();
+        draft.CONFIG.coupons = {}; list.forEach(x => { if (x.code) draft.CONFIG.coupons[x.code] = Object.assign({ pct: x.pct, label: x.label }, x.label_en ? { label_en: x.label_en } : {}); }); save();
       }
     });
     /* سحب نقاط القطعيات على الرسم */

@@ -1,47 +1,52 @@
 /* الرئيسية — كل النصوص من D.COPY.home، وترتيب الأقسام وإظهارها من D.HOME (لوحة التحكم) */
 module.exports = function (ctx) {
   const { D, U, C, S } = ctx;
-  const { icon, esc, tpl, h } = U;
+  const { icon, esc, tpl, h, L } = U;
   const T = D.COPY.home;
+  const EN = D.lang === "en", KG = L("كجم", "kg"), G = L("جم", "g");
   const cutsCount = D.live().filter(p => p.sold === "kg").length;
 
   /* ---------- فاتورة مثال (تُحسب بنفس منطق السلة) ---------- */
   function sampleReceipt() {
     const sample = [
-      { id: "lamb-shoulder", kg: 2, opts: { prep: "cubes", marinade: "hot", skewer: true }, why: "أوصال · 200 جم للشخص" },
-      { id: "lamb-mince", kg: 1.5, opts: { prep: "kebab", marinade: "classic", skewer: true }, why: "كباب · 150 جم للشخص" },
-      { id: "lamb-rack", kg: 1.5, opts: { prep: "chops" }, why: "ريش بالعظم · 150 جم للشخص" },
-      { id: "charcoal", qty: 2, why: "كيس لكل 4.5 كجم" }
+      { id: "lamb-shoulder", kg: 2, opts: { prep: "cubes", marinade: "hot", skewer: true }, why: L("أوصال · 200 جم للشخص", "Cubes · 200 g per person") },
+      { id: "lamb-mince", kg: 1.5, opts: { prep: "kebab", marinade: "classic", skewer: true }, why: L("كباب · 150 جم للشخص", "Kebab · 150 g per person") },
+      { id: "lamb-rack", kg: 1.5, opts: { prep: "chops" }, why: L("ريش بالعظم · 150 جم للشخص", "Bone-in ribs · 150 g per person") },
+      { id: "charcoal", qty: 2, why: L("كيس لكل 4.5 كجم", "1 bag per 4.5 kg") }
     ].filter(l => D.byId(l.id));
     const tot = sample.reduce((t, l) => t + S.breakdown(l).total, 0);
     return U.receipt({
-      cls: "receipt--sample", kicker: "خطة المستشار", title: "حفلة مشاوي · 10 أشخاص",
+      cls: "receipt--sample", kicker: L("خطة المستشار", "Advisor's plan"), title: L("حفلة مشاوي · 10 أشخاص", "BBQ party · 10 people"),
       lines: sample.map(l => { const x = U.lineForReceipt(l); x.sub = [esc(l.why), x.sub].filter(Boolean).join(" · "); return x; }),
-      totals: [["مجموع الخطة", U.money2(tot), "is-total"], ["للشخص تقريباً", U.money2(tot / 10)]], stamp: "مثال"
+      totals: [[L("مجموع الخطة", "Plan total"), U.money2(tot), "is-total"], [L("للشخص تقريباً", "Per person, approx."), U.money2(tot / 10)]], stamp: L("مثال", "Sample")
     });
   }
 
   /* ---------- «التقطيع مجاني»: سكين تقطّع الصورة إلى شرائح (شكل تقطيع لكل شريحة) ----------
-     الشرائح نسخ من نفس الصورة مقصوصة بمضلعات مائلة، والسكين تمر على خطوط القطع من اليمين */
+     الشرائح نسخ من نفس الصورة مقصوصة بمضلعات مائلة، والسكين تمر على خطوط القطع
+     من اليمين في العربية ومن اليسار في الإنجليزية. العنوان في منتصف الصورة. */
   function cutBand(n) {
     const B = T.cutband;
     const forms = (B.forms || []).filter(k => D.PREPS[k]);
     const N = Math.max(2, forms.length), W = 100 / N, SL = 2.6, TT = 100 / (N - 1), bg = D.IMAGES.texture || "";
     const f = x => +x.toFixed(3);
+    const pos = i => EN ? i : N - 1 - i; /* موضع الشريحة i من اليسار */
     const strips = forms.map((k, i) => {
-      const p = N - 1 - i, l = p ? f(p * W) : -12, r = p === N - 1 ? 112 : f((p + 1) * W);
+      const p = pos(i), l = p ? f(p * W) : -12, r = p === N - 1 ? 112 : f((p + 1) * W);
       return `<div class="cutband__s" style="--i:${i};--l:${l}%;--r:${r}%;--dir:${i % 2 ? 1 : -1};--mid:${f((p + .5) * W - SL)}%;background-image:url('${esc(bg)}')">
       <span class="cutband__lbl"><b>${esc(D.PREPS[k].n)}</b><small>${esc(D.PREPS[k].d)}</small></span></div>`;
     }).join("");
-    const lines = forms.slice(1).map((k, j) => { const x = 100 - (j + 1) * W; return `<line x1="${f(x + SL)}" y1="0" x2="${f(x - SL)}" y2="100" style="--k:${j}"/>`; }).join("");
+    /* خط القطع j بين الشريحة j والتي بعدها */
+    const cutX = j => EN ? (j + 1) * W : 100 - (j + 1) * W;
+    const lines = forms.slice(1).map((k, j) => { const x = cutX(j); return `<line x1="${f(x + SL)}" y1="0" x2="${f(x - SL)}" y2="100" style="--k:${j}"/>`; }).join("");
     let kf = "";
     forms.slice(1).forEach((k, j) => {
-      const x = 100 - (j + 1) * W, st = j * TT;
+      const x = cutX(j), st = j * TT;
       kf += `${f(st)}%{left:${f(x + SL + .4)}%;top:-6%;animation-timing-function:cubic-bezier(.55,0,.8,.4)}`;
       kf += `${f(st + TT * .6)}%{left:${f(x - SL - .2)}%;top:104%;animation-timing-function:linear}`;
       kf += `${f(st + TT * .8)}%{left:${f(x - SL - .6)}%;top:175%;animation-timing-function:steps(1,end)}`;
     });
-    kf += `100%{left:${f(W - SL - .6)}%;top:175%}`;
+    kf += `100%{left:${f(cutX(N - 2) - SL - .6)}%;top:175%}`;
     return `<section class="cutband" data-cutband aria-labelledby="cutH">
   <style>@keyframes knife{${kf}}</style>
   <div class="cutband__stage" style="--sl:${SL}%" aria-hidden="true">
@@ -53,11 +58,13 @@ module.exports = function (ctx) {
       <path d="M12 96H46V262Q46 286 38 300Q20 276 14 250Q12 240 12 228Z" fill="url(#kbl)"/><path d="M40 100V258" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/><path d="M12 96V228Q12 240 14 250Q20 276 38 300" fill="none" stroke="#FF5A36" stroke-opacity=".7" stroke-width="1.2"/></svg>
   </div>
   <div class="wrap cutband__copy">
-    ${U.kicker(String(forms.length).padStart(2, "0"), esc(B.kicker))}
-    <h2 id="cutH">${esc(B.title)}<em>${esc(B.em)}</em></h2>
-    <p>${tpl(B.sub)}</p>
+    <div class="cutband__panel">
+      ${U.kicker(String(forms.length).padStart(2, "0"), esc(B.kicker))}
+      <h2 id="cutH">${esc(B.title)}<em>${esc(B.em)}</em></h2>
+      <p>${tpl(B.sub)}</p>
+      <button type="button" class="cutband__again" data-cut-again>${icon("knife")}${esc(B.again)}</button>
+    </div>
   </div>
-  <button type="button" class="cutband__again" data-cut-again>${icon("knife")}${esc(B.again)}</button>
   <ul class="cutband__forms">${forms.map(k => `<li><b>${esc(D.PREPS[k].n)}</b><small>${esc(D.PREPS[k].d)}</small></li>`).join("")}</ul>
 </section>`;
   }
@@ -77,10 +84,10 @@ module.exports = function (ctx) {
       <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}${esc(T.hero.cta1)}</a><a class="btn btn--line btn--lg" href="shop.html">${esc(T.hero.cta2)}</a></div>
       <dl class="hero__stats"><div><dt class="num">${D.ANIMALS.length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
     </div>
-    <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>مستشار نُضْج</b></div><div class="adv__log"><p class="muted" style="padding:20px">جارٍ تشغيل المستشار…</p></div></div></div>
+    <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>${L("مستشار نُضْج", "NUDJ Advisor")}</b></div><div class="adv__log"><p class="muted" style="padding:20px">${L("جارٍ تشغيل المستشار…", "Starting the advisor…")}</p></div></div></div>
   </div>
 </section>`,
-    marquee: () => `<div class="marquee" aria-hidden="true"><div class="marquee__track">${Array(2).fill(D.ANIMALS.map(a => `<span>${esc(a.n)}</span><i>${esc(a.en)}</i>`).join("")).join("")}</div></div>`,
+    marquee: () => `<div class="marquee" aria-hidden="true"><div class="marquee__track">${Array(2).fill(D.ANIMALS.map(a => `<span>${esc(a.n)}</span><i>${esc(U.altName(a))}</i>`).join("")).join("")}</div></div>`,
     herd: n => `<section class="section wrap" aria-labelledby="herdH">
   <div class="sec-head">${U.kicker(num(n), esc(T.herd.kicker))}<h2 id="herdH">${esc(T.herd.title)}</h2><p>${tpl(T.herd.sub)}</p><a class="seeall" href="cuts.html">${esc(T.herd.link)} ${icon("chevL")}</a></div>
   <div class="herd-rail">${D.ANIMALS.map((a, i) => U.herdCard(a, i)).join("")}</div>
@@ -103,7 +110,7 @@ module.exports = function (ctx) {
 </section>`,
     uses: n => `<section class="section wrap" aria-labelledby="useH">
   <div class="sec-head">${U.kicker(num(n), esc(T.uses.kicker))}<h2 id="useH">${esc(T.uses.title)}</h2><a class="seeall" href="shop.html">${esc(T.uses.link)} ${icon("chevL")}</a></div>
-  <div class="seg-tabs" role="tablist" aria-label="حسب الطبخة">${uses.map((u, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-use-tab="${u}">${icon(D.USES[u].ic)}${esc(D.USES[u].n)}</button>`).join("")}</div>
+  <div class="seg-tabs" role="tablist" aria-label="${L("حسب الطبخة", "By dish")}">${uses.map((u, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-use-tab="${u}">${icon(D.USES[u].ic)}${esc(D.USES[u].n)}</button>`).join("")}</div>
   ${uses.map((u, i) => `<div class="rail" role="tabpanel" data-use-panel="${u}"${i ? " hidden" : ""}>${U.grid(byUse(u))}</div>`).join("")}
 </section>`,
     services: n => `<section class="section svc" aria-labelledby="svcH">
@@ -112,10 +119,10 @@ module.exports = function (ctx) {
     <div class="svc__b">
       <div class="sec-head">${U.kicker(num(n), esc(T.services.kicker))}<h2 id="svcH">${esc(T.services.title)}</h2><p>${tpl(T.services.sub)}</p></div>
       <ul class="price-list">
-        ${D.MARINADES.filter(m => m.p).map(m => `<li><span><b>تتبيلة ${esc(m.n)}</b><small>${esc(m.d)}</small></span><em class="num">+${m.p} ر.س/كجم</em></li>`).join("")}
-        <li><span><b>${esc(D.SERVICES.skewer.n)}</b><small>${esc(D.SERVICES.skewer.d)}</small></span><em class="num">+${D.SERVICES.skewer.p} ر.س/كجم</em></li>
-        <li><span><b>${esc(D.SERVICES.vacuum.n)}</b><small>${esc(D.SERVICES.vacuum.d)}</small></span><em class="num">+${D.SERVICES.vacuum.p} ر.س/كجم</em></li>
-        <li class="is-free"><span><b>${esc(T.services.freeT)}</b><small>${esc(T.services.freeD)}</small></span><em>مجاناً</em></li>
+        ${D.MARINADES.filter(m => m.p).map(m => `<li><span><b>${esc(S.marinadeLabel(m))}</b><small>${esc(m.d)}</small></span><em class="num">+${m.p} ${C.currency}/${KG}</em></li>`).join("")}
+        <li><span><b>${esc(D.SERVICES.skewer.n)}</b><small>${esc(D.SERVICES.skewer.d)}</small></span><em class="num">+${D.SERVICES.skewer.p} ${C.currency}/${KG}</em></li>
+        <li><span><b>${esc(D.SERVICES.vacuum.n)}</b><small>${esc(D.SERVICES.vacuum.d)}</small></span><em class="num">+${D.SERVICES.vacuum.p} ${C.currency}/${KG}</em></li>
+        <li class="is-free"><span><b>${esc(T.services.freeT)}</b><small>${esc(T.services.freeD)}</small></span><em>${L("مجاناً", "Free")}</em></li>
       </ul>
       <a class="seeall" href="shop.html?a=extra">${esc(T.services.link)} ${icon("chevL")}</a>
     </div>
@@ -126,7 +133,7 @@ module.exports = function (ctx) {
   <div class="carcass-cta__media">${U.slot("occ-carcass", "carcass-cta__img", "")}</div>
   <div class="carcass-cta__b">
     <div class="sec-head">${U.kicker(num(n), esc(T.carcass.kicker))}<h2 id="carH">${esc(T.carcass.title)}</h2><p>${tpl(T.carcass.sub)}</p></div>
-    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</b><small>${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg} كجم</small></a>`).join("")}</div>
+    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</b><small>${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg} ${KG}</small></a>`).join("")}</div>
     <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="carcass">${esc(T.carcass.btn1)}</button><a class="btn btn--line" href="shop.html?a=carcass">${esc(T.carcass.btn2)}</a></div>
   </div>
 </section>`,
@@ -144,7 +151,7 @@ module.exports = function (ctx) {
     name: "home", file: "index.html", tab: "home", nav: "", mode: "root", appTitle: "", scripts: ["home"],
     preload: D.IMAGES["home-hero"] || "",
     title: T.seoTitle, desc: T.seoDesc,
-    jsonld: [{ "@context": "https://schema.org", "@type": "Store", name: "نُضْج", url: C.base, image: C.base + (D.IMAGES["og-share"] || ""), priceRange: "SAR", currenciesAccepted: "SAR", description: T.seoDesc }],
+    jsonld: [{ "@context": "https://schema.org", "@type": "Store", name: L("نُضْج", "NUDJ"), url: C.base + (EN ? "en/" : ""), inLanguage: EN ? "en" : "ar", image: C.base + String(D.IMAGES["og-share"] || "").replace(/^(\.\.\/)+/, ""), priceRange: "SAR", currenciesAccepted: "SAR", description: T.seoDesc }],
     main
   }];
 };

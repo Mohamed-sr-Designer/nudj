@@ -7,6 +7,7 @@
   "use strict";
   const D = root.NUDJ;
   const C = D.CONFIG;
+  const L = D.L || (ar => ar), EN = D.lang === "en", R = D.R || "";
 
   /* ---------------- أساسيات ---------------- */
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -15,7 +16,8 @@
   const money2 = n => Number(n || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const cur = n => `<span class="num">${money(n)}</span> <span class="cur">${C.currency}</span>`;
   /* الوزن: 0.5 ← «½ كجم»، 1.5 ← «1.5 كجم» */
-  const kgTxt = kg => (kg === 0.5 ? "½" : String(Math.round(kg * 100) / 100)) + " كجم";
+  const KG = L("كجم", "kg");
+  const kgTxt = kg => (kg === 0.5 ? "½" : String(Math.round(kg * 100) / 100)) + " " + KG;
 
   /* ---------------- الأيقونات ---------------- */
   const P = {
@@ -64,7 +66,9 @@
     save: '<path d="M6 3h12v18l-6-4-6 4z"/>',
     box: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>'
   };
-  const icon = (n, cls, sw) => `<svg class="ic${cls ? " " + cls : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ""}</svg>`;
+  /* الأسهم الأفقية تنقلب في الصفحات الإنجليزية (CSS: [dir=ltr] .ic--dir) */
+  const DIRIC = { chevL: 1, chevR: 1 };
+  const icon = (n, cls, sw) => `<svg class="ic${DIRIC[n] ? " ic--dir" : ""}${cls ? " " + cls : ""}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw || 1.8}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[n] || ""}</svg>`;
 
   /* ---------------- الهوية ----------------
      الشعار: «نضج» بالخط الكوفي المربّع يقطعه خط سكين، ونقطة النون جمرة */
@@ -93,16 +97,18 @@
   }
   const slot = (key, cls, alt, o) => img(D.IMAGES[key] || "", alt, cls, o);
   const productImg = (p, cls, o) => img(p.img || "", p.name, cls, o);
-  const herdArt = (k, cls) => { const a = D.animal(k); return `<img class="herd-art${cls ? " " + cls : ""}" src="${esc((a && a.art) || "assets/img/herd/" + k + ".png")}" alt="" loading="lazy" decoding="async">`; };
+  const herdArt = (k, cls) => { const a = D.animal(k); return `<img class="herd-art${cls ? " " + cls : ""}" src="${esc((a && a.art) || R + "assets/img/herd/" + k + ".png")}" alt="" loading="lazy" decoding="async">`; };
 
   /* ---------------- التسعير ---------------- */
   const sizeOf = (p, k) => (p.sizes || []).find(s => s.k === k) || (p.sizes || []).find(s => s.k === p.sizeDef) || (p.sizes || [])[0];
-  const perTxt = p => p.sold === "kg" ? "كجم" : p.sold === "carcass" ? "ذبيحة" : p.unitName || "حبة";
+  const perTxt = p => p.sold === "kg" ? KG : p.sold === "carcass" ? L("ذبيحة", "carcass") : p.unitName || L("حبة", "piece");
   function priceTag(p) {
-    if (p.sold === "carcass") return `<span class="price"><small>من</small> <b class="price__v">${cur(Math.min.apply(null, p.sizes.map(s => s.p)))}</b></span>`;
+    if (p.sold === "carcass") return `<span class="price"><small>${L("من", "from")}</small> <b class="price__v">${cur(Math.min.apply(null, p.sizes.map(s => s.p)))}</b></span>`;
     return `<span class="price"><b class="price__v">${cur(p.price)}</b> <small>/ ${perTxt(p)}</small></span>`;
   }
-  const animalName = p => p.animal === "extra" ? "إضافات" : (D.animal(p.animal) || {}).n || "";
+  const animalName = p => p.animal === "extra" ? L("إضافات", "Extras") : (D.animal(p.animal) || {}).n || "";
+  /* الاسم الزخرفي الثاني للماشية: بالإنجليزي في العربية، وبالعربي في الإنجليزية */
+  const altName = a => EN ? (a.n_ar || a.en) : a.en;
 
   /* ---------------- بطاقة المنتج: بطاقة جزّار معلّقة ---------------- */
   function tagCard(p, o) {
@@ -111,13 +117,13 @@
     const a = D.animal(p.animal);
     return `<article class="tag-card${p.animal === "extra" ? " is-extra" : ""}" data-id="${p.id}">
   <a class="tag-card__media" href="${href}" tabindex="-1" aria-hidden="true">${productImg(p)}</a>
-  <button class="tag-card__wish" type="button" data-wish="${p.id}" aria-label="أضف ${esc(p.name)} للمفضلة" aria-pressed="false">${icon("heart")}</button>
+  <button class="tag-card__wish" type="button" data-wish="${p.id}" aria-label="${L("أضف " + esc(p.name) + " للمفضلة", "Add " + esc(p.name) + " to wishlist")}" aria-pressed="false">${icon("heart")}</button>
   <div class="tag">
     <span class="tag__hole" aria-hidden="true"></span>
-    <div class="tag__meta"><span class="tag__code num">${p.code}</span><span>${a ? a.n : "إضافات"}${p.bone ? " · بالعظم" : ""}</span></div>
+    <div class="tag__meta"><span class="tag__code num">${p.code}</span><span>${a ? a.n : L("إضافات", "Extras")}${p.bone ? L(" · بالعظم", " · bone-in") : ""}</span></div>
     <h3 class="tag__name"><a href="${href}">${esc(p.name)}</a></h3>
     <p class="tag__short">${esc(p.short || "")}</p>
-    <div class="tag__foot">${priceTag(p)}<button class="tag__add" type="button" data-quick="${p.id}" aria-label="أضف ${esc(p.name)} للسلة">${icon("plus", "", 2.4)}</button></div>
+    <div class="tag__foot">${priceTag(p)}<button class="tag__add" type="button" data-quick="${p.id}" aria-label="${L("أضف " + esc(p.name) + " للسلة", "Add " + esc(p.name) + " to cart")}">${icon("plus", "", 2.4)}</button></div>
   </div>
 </article>`;
   }
@@ -129,8 +135,8 @@
   /* شريط المواصفات (طراوة، دهن، نكهة) */
   function spec(s) {
     if (!s) return "";
-    const K = ["الطراوة", "الدهن", "النكهة"];
-    return `<div class="spec">${s.map((v, i) => `<div class="spec__row"><span>${K[i]}</span><span class="spec__bar" role="img" aria-label="${K[i]} ${v} من 5">${[1, 2, 3, 4, 5].map(n => `<i${n <= v ? ' class="on"' : ""}></i>`).join("")}</span></div>`).join("")}</div>`;
+    const K = L(["الطراوة", "الدهن", "النكهة"], ["Tenderness", "Fat", "Flavour"]);
+    return `<div class="spec">${s.map((v, i) => `<div class="spec__row"><span>${K[i]}</span><span class="spec__bar" role="img" aria-label="${K[i]} ${v} ${L("من", "of")} 5">${[1, 2, 3, 4, 5].map(n => `<i${n <= v ? ' class="on"' : ""}></i>`).join("")}</span></div>`).join("")}</div>`;
   }
 
   /* ---------------- القطيع ---------------- */
@@ -139,8 +145,8 @@
     return `<a class="herd-card" href="${url.animal(a.k)}">
   <span class="herd-card__n num">0${i + 1}</span>
   <span class="herd-card__art">${herdArt(a.k)}</span>
-  <span class="herd-card__b"><b>${a.n}</b><small class="num">${a.en} · ${list.length} قطعيات</small></span>
-  <span class="herd-card__p">من <b class="num">${from}</b> ${C.currency}/كجم</span>
+  <span class="herd-card__b"><b>${a.n}</b><small class="num">${esc(altName(a))} · ${list.length} ${L("قطعيات", "cuts")}</small></span>
+  <span class="herd-card__p">${L("من", "from")} <b class="num">${from}</b> ${C.currency}/${KG}</span>
 </a>`;
   }
   /* الرسم الخطي مع نقاط مرقّمة لكل قطعة */
@@ -174,11 +180,11 @@
     o = o || {};
     const rule = `<div class="rc__rule" aria-hidden="true"></div>`;
     return `<div class="receipt${o.cls ? " " + o.cls : ""}">
-  <div class="rc__head">${logo("rc__logo")}<small>${esc(o.kicker || "ملحمة إلكترونية · مستشار طبخ")}</small></div>
+  <div class="rc__head">${logo("rc__logo")}<small>${esc(o.kicker || L("ملحمة إلكترونية · مستشار طبخ", "Online butcher · Cooking advisor"))}</small></div>
   ${o.title ? `<div class="rc__title">${o.title}</div>` : ""}
   ${(o.meta || []).length ? `<dl class="rc__meta">${o.meta.map(m => `<div><dt>${m[0]}</dt><dd>${m[1]}</dd></div>`).join("")}</dl>` : ""}
   ${rule}
-  <div class="rc__lines">${(o.lines || []).length ? o.lines.map(receiptLine).join("") : `<p class="rc__empty">${o.empty || "لا شيء بعد"}</p>`}</div>
+  <div class="rc__lines">${(o.lines || []).length ? o.lines.map(receiptLine).join("") : `<p class="rc__empty">${o.empty || L("لا شيء بعد", "Nothing yet")}</p>`}</div>
   ${(o.totals || []).length ? rule + `<dl class="rc__totals">${o.totals.map(t => `<div class="${t[2] || ""}"><dt>${t[0]}</dt><dd class="num">${t[1]}</dd></div>`).join("")}</dl>` : ""}
   ${o.code ? rule + `<div class="rc__code">${barcode(o.code)}<span class="num">${esc(o.code)}</span></div>` : ""}
   ${o.foot ? `<p class="rc__foot">${o.foot}</p>` : ""}
@@ -202,15 +208,17 @@
     let calc = "", sub = optsText(l);
     if (p.sold === "kg") calc = `${kgTxt(l.kg)} × ${money2(p.price)}`;
     else if (p.sold === "carcass") calc = `${l.qty || 1} × ${money2(sizeOf(p, l.opts && l.opts.size).p)}`;
-    else calc = `${l.qty || 1} ${p.unitName || "حبة"} × ${money2(p.price)}`;
-    return { key: l.key, name: esc(p.name), sub, calc, amount: b.base, adds: (b.adds || []).map(a => ({ n: a.n, calc: a.flat ? "" : `${kgTxt(a.q)} × ${a.u}`, v: a.v })) };
+    else calc = `${l.qty || 1} ${p.unitName || L("حبة", "piece")} × ${money2(p.price)}`;
+    /* اسم الإضافة يُعاد من البيانات بلغة الصفحة (المحفوظ في الطلبات القديمة احتياط) */
+    const addName = a => a.k === "marinade" && l.opts && l.opts.marinade ? S.marinadeLabel(D.marinade(l.opts.marinade)) : a.k && D.SERVICES[a.k] ? D.SERVICES[a.k].n : a.n;
+    return { key: l.key, name: esc(p.name), sub, calc, amount: b.base, adds: (b.adds || []).map(a => ({ n: esc(addName(a)), calc: a.flat ? "" : `${kgTxt(a.q)} × ${a.u}`, v: a.v })) };
   }
   function optsText(l) {
     const p = D.byId(l.id); if (!p || !l.opts) return "";
     const o = l.opts, out = [];
     if (p.sold === "kg" && o.prep && D.PREPS[o.prep]) out.push(D.PREPS[o.prep].n);
     if (p.sold === "carcass") {
-      const s = sizeOf(p, o.size); out.push(s.l + " ≈ " + s.kg + " كجم");
+      const s = sizeOf(p, o.size); out.push(s.l + " ≈ " + s.kg + " " + KG);
       if (o.part && p.parts) { const x = p.parts.find(q => q.k === o.part); if (x) out.push(x.l); }
       out.push(D.style(o.style).n);
     }
@@ -226,7 +234,7 @@
     o = o || {};
     return `<fieldset class="opt${o.cls ? " " + o.cls : ""}"${o.attrs ? " " + o.attrs : ""}><legend class="opt__label">${label}${o.hint ? `<small>${o.hint}</small>` : ""}</legend><div class="chips">${items.map((it, i) => {
       const on = def != null ? it.k === def : i === 0;
-      return `<label class="chip"><input type="radio" name="${name}" value="${esc(it.k)}"${on ? " checked" : ""}><span><b>${esc(it.n)}</b>${it.d ? `<small>${esc(it.d)}</small>` : ""}${it.p != null ? `<em class="num">${it.p ? "+" + money(it.p) + (it.per || "") : "مجاناً"}</em>` : ""}</span></label>`;
+      return `<label class="chip"><input type="radio" name="${name}" value="${esc(it.k)}"${on ? " checked" : ""}><span><b>${esc(it.n)}</b>${it.d ? `<small>${esc(it.d)}</small>` : ""}${it.p != null ? `<em class="num">${it.p ? "+" + money(it.p) + (it.per || "") : L("مجاناً", "Free")}</em>` : ""}</span></label>`;
     }).join("")}</div></fieldset>`;
   }
   const toggle = (name, t, d, price) => `<label class="toggle"><input type="checkbox" name="${name}"><span class="toggle__sw" aria-hidden="true"></span><span class="toggle__b"><b>${t}</b><small>${d}</small></span><em class="num">+${price}</em></label>`;
@@ -234,12 +242,12 @@
   function scale(p) {
     const presets = [0.5, 1, 1.5, 2, 3, 5];
     return `<div class="scale" data-scale>
-  <div class="scale__screen"><span class="scale__label">وزن</span><output class="scale__read num" name="kg">${p.def.toFixed(2)}</output><span class="scale__unit">KG</span></div>
+  <div class="scale__screen"><span class="scale__label">${L("وزن", "Weight")}</span><output class="scale__read num" name="kg">${p.def.toFixed(2)}</output><span class="scale__unit">KG</span></div>
   <div class="scale__dial" aria-hidden="true"><svg viewBox="0 0 200 110"><path class="scale__arc" d="M15 100a85 85 0 0 1 170 0"/><g class="scale__ticks">${Array.from({ length: 21 }, (_, i) => { const a = Math.PI * (1 - i / 20), r1 = i % 5 ? 76 : 70; return `<line x1="${(100 + r1 * Math.cos(a)).toFixed(1)}" y1="${(100 - r1 * Math.sin(a)).toFixed(1)}" x2="${(100 + 84 * Math.cos(a)).toFixed(1)}" y2="${(100 - 84 * Math.sin(a)).toFixed(1)}"/>`; }).join("")}</g><line class="scale__needle" x1="100" y1="100" x2="100" y2="28"/><circle cx="100" cy="100" r="6" class="scale__hub"/></svg></div>
   <div class="scale__ctl">
-    <button type="button" class="scale__btn" data-kg-step="-1" aria-label="أنقص نصف كيلو">${icon("minus", "", 2.4)}</button>
+    <button type="button" class="scale__btn" data-kg-step="-1" aria-label="${L("أنقص نصف كيلو", "Half a kilo less")}">${icon("minus", "", 2.4)}</button>
     <div class="scale__presets">${presets.map(v => `<button type="button" data-kg="${v}"${v === p.def ? ' class="on"' : ""}>${v === 0.5 ? "½" : v}</button>`).join("")}</div>
-    <button type="button" class="scale__btn" data-kg-step="1" aria-label="زد نصف كيلو">${icon("plus", "", 2.4)}</button>
+    <button type="button" class="scale__btn" data-kg-step="1" aria-label="${L("زد نصف كيلو", "Half a kilo more")}">${icon("plus", "", 2.4)}</button>
   </div>
 </div>`;
   }
@@ -249,23 +257,23 @@
     const parts = [];
     if (p.sold === "kg") {
       parts.push(scale(p));
-      parts.push(chips(n + "-prep", "التقطيع", p.preps.map(k => ({ k, n: D.PREPS[k].n, d: D.PREPS[k].d })), p.prepDef, { hint: "مجاني" }));
-      parts.push(chips(n + "-marinade", "التتبيل", D.MARINADES.map(m => ({ k: m.k, n: m.n, d: m.d, p: m.p, per: "/كجم" })), "none", { cls: "opt--paid", hint: "خدمة إضافية" }));
-      parts.push(`<div class="opt opt--paid"><span class="opt__label">خدمات<small>خدمة إضافية</small></span>
-        <div data-skew-row>${toggle("skewer", D.SERVICES.skewer.n, D.SERVICES.skewer.d, D.SERVICES.skewer.p + "/كجم")}</div>
-        ${toggle("vacuum", D.SERVICES.vacuum.n, D.SERVICES.vacuum.d, D.SERVICES.vacuum.p + "/كجم")}</div>`);
+      parts.push(chips(n + "-prep", L("التقطيع", "Cutting"), p.preps.map(k => ({ k, n: D.PREPS[k].n, d: D.PREPS[k].d })), p.prepDef, { hint: L("مجاني", "Free") }));
+      parts.push(chips(n + "-marinade", L("التتبيل", "Marinade"), D.MARINADES.map(m => ({ k: m.k, n: m.n, d: m.d, p: m.p, per: "/" + KG })), "none", { cls: "opt--paid", hint: L("خدمة إضافية", "Extra service") }));
+      parts.push(`<div class="opt opt--paid"><span class="opt__label">${L("خدمات", "Services")}<small>${L("خدمة إضافية", "Extra service")}</small></span>
+        <div data-skew-row>${toggle("skewer", D.SERVICES.skewer.n, D.SERVICES.skewer.d, D.SERVICES.skewer.p + "/" + KG)}</div>
+        ${toggle("vacuum", D.SERVICES.vacuum.n, D.SERVICES.vacuum.d, D.SERVICES.vacuum.p + "/" + KG)}</div>`);
     } else if (p.sold === "carcass") {
-      parts.push(chips(n + "-size", "الحجم", p.sizes.map(s => ({ k: s.k, n: s.l, d: "≈ " + s.kg + " كجم · " + money(s.p) + " " + C.currency })), p.sizeDef, { cls: "opt--cards" }));
-      if (p.parts) parts.push(chips(n + "-part", "الجزء", p.parts.map(x => ({ k: x.k, n: x.l, d: x.d })), null));
-      parts.push(chips(n + "-style", "أسلوب التقطيع", D.STYLES.map(s => ({ k: s.k, n: s.n, d: s.d })), "fridge", { hint: "مجاني" }));
-      parts.push(`<div class="opt opt--paid"><span class="opt__label">خدمات<small>خدمة إضافية</small></span>${toggle("vacuum", D.SERVICES.vacuum.n, "كل وجبة في كيس مفرّغ", D.SERVICES.vacuum.carcass + " للذبيحة")}</div>`);
+      parts.push(chips(n + "-size", L("الحجم", "Size"), p.sizes.map(s => ({ k: s.k, n: s.l, d: "≈ " + s.kg + " " + KG + " · " + money(s.p) + " " + C.currency })), p.sizeDef, { cls: "opt--cards" }));
+      if (p.parts) parts.push(chips(n + "-part", L("الجزء", "Part"), p.parts.map(x => ({ k: x.k, n: x.l, d: x.d })), null));
+      parts.push(chips(n + "-style", L("أسلوب التقطيع", "Cutting style"), D.STYLES.map(s => ({ k: s.k, n: s.n, d: s.d })), "fridge", { hint: L("مجاني", "Free") }));
+      parts.push(`<div class="opt opt--paid"><span class="opt__label">${L("خدمات", "Services")}<small>${L("خدمة إضافية", "Extra service")}</small></span>${toggle("vacuum", D.SERVICES.vacuum.n, L("كل وجبة في كيس مفرّغ", "Each meal in a vacuum bag"), D.SERVICES.vacuum.carcass + L(" للذبيحة", " per carcass"))}</div>`);
     }
-    if (p.sold !== "piece") parts.push(`<label class="opt opt--note"><span class="opt__label">ملاحظة للجزّار<small>اختياري</small></span><textarea name="note" rows="2" maxlength="160" placeholder="${p.sold === "carcass" ? "مثال: الأفخاذ كاملة والباقي ثلاجة" : "مثال: شيل الدهن الزائد"}"></textarea></label>`);
-    const stepper = p.sold === "kg" ? "" : `<div class="stepper" data-stepper><button type="button" data-step="-1" aria-label="إنقاص">${icon("minus", "", 2.2)}</button><output name="qty" class="num">1</output><button type="button" data-step="1" aria-label="زيادة">${icon("plus", "", 2.2)}</button></div>`;
+    if (p.sold !== "piece") parts.push(`<label class="opt opt--note"><span class="opt__label">${L("ملاحظة للجزّار", "Note for the butcher")}<small>${L("اختياري", "Optional")}</small></span><textarea name="note" rows="2" maxlength="160" placeholder="${p.sold === "carcass" ? L("مثال: الأفخاذ كاملة والباقي ثلاجة", "e.g. legs whole, the rest cut for the freezer") : L("مثال: شيل الدهن الزائد", "e.g. trim the excess fat")}"></textarea></label>`);
+    const stepper = p.sold === "kg" ? "" : `<div class="stepper" data-stepper><button type="button" data-step="-1" aria-label="${L("إنقاص", "Decrease")}">${icon("minus", "", 2.2)}</button><output name="qty" class="num">1</output><button type="button" data-step="1" aria-label="${L("زيادة", "Increase")}">${icon("plus", "", 2.2)}</button></div>`;
     return `<form class="buy-form" data-product="${p.id}" novalidate>
   ${parts.join("")}
   <div class="buy-sum" data-sum></div>
-  <div class="buy-row">${stepper}<button class="btn btn--ember btn--lg buy-submit" type="submit">${icon("cart")}<span>أضف للسلة</span><b class="num" data-total></b></button></div>
+  <div class="buy-row">${stepper}<button class="btn btn--ember btn--lg buy-submit" type="submit">${icon("cart")}<span>${L("أضف للسلة", "Add to cart")}</span><b class="num" data-total></b></button></div>
 </form>`;
   }
 
@@ -277,7 +285,7 @@
     return `<${tag} class="cell${o.cls ? " " + o.cls : ""}"${attrs}>${o.icon ? `<span class="cell__ic${o.tone ? " is-" + o.tone : ""}">${icon(o.icon)}</span>` : ""}<span class="cell__b"><span class="cell__t">${o.title}</span>${o.sub ? `<span class="cell__s">${o.sub}</span>` : ""}</span>${o.detail != null ? `<span class="cell__d">${o.detail}</span>` : ""}${o.href || o.chev ? icon("chevL", "cell__chev") : ""}</${tag}>`;
   }
   const group = (cells, head, foot) => `${head ? `<h2 class="group__head">${head}</h2>` : ""}<div class="group">${cells.join("")}</div>${foot ? `<p class="group__foot">${foot}</p>` : ""}`;
-  const fmtDate = (ts, o) => new Date(ts).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", Object.assign({ day: "numeric", month: "long", year: "numeric" }, o || {}));
+  const fmtDate = (ts, o) => new Date(ts).toLocaleDateString(L("ar-SA-u-ca-gregory-nu-latn", "en-GB"), Object.assign({ day: "numeric", month: "long", year: "numeric" }, o || {}));
   const fmtTime = ts => new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const kicker = (n, t) => `<span class="kicker"><b class="num">${n}</b>${t}</span>`;
 
@@ -286,10 +294,10 @@
     if (str == null) return "";
     const K = C.contact || {};
     const V = {
-      fee: C.delivery.fee, freeOver: C.delivery.freeOver, cities: C.cities.join("، "), windows: C.windows.map(w => w.l).join("، "),
+      fee: C.delivery.fee, freeOver: C.delivery.freeOver, cities: C.cities.join(L("، ", ", ")), windows: C.windows.map(w => w.l).join(L("، ", ", ")),
       phone: K.phone, whatsapp: K.whatsapp, email: K.email, cr: K.cr, vatNo: K.vatNo, city: K.city, hours: K.hours, address: K.address,
       skewer: D.SERVICES.skewer.p, vacuumKg: D.SERVICES.vacuum.p, vacuumCarcass: D.SERVICES.vacuum.carcass,
-      marinades: D.MARINADES.filter(m => m.p).map(m => `<b>تتبيلة ${m.n}:</b> ${m.d} — ${m.p} ر.س/كجم`).join("<br>"),
+      marinades: D.MARINADES.filter(m => m.p).map(m => `<b>${L("تتبيلة " + m.n, m.n + " marinade")}:</b> ${m.d} — ${m.p} ${C.currency}/${KG}`).join("<br>"),
       styles: D.STYLES.map(x => `<b>${x.n}:</b> ${x.d}`).join("<br>"),
       cutsCount: D.live().filter(p => p.sold === "kg").length, carcassCount: D.carcasses().length
     };
@@ -298,8 +306,8 @@
   /* مساعدات القوالب (المتصفح والبناء معاً) */
   const h = {
     crumbs(list) {
-      const items = [["الرئيسية", "index.html"]].concat(list);
-      return `<nav class="crumbs" aria-label="مسار التنقل">${items.map((c, i) => {
+      const items = [[L("الرئيسية", "Home"), "index.html"]].concat(list);
+      return `<nav class="crumbs" aria-label="${L("مسار التنقل", "Breadcrumb")}">${items.map((c, i) => {
         const last = i === items.length - 1;
         return (i ? icon("chevL") : "") + (last || !c[1] ? `<span${last ? ' aria-current="page"' : ""}>${esc(c[0])}</span>` : `<a href="${c[1]}">${esc(c[0])}</a>`);
       }).join("")}</nav>`;
@@ -311,7 +319,7 @@
   const payments = () => (C.payments || []).filter(p => p.on !== false);
 
   root.NUDJ_UI = {
-    esc, money, money2, cur, kgTxt, icon, logo, brand, mark, url, img, slot, productImg, herdArt, sizeOf, perTxt, priceTag, animalName,
+    L, EN, R, altName, esc, money, money2, cur, kgTxt, icon, logo, brand, mark, url, img, slot, productImg, herdArt, sizeOf, perTxt, priceTag, animalName,
     tagCard, grid, productRow, spec, herdCard, herdMap, barcode, receipt, lineForReceipt, optsText, chips, buyForm, scale,
     empty, cell, group, fmtDate, fmtTime, kicker, tpl, h, payLogos, payments
   };

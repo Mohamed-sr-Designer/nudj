@@ -18,7 +18,8 @@
   function calc() {
     if (!out || !ADV) return;
     const s = ADV.suggestKg(p, n);
-    out.innerHTML = `لـ <b>${n}</b> ${n === 1 ? "شخص" : n === 2 ? "شخصين" : n <= 10 ? "أشخاص" : "شخص"} تحتاج <b class="num">${U.kgTxt(s.kg)}</b> <small>(${s.g} جم للشخص · ${s.use})</small>`;
+    out.innerHTML = D.L(`لـ <b>${n}</b> ${n === 1 ? "شخص" : n === 2 ? "شخصين" : n <= 10 ? "أشخاص" : "شخص"} تحتاج <b class="num">${U.kgTxt(s.kg)}</b> <small>(${s.g} جم للشخص · ${s.use})</small>`,
+      `For <b>${n}</b> ${n === 1 ? "person" : "people"} you need <b class="num">${U.kgTxt(s.kg)}</b> <small>(${s.g} g per person · ${s.use})</small>`);
     return s;
   }
   document.addEventListener("click", e => {
@@ -26,7 +27,7 @@
     if (e.target.closest("#mpSet") && form && form.setKg) {
       const s = calc(); form.setKg(s.kg);
       const sc = $(".scale", form); if (sc) { sc.classList.remove("flash"); void sc.offsetWidth; sc.classList.add("flash"); if (window.innerWidth < 900) sc.scrollIntoView({ behavior: "smooth", block: "center" }); }
-      A.toast("ضبطنا الميزان على " + U.kgTxt(s.kg), { icon: "scale" });
+      A.toast(D.L("ضبطنا الميزان على ", "Scale set to ") + U.kgTxt(s.kg), { icon: "scale" });
     }
     const th = e.target.closest("[data-thumb]"); if (th) {
       const img = $(".pd__img img"); if (img) img.src = th.dataset.thumb;

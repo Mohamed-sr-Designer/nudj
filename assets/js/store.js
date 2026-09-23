@@ -7,6 +7,8 @@ window.NUDJ_STORE = (function () {
   "use strict";
   const D = window.NUDJ;
   const C = D.CONFIG;
+  const L = D.L || (ar => ar);
+  const marinadeLabel = m => L("تتبيلة " + m.n, m.n + " marinade");
 
   const K = { cart: "nudj_cart", wish: "nudj_wish", user: "nudj_user", orders: "nudj_orders", addr: "nudj_addr", recent: "nudj_recent", city: "nudj_city", plans: "nudj_plans", known: "nudj_known" };
   function read(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
@@ -42,7 +44,7 @@ window.NUDJ_STORE = (function () {
       const kg = l.kg || p.def;
       base = r2(kg * p.price);
       const m = D.marinade(o.marinade);
-      if (m.p) adds.push({ k: "marinade", n: "تتبيلة " + m.n, q: kg, u: m.p, v: r2(kg * m.p) });
+      if (m.p) adds.push({ k: "marinade", n: marinadeLabel(m), q: kg, u: m.p, v: r2(kg * m.p) });
       if (o.skewer) adds.push({ k: "skewer", n: D.SERVICES.skewer.n, q: kg, u: D.SERVICES.skewer.p, v: r2(kg * D.SERVICES.skewer.p) });
       if (o.vacuum) adds.push({ k: "vacuum", n: D.SERVICES.vacuum.n, q: kg, u: D.SERVICES.vacuum.p, v: r2(kg * D.SERVICES.vacuum.p) });
     } else if (p.sold === "carcass") {
@@ -228,13 +230,16 @@ window.NUDJ_STORE = (function () {
     push(q) { q = String(q || "").trim(); if (!q) return; const l = read(K.recent, []).filter(x => x !== q); l.unshift(q); write(K.recent, l.slice(0, 8)); },
     clear() { write(K.recent, []); }
   };
+  /* المدن تُحفظ بالاسم العربي (ثابت بين اللغتين) وتُعرض بلغة الصفحة */
+  const cityKey = v => { const i = (C.cities || []).indexOf(v); return i > -1 && C.cities_ar ? C.cities_ar[i] : v; };
+  const cityLabel = v => { const i = (C.cities_ar || []).indexOf(v); return i > -1 ? C.cities[i] : v; };
   const city = {
-    get: () => read(K.city, null) || (addr.def() || {}).city || C.cities[0],
-    set: v => { write(K.city, v); emit("city"); }
+    get: () => read(K.city, null) || (addr.def() || {}).city || cityKey(C.cities[0]),
+    set: v => { write(K.city, cityKey(v)); emit("city"); }
   };
 
   return {
-    on, emit, sizeOf, unitPrice, fromPrice, breakdown, snapKg,
+    on, emit, marinadeLabel, cityKey, cityLabel, sizeOf, unitPrice, fromPrice, breakdown, snapKg,
     cart: { get: getCart, add, setAmount, setOpts, remove, clear, has, count, linePrice, totals },
     wish, user, normPhone, fmtPhone, addr, orders, plans, recent, city
   };
