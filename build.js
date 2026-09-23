@@ -92,6 +92,14 @@ ${MODULES.map(n => wrap(n, "src/pages/" + n + ".js")).join(String.fromCharCode(1
     var file = is404 ? (decodeURIComponent(location.pathname.split("/").pop() || "") || "index.html") : cur;
     var page = null, mods = ${JSON.stringify(MODULES)};
     for (var i = 0; i < mods.length && !page; i++) { var list = M[mods[i]](ctx); for (var j = 0; j < list.length; j++) if (list[j].file === file) { page = list[j]; break; } }
+    /* صفحة غير موجودة فعلاً: نرسم إطارها بلغة الزائر (العربية أو /en/) */
+    if (!page && is404) {
+      var L = D.L;
+      page = { name: "notfound", file: "404.html", tab: "", mode: "push", back: ["index.html", L("الرئيسية", "Home")], appTitle: L("غير موجودة", "Not found"), noindex: true,
+        title: L("الصفحة غير موجودة · نُضْج", "Page not found · NUDJ"), desc: "",
+        main: '<div class="wrap"><div class="nf"><div class="nf__code num">404</div><h1>' + L("الصفحة غير موجودة", "Page not found") + '</h1><p class="muted">' + L("يمكن الرابط قديم أو فيه خطأ. جرّب واحدة من هذي:", "The link may be old or mistyped. Try one of these:") +
+          '</p><div class="row-btns" style="justify-content:center"><a class="btn btn--ember" href="shop.html">' + L("المتجر", "Shop") + '</a><a class="btn btn--line" href="advisor.html">' + L("المستشار", "Advisor") + '</a><a class="btn btn--line" href="index.html">' + L("الرئيسية", "Home") + '</a></div></div></div>' };
+    }
     if (!page) return false;
     var doc = new DOMParser().parseFromString(render(page, page.main), "text/html");
     [".util", ".site-header", ".app-bar", "main", ".site-footer", "#actionBar", ".tabbar"].forEach(function (sel) {
