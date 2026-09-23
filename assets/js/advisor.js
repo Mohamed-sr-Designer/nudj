@@ -44,7 +44,7 @@ window.NUDJ_ADVISOR = (function () {
   const yes = (n, p, per) => ({ k: "yes", n, p, per });
   const NODES = {
     occ: { type: "occ", ask: () => st.sections.length ? "حلو! وش المناسبة أو الطبق الثاني؟" : "هلا! أنا مستشار نُضْج. قل لي وش المناسبة، وأحسب لك كل شي بالجرام — اللحم والتتبيلة والفحم — وتطلبه بضغطة.",
-      opts: () => AD.occasions.map(o => ({ k: o.k, n: o.n, d: o.s, img: o.img, ic: o.ic })) },
+      opts: () => AD.occasions.filter(o => o.on !== false).map(o => ({ k: o.k, n: o.n, d: o.s, img: o.img, ic: o.ic })) },
     people: { type: "people", ask: a => ({ grill: "كم شخص على الشواية؟", feast: "كم شخص معزوم؟", carcass: "كم شخص بتكفيهم الذبيحة؟", steak: "كم شخص على العشاء؟", weekly: "كم شخص في البيت؟", ask: "لكم شخص تبغى تطبخها؟" })[a.occ] },
     forms: { type: "multi", max: 3, ask: () => "وش تبغى على الشواية؟ قطع، شرائح، ولا قطع سليمة؟ تقدر تختار لين ثلاثة.", opts: () => AD.grillForms.map(f => ({ k: f.k, n: f.n, d: f.d })) },
     gAnimal: { type: "chips", ask: () => "أي لحم تفضّل؟",
@@ -248,7 +248,8 @@ window.NUDJ_ADVISOR = (function () {
     for (const k of f) {
       if (isSkip(k)) continue;
       const n = NODES[k], v = st.a[k];
-      const q = n.ask(st.a);
+      /* نص السؤال من لوحة التحكم إن وُجد */
+      const q = !n.html && AD.q && AD.q[k] && !(k === "occ" && st.sections.length) ? AD.q[k] : n.ask(st.a);
       if (v == null) {
         if (k === cur) out.push(bot(n.type === "occ" ? esc(q) + occGrid() : n.html ? q : esc(q), "is-q"));
         break;

@@ -48,7 +48,7 @@
     const t = S.cart.totals(ls, coupon);
     let n = 0;
     const sec = (title, body) => `<section class="co-sec"><h2 class="co-sec__h"><span class="num">0${++n}</span>${title}</h2>${body}</section>`;
-    root.innerHTML = `<div class="co">
+    root.innerHTML = `<ol class="co-steps" id="coSteps"></ol><div class="co">
       <div class="co__main">
         ${sec("بيانات التواصل", contactSec())}
         ${sec("عنوان التوصيل", `<div id="addrBox">${addrSec()}</div>`)}
@@ -64,6 +64,14 @@
     const picker = A.slotPicker($("#days"), $("#times"), { onChange: s => { slot = s; } });
     slot = picker.get();
     if (bar) { bar.hidden = false; $("#abTotal").textContent = cur(t.total); }
+    steps();
+  }
+  /* المرحلة الحالية تتحدث مع إكمال البيانات */
+  function steps() {
+    const el = $("#coSteps"); if (!el) return;
+    const ready = !!(S.user.get() && S.addr.get(addrId) && slot);
+    const list = [["السلة", 1], ["البيانات والتوصيل", ready ? 1 : 2], ["الدفع", ready ? 2 : 0], ["الفاتورة", 0]];
+    el.innerHTML = list.map((x, i) => `<li class="${x[1] === 1 ? "done" : x[1] === 2 ? "now" : ""}"><b>${x[1] === 1 ? U.icon("check", "", 2.6) : i + 1}</b><span>${x[0]}</span></li>`).join("");
   }
   function refreshSummary() {
     const ls = S.cart.get(); const t = S.cart.totals(ls, coupon);
@@ -71,7 +79,8 @@
     if (bar) $("#abTotal").textContent = cur(t.total);
   }
 
-  root.addEventListener("change", e => { if (e.target.name === "addr") addrId = e.target.value; });
+  root.addEventListener("change", e => { if (e.target.name === "addr") addrId = e.target.value; steps(); });
+  root.addEventListener("click", () => setTimeout(steps, 0));
   root.addEventListener("click", e => {
     if (e.target.closest("[data-addr-new]")) { A.addressSheet(null, a => { addrId = a.id; $("#addrBox").innerHTML = addrSec(); }); return; }
     const ed = e.target.closest("[data-addr-edit]");
@@ -101,7 +110,7 @@
     location.replace("order.html?id=" + encodeURIComponent(o.id) + "&new=1");
   }
 
-  S.on("addr", () => { const b = $("#addrBox"); if (b) b.innerHTML = addrSec(); });
+  S.on("addr", () => { const b = $("#addrBox"); if (b) b.innerHTML = addrSec(); steps(); });
   S.on("auth", render);
   render();
 })();

@@ -47,6 +47,12 @@ vm.runInContext(read("assets/js/data.js"), sandbox, { filename: "data.js" });
   console.log("  images: " + n + " detected");
 }
 vm.runInContext(read("assets/js/images.js"), sandbox, { filename: "images.js" });
+/* المحتوى المنشور من لوحة التحكم يُطبع داخل الصفحات الثابتة */
+vm.runInContext(read("assets/js/content.js"), sandbox, { filename: "content.js" });
+vm.runInContext(read("assets/js/cms.js"), sandbox, { filename: "cms.js" });
+const PUB = sandbox.window.NUDJ_CONTENT || null;
+if (PUB) { sandbox.window.NUDJ_CMS.apply(PUB); console.log("  content: published edits applied"); }
+const contentHash = PUB ? sandbox.window.NUDJ_CMS.hash(PUB) : "0";
 vm.runInContext(read("assets/js/store.js"), sandbox, { filename: "store.js" });
 vm.runInContext(read("assets/js/ui.js"), sandbox, { filename: "ui.js" });
 const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, S = sandbox.window.NUDJ_STORE, C = D.CONFIG;
@@ -55,25 +61,51 @@ const D = sandbox.window.NUDJ, U = sandbox.window.NUDJ_UI, S = sandbox.window.NU
 const vcache = {};
 const V = p => vcache[p] || (vcache[p] = crypto.createHash("md5").update(fs.readFileSync(rel(p))).digest("hex").slice(0, 8));
 
-/* ---------- مساعدات القوالب ---------- */
-const { icon, esc } = U;
-const h = {
-  crumbs(list) {
-    const items = [["الرئيسية", "index.html"]].concat(list);
-    return `<nav class="crumbs" aria-label="مسار التنقل">${items.map((c, i) => {
-      const last = i === items.length - 1;
-      return (i ? icon("chevL") : "") + (last || !c[1] ? `<span${last ? ' aria-current="page"' : ""}>${esc(c[0])}</span>` : `<a href="${c[1]}">${esc(c[0])}</a>`);
-    }).join("")}</nav>`;
-  },
-  faq(q, a) { return `<details><summary>${q}${icon("plus", "faq__ic", 2)}</summary><div class="a">${a}</div></details>`; }
-};
-const ctx = { D, U, C, S, V, h };
+/* ---------- قوالب المتصفح: نفس ملفات src تُجمع في assets/js/templates.js لإعادة الرسم بعد تعديلات لوحة التحكم ---------- */
+const MODULES = ["home", "shop", "product", "commerce", "info"];
+{
+  const wrap = (name, file) => `M[${JSON.stringify(name)}] = (function () { var module = { exports: {} };
+${read(file)}
+return module.exports; })();`;
+  write("assets/js/templates.js", `/* مولّد تلقائياً بواسطة build.js — لا تعدّله يدوياً.
+   قوالب الصفحات في المتصفح: تُحمَّل فقط حين يختلف محتوى لوحة التحكم عن الصفحة الثابتة. */
+window.NUDJ_TPL = (function () {
+  "use strict";
+  var M = {};
+${wrap("shell", "src/shell.js")}
+${MODULES.map(n => wrap(n, "src/pages/" + n + ".js")).join(String.fromCharCode(10))}
+  function rerender() {
+    var D = window.NUDJ, U = window.NUDJ_UI, S = window.NUDJ_STORE;
+    var ctx = { D: D, U: U, C: D.CONFIG, S: S, V: function () { return ""; }, h: U.h, contentHash: "" };
+    var render = M.shell(ctx);
+    var cur = document.body.getAttribute("data-file"), is404 = cur === "404.html";
+    var file = is404 ? (decodeURIComponent(location.pathname.split("/").pop() || "") || "index.html") : cur;
+    var page = null, mods = ${JSON.stringify(MODULES)};
+    for (var i = 0; i < mods.length && !page; i++) { var list = M[mods[i]](ctx); for (var j = 0; j < list.length; j++) if (list[j].file === file) { page = list[j]; break; } }
+    if (!page) return false;
+    var doc = new DOMParser().parseFromString(render(page, page.main), "text/html");
+    [".util", ".site-header", ".app-bar", "main", ".site-footer", "#actionBar", ".tabbar"].forEach(function (sel) {
+      var a = document.querySelector(sel), b = doc.querySelector(sel);
+      if (a && b) a.replaceWith(document.importNode(b, true));
+      else if (a && !b) a.remove();
+      else if (!a && b) document.body.insertBefore(document.importNode(b, true), document.getElementById("toast"));
+    });
+    document.title = doc.title;
+    var md = document.querySelector('meta[name="description"]'), nd = doc.querySelector('meta[name="description"]'); if (md && nd) md.setAttribute("content", nd.getAttribute("content"));
+    Array.prototype.forEach.call(doc.body.attributes, function (at) { document.body.setAttribute(at.name, at.value); });
+    if (is404) (page.scripts || []).forEach(function (s) { var el = document.createElement("script"); el.src = "assets/js/pages/" + s + ".js"; el.async = false; document.body.appendChild(el); });
+    return true;
+  }
+  return { M: M, rerender: rerender };
+})();
+`);
+}
+const ctx = { D, U, C, S, V, h: U.h, contentHash };
 const render = require("./src/shell.js")(ctx);
 
 /* ---------- الصفحات ---------- */
-const MODULES = ["home", "shop", "product", "commerce", "info"];
 let pages = [];
-MODULES.forEach(m => { pages = pages.concat(require("./src/pages/" + m + ".js")(ctx)); });
+MODULES.concat(["admin"]).forEach(m => { pages = pages.concat(require("./src/pages/" + m + ".js")(ctx)); });
 
 const produced = [];
 pages.forEach(p => { write(p.file, render(p, p.main)); produced.push(p.file); });
@@ -107,6 +139,7 @@ const stub = (file, js, fallback) => {
   produced.push(file);
 };
 const idsJ = JSON.stringify(D.PRODUCTS.map(p => p.id));
+const { esc } = U;
 stub("category.html", `var a=q.get("a"),t=a==="ضأن"?"lamb.html":a==="بقر"?"beef.html":"";`, "shop.html");
 stub("cut.html", `var c=q.get("c");var t=${idsJ}.indexOf(c)>-1?c+".html":"";`, "shop.html");
 stub("product.html", `var c=q.get("id");var t=${idsJ}.indexOf(c)>-1?c+".html":"";`, "shop.html");

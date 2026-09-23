@@ -9,7 +9,8 @@
   const cur = n => U.money(n) + " " + C.currency;
 
   const SEC = { orders: { t: "طلباتي", i: "receipt" }, plans: { t: "خطط المستشار", i: "chat" }, addresses: { t: "العناوين", i: "pin" }, profile: { t: "الملف الشخصي", i: "user" } };
-  const STATUS = { placed: ["قيد التجهيز", "placed"], done: ["مكتمل", "done"], cancelled: ["ملغي", "cancelled"] };
+  const STATUS = { cancelled: ["ملغي", "cancelled"] };
+  D.ORDER_STEPS.forEach(s => { STATUS[s.k] = [s.n, s.k === "done" ? "done" : "placed"]; });
 
   if (SEC[s]) {
     const bar = $(".app-bar");

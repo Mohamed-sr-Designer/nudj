@@ -7,10 +7,9 @@
   const form = $(".pd .buy-form");
   const abT = $("#abTotal"), abKg = $("#abKg");
 
-  if (form) {
-    form.dataset.bound = ""; /* نعيد الربط لنستقبل التغييرات */
-    A.bindBuyForm(form, { onChange: (r, t) => { if (abT) abT.textContent = U.money(t) + " " + D.CONFIG.currency; if (abKg && r.kg) abKg.textContent = r.kg; } });
-  }
+  const onChange = (r, t) => { if (abT) abT.textContent = U.money(t) + " " + D.CONFIG.currency; if (abKg && r && r.kg) abKg.textContent = r.kg; };
+  if (form && !form.dataset.bound) A.bindBuyForm(form, { onChange });
+  else if (form) form.addEventListener("change", () => { const t = form.querySelector("[data-total]"); if (abT && t) abT.textContent = t.textContent; if (abKg) abKg.textContent = form.dataset.kg || ""; });
   const ab = $("#abAdd"); if (ab && form) ab.addEventListener("click", () => form.requestSubmit ? form.requestSubmit() : form.dispatchEvent(new Event("submit", { cancelable: true })));
 
   /* كم تحتاج؟ */

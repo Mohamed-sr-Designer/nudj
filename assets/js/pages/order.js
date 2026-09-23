@@ -6,7 +6,7 @@
   const root = $("#orderRoot"); if (!root) return;
   const q = new URLSearchParams(location.search);
   const isNew = q.get("new") === "1";
-  const STEPS = [["placed", "استلمنا الطلب", "receipt"], ["cutting", "على طاولة الجزّار", "knife"], ["onway", "في الطريق إليك", "truck"], ["done", "وصل", "check"]];
+  const STEPS = D.ORDER_STEPS;
 
   function render() {
     const o = S.orders.get(q.get("id"));
@@ -34,13 +34,14 @@
       stamp: cancelled ? "ملغي" : cod ? "الدفع عند الاستلام" : "مدفوع",
       foot: "شكراً لك — نقطّعها لك على طبختك."
     });
-    const cur = cancelled ? -1 : 0;
+    const cur = cancelled ? -1 : Math.max(0, STEPS.findIndex(s => s.k === o.status));
+    const when = k => { const e = (o.log || []).filter(x => x.s === k).pop(); return e ? U.fmtTime(e.t) : k === "placed" ? U.fmtTime(o.date) : ""; };
     const a = o.address;
     root.innerHTML = `${isNew && !cancelled ? `<div class="order-hero"><span class="order-hero__tick">${U.icon("check", "", 2.6)}</span><div><h1>طُبعت فاتورتك</h1><p>وصلنا طلبك وبنبدأ التقطيع قبل موعد التوصيل. ${D.CONFIG.demo ? "<small>(نسخة تجريبية: لم يُخصم أي مبلغ)</small>" : ""}</p></div></div>` : `<div class="page-head"><h1 class="large-title">الفاتورة</h1></div>`}
       <div class="order">
         <div class="order__rc"><div class="printer" aria-hidden="true"><span></span></div>${rc}</div>
         <aside class="order__side">
-          <div class="card track"><h2>حالة الطلب</h2>${cancelled ? `<p class="track__void">${U.icon("x", "", 2.4)}أُلغي هذا الطلب</p>` : `<ol>${STEPS.map((s, i) => `<li class="${i < cur ? "done" : i === cur ? "now" : ""}"><span>${U.icon(s[2])}</span><b>${s[1]}</b>${i === 0 ? `<small>${U.fmtTime(o.date)}</small>` : i === 2 && o.slot ? `<small>${U.esc(o.slot.time)}</small>` : ""}</li>`).join("")}</ol>`}</div>
+          <div class="card track"><h2>حالة الطلب</h2>${cancelled ? `<p class="track__void">${U.icon("x", "", 2.4)}أُلغي هذا الطلب</p>` : `<span class="track__now">${U.icon(STEPS[cur].ic, "", 2)}${U.esc(STEPS[cur].n)} · ${cur + 1}/${STEPS.length}</span><ol>${STEPS.map((s, i) => `<li class="${i < cur || (i === cur && s.k === "done") ? "done" : i === cur ? "now" : ""}"><span>${U.icon(i < cur ? "check" : s.ic)}</span><b>${U.esc(s.n)}</b><small class="num">${i <= cur ? when(s.k) : s.k === "onway" && o.slot ? U.esc(o.slot.time) : ""}</small><p>${U.esc(s.d)}</p></li>`).join("")}</ol>`}</div>
           ${a ? `<div class="card"><h2>${U.icon("pin")}التوصيل إلى</h2><p><b>${U.esc(a.label)}</b><br>${U.esc(A.addrLine(a))}${a.notes ? `<br><small class="muted">${U.esc(a.notes)}</small>` : ""}</p></div>` : ""}
           <div class="row-btns row-btns--col">
             <button type="button" class="btn btn--ember" data-reorder>${U.icon("refresh")}اطلبها مرة ثانية</button>

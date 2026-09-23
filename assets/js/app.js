@@ -5,6 +5,8 @@
    ========================================================= */
 (function () {
   "use strict";
+  /* تعديلات لوحة التحكم: إعادة رسم الصفحة قبل ربط السلوك (القوالب حمّلها cms.js) */
+  if (window.NUDJ_CMS && window.NUDJ_CMS.rerender && window.NUDJ_TPL) { try { window.NUDJ_TPL.rerender(); } catch (e) { console.error(e); } }
   const D = window.NUDJ, S = window.NUDJ_STORE, U = window.NUDJ_UI;
   const C = D.CONFIG;
   const $ = (s, r) => (r || document).querySelector(s);
@@ -301,7 +303,7 @@
     openAdvisor({ occ: b.dataset.advisor && b.dataset.advisor !== "open" ? b.dataset.advisor : null, ask: b.dataset.ask || null, hints: b.dataset.animal ? { animal: b.dataset.animal } : null, sheet: b.hasAttribute("data-sheet") });
   });
   function initFab() {
-    if (document.body.classList.contains("page-advisor") || $("[data-no-fab]") || $("[data-advisor-inline]")) return;
+    if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]") || $("[data-advisor-inline]")) return;
     const f = document.createElement("button");
     f.type = "button"; f.className = "fab"; f.setAttribute("data-advisor", "open"); f.setAttribute("data-sheet", ""); f.setAttribute("aria-label", "اسأل مستشار نُضْج");
     f.innerHTML = `<span class="fab__av">${U.mark("fab__mark")}</span><span class="fab__t">اسأل المستشار</span>`;
@@ -408,10 +410,10 @@
   /* طرق الدفع + حقول البطاقة (واجهة فقط — لا تُحفظ بيانات البطاقة أبداً) */
   function payMethods(box, o) {
     o = o || {};
-    const list = C.payments.filter(p => o.cod || !p.cod);
+    const list = U.payments().filter(p => o.cod || !p.cod);
     const name = "pay" + Math.random().toString(36).slice(2, 6);
     box.innerHTML = `${C.demo ? `<p class="demo-banner">${U.icon("info")}نسخة تجريبية: الدفع محاكاة ولا يُخصم أي مبلغ.</p>` : ""}
-      <div class="pay-list">${list.map((p, i) => `<label class="radio-card"><input type="radio" name="${name}" value="${p.k}"${i === 0 ? " checked" : ""}><span class="pay-logo">${p.logo}</span><span class="radio-card__b"><b>${p.n}</b><small>${p.s}</small></span></label>`).join("")}</div>
+      <div class="pay-list">${list.map((p, i) => `<label class="radio-card"><input type="radio" name="${name}" value="${p.k}"${i === 0 ? " checked" : ""}><span class="radio-card__b"><b>${U.esc(p.n)}</b><small>${U.esc(p.s)}</small></span>${U.payLogos(p)}</label>`).join("")}</div>
       <div class="card card-fields" hidden>
         <label class="field"><span class="field__l">رقم البطاقة</span><input class="input num" inputmode="numeric" autocomplete="cc-number" placeholder="0000 0000 0000 0000" maxlength="23" dir="ltr" data-cc="num"></label>
         <div class="form-grid">
@@ -486,6 +488,13 @@
      ========================================================= */
   function init() {
     fillSlots(); initAppBar(); refresh(); initFab();
+    /* شريط «أنت تشاهد المسودة» للمدير فقط */
+    if (window.NUDJ_CMS && window.NUDJ_CMS.preview && document.body.dataset.file !== "admin.html") {
+      const b = document.createElement("div"); b.className = "preview-bar";
+      b.innerHTML = `<span>${U.icon("edit")}تشاهد مسودة لوحة التحكم — غير منشورة</span><a href="admin.html">لوحة التحكم</a><button type="button" data-stop-preview>إيقاف المعاينة</button>`;
+      document.body.appendChild(b);
+      b.querySelector("[data-stop-preview]").addEventListener("click", () => { try { localStorage.removeItem("nudj_cms_preview"); } catch (e) { } location.reload(); });
+    }
     $$(".buy-form").forEach(f => bindBuyForm(f));
     $$("[data-advisor-inline]").forEach(el => { if (window.NUDJ_ADVISOR) window.NUDJ_ADVISOR.mount(el, { cls: el.dataset.advisorInline || "", scroll: true }); });
     html.classList.add("js-ready");

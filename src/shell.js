@@ -1,16 +1,18 @@
 /* =========================================================
    نُضْج — الإطار المشترك لكل الصفحات
    ترويسة الموقع + شريط التطبيق (iOS) + شريط التبويبات + الفوتر
+   (يعمل في build.js وفي المتصفح لإعادة الرسم بعد تعديلات لوحة التحكم)
    ========================================================= */
 module.exports = function makeShell(ctx) {
   const { D, U, C, V } = ctx;
-  const { icon, esc } = U;
+  const { icon, esc, tpl } = U;
+  const T = () => D.COPY;
 
-  const NAV = [
-    ["shop", "shop.html", "المتجر"],
-    ["herd", "cuts.html", "القطيع"],
-    ["carcass", "shop.html?a=carcass", "الذبائح"],
-    ["extras", "shop.html?a=extra", "عدّة الشواء"]
+  const NAV = () => [
+    ["shop", "shop.html", T().nav.shop],
+    ["herd", "cuts.html", T().nav.herd],
+    ["carcass", "shop.html?a=carcass", T().nav.carcass],
+    ["extras", "shop.html?a=extra", T().nav.extras]
   ];
   const TABS = [
     ["home", "index.html", "home", "الرئيسية"],
@@ -28,6 +30,7 @@ module.exports = function makeShell(ctx) {
 <title>${esc(m.title)}</title>
 <meta name="description" content="${esc(m.desc)}">
 ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="canonical" href="${C.base}${m.file === "index.html" ? "" : m.file}">`}
+<meta name="nudj-content" content="${ctx.contentHash || "0"}" data-tpl="${V("assets/js/templates.js")}">
 <meta name="theme-color" content="#0E1216">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -51,19 +54,18 @@ ${(m.ogImage || D.IMAGES["og-share"]) ? `<meta property="og:image" content="${C.
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@300;500;700;800;900&family=Handjet:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css?v=${V("assets/css/style.css")}">
+<style id="theme">:root{--ember:${esc(D.THEME.accent || "#FF5A36")}}</style>
 ${m.preload ? `<link rel="preload" as="image" href="${m.preload}">` : ""}
 ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify(j)}</script>`).join("\n")}
 </head>`;
 
-  const ticker = () => `<div class="util" role="note"><div class="util__track"><span>${[
-    "التقطيع مجاني بأي شكل", "التتبيل والتسييخ حسب الطلب", "المستشار يحسب لك بالجرام", "توصيل مجاني من " + C.delivery.freeOver + " ر.س", "ضأن · ماعز · حاشي · عجل · بقر · جاموس"
-  ].map(t => `<i>${t}</i>`).join("")}</span></div></div>`;
+  const ticker = () => (T().ticker || []).length ? `<div class="util" role="note"><div class="util__track"><span>${T().ticker.map(t => `<i>${esc(tpl(t))}</i>`).join("")}</span></div></div>` : "";
 
   const siteHeader = m => `<header class="site-header"><div class="wrap hdr">
   <a class="hdr__logo" href="index.html" aria-label="نُضْج — الرئيسية">${U.brand()}</a>
-  <nav class="nav" aria-label="التنقل الرئيسي">${NAV.map(([k, h, t]) => `<a href="${h}"${m.nav === k ? ' class="is-on" aria-current="page"' : ""}>${t}</a>`).join("")}
-    <a href="advisor.html" class="nav__adv${m.nav === "advisor" ? " is-on" : ""}"${m.nav === "advisor" ? ' aria-current="page"' : ""}><i class="live"></i>المستشار</a></nav>
-  <form class="hdr-search" role="search" data-search-form>${icon("search")}<input type="search" name="q" placeholder="ريش، كبسة، حاشي…" aria-label="ابحث في المتجر" autocomplete="off"></form>
+  <nav class="nav" aria-label="التنقل الرئيسي">${NAV().map(([k, h, t]) => `<a href="${h}"${m.nav === k ? ' class="is-on" aria-current="page"' : ""}>${esc(t)}</a>`).join("")}
+    <a href="advisor.html" class="nav__adv${m.nav === "advisor" ? " is-on" : ""}"${m.nav === "advisor" ? ' aria-current="page"' : ""}><i class="live"></i>${esc(T().nav.advisor)}</a></nav>
+  <form class="hdr-search" role="search" data-search-form>${icon("search")}<input type="search" name="q" placeholder="${esc(T().nav.search)}" aria-label="ابحث في المتجر" autocomplete="off"></form>
   <div class="hdr-tools">
     <a class="tool${m.tab === "account" ? " is-on" : ""}" href="account.html" aria-label="حسابي">${icon("user")}</a>
     <a class="tool" href="wishlist.html" aria-label="المفضلة">${icon("heart")}</a>
@@ -76,7 +78,6 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
     if (t === "share") return `<button class="ab-btn" type="button" data-share aria-label="مشاركة">${icon("share")}</button>`;
     if (t === "cart") return `<a class="ab-btn" href="cart.html" aria-label="السلة">${icon("cart")}<b class="badge" data-cart-count>0</b></a>`;
     if (t === "herd") return `<a class="ab-btn" href="cuts.html" aria-label="القطيع">${icon("map")}</a>`;
-    if (t === "reset") return `<button class="ab-btn" type="button" data-act="reset-adv" aria-label="ابدأ من جديد">${icon("refresh")}</button>`;
     if (t.indexOf("wish:") === 0) return `<button class="ab-btn" type="button" data-wish="${t.slice(5)}" aria-label="أضف للمفضلة" aria-pressed="false">${icon("heart")}</button>`;
     return "";
   };
@@ -94,30 +95,30 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
 
   const footer = () => `<footer class="site-footer"><div class="wrap">
   <div class="ftr">
-    <div class="ftr__brand"><a href="index.html" class="ftr__logo" aria-label="نُضْج — الرئيسية">${U.brand()}</a><p>ملحمة إلكترونية ومستشار طبخ: قل لنا وش المناسبة، ونقطّع لك اللحم على طبختك بالجرام.</p>
-      <div class="ftr__meta"><span>السجل التجاري <b>${C.contact.cr}</b></span><span>الرقم الضريبي <b>${C.contact.vatNo}</b></span><span>للطلبات <b>${C.contact.phone}</b></span></div></div>
-    <div><h3>القطيع</h3><ul>${D.ANIMALS.map(a => `<li><a href="${a.k}.html">${a.n}</a></li>`).join("")}</ul></div>
-    <div><h3>تسوّق</h3><ul><li><a href="shop.html">كل القطعيات</a></li><li><a href="shop.html?a=carcass">الذبائح</a></li><li><a href="shop.html?a=extra">عدّة الشواء والبهارات</a></li><li><a href="advisor.html">مستشار نُضْج</a></li><li><a href="cuts.html">خريطة القطعيات</a></li></ul></div>
+    <div class="ftr__brand"><a href="index.html" class="ftr__logo" aria-label="نُضْج — الرئيسية">${U.brand()}</a><p>${tpl(T().footer.about)}</p>
+      <div class="ftr__meta"><span>السجل التجاري <b>${esc(C.contact.cr)}</b></span><span>الرقم الضريبي <b>${esc(C.contact.vatNo)}</b></span><span>للطلبات <b>${esc(C.contact.phone)}</b></span></div></div>
+    <div><h3>${esc(T().nav.herd)}</h3><ul>${D.ANIMALS.map(a => `<li><a href="${a.k}.html">${esc(a.n)}</a></li>`).join("")}</ul></div>
+    <div><h3>تسوّق</h3><ul><li><a href="shop.html">كل القطعيات</a></li><li><a href="shop.html?a=carcass">${esc(T().nav.carcass)}</a></li><li><a href="shop.html?a=extra">${esc(T().nav.extras)}</a></li><li><a href="advisor.html">مستشار نُضْج</a></li><li><a href="cuts.html">خريطة القطعيات</a></li></ul></div>
     <div><h3>المساعدة</h3><ul><li><a href="help.html">الأسئلة الشائعة</a></li><li><a href="help.html#delivery">التوصيل</a></li><li><a href="account.html?s=orders">تتبّع طلبك</a></li><li><a href="contact.html">تواصل معنا</a></li><li><a href="about.html">من نحن</a></li></ul></div>
   </div>
-  <div class="ftr__bottom"><span>© 2026 نُضْج · المملكة العربية السعودية</span><span><a href="terms.html">الشروط</a> · <a href="privacy.html">الخصوصية</a></span>
-    <span class="pays" aria-label="طرق الدفع"><span>مدى</span><span>Apple Pay</span><span>VISA</span><span>Mastercard</span><span>تمارا</span></span></div>
+  <div class="ftr__bottom"><span>${esc(T().footer.copyright)}</span><span><a href="terms.html">الشروط</a> · <a href="privacy.html">الخصوصية</a></span>
+    <span class="pays" aria-label="طرق الدفع">${U.payments().filter(p => (p.logos || []).length).map(p => U.payLogos(p)).join("")}</span></div>
 </div></footer>`;
 
-  const SCRIPTS = ["assets/js/data.js", "assets/js/images.js", "assets/js/store.js", "assets/js/ui.js", "assets/js/app.js", "assets/js/advisor.js"];
+  const SCRIPTS = ["assets/js/data.js", "assets/js/images.js", "assets/js/content.js", "assets/js/cms.js", "assets/js/store.js", "assets/js/ui.js", "assets/js/app.js", "assets/js/advisor.js"];
 
-  return function render(m, main) {
+  function render(m, main) {
     const mode = m.mode || "root";
     m.mode = mode;
     const hasTab = m.tabbar !== false;
     const cls = ["page-" + m.name, hasTab ? "has-tabbar" : "", m.actionbar ? "has-actionbar" : "", "mode-" + mode].filter(Boolean).join(" ");
     const attrs = Object.keys(m.data || {}).map(k => ` data-${k}="${esc(m.data[k])}"`).join("");
-    const scripts = SCRIPTS.concat((m.scripts || []).map(s => "assets/js/pages/" + s + ".js"));
+    const scripts = (m.ownScripts || SCRIPTS).concat((m.scripts || []).map(s => "assets/js/pages/" + s + ".js"));
     return `${head(m)}
-<body class="${cls}" data-tab="${m.tab || ""}"${attrs}>
+<body class="${cls}" data-tab="${m.tab || ""}" data-file="${esc(m.file)}"${attrs}>
 <a class="skip" href="#main">تخطَّ إلى المحتوى</a>
-${ticker()}
-${siteHeader(m)}
+${m.chrome === false ? "" : ticker()}
+${m.chrome === false ? "" : siteHeader(m)}
 ${appBar(m)}
 <main id="main">
 ${main}
@@ -130,5 +131,7 @@ ${scripts.map(s => `<script src="${s}?v=${V(s)}"></script>`).join("\n")}
 </body>
 </html>
 `;
-  };
+  }
+  render.parts = { ticker, siteHeader, footer, appBar, tabbar };
+  return render;
 };

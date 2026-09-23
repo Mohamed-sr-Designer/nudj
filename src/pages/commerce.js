@@ -1,7 +1,8 @@
 /* المستشار + السلة + الدفع + الطلب + المفضلة + البحث + الحساب + الدخول */
 module.exports = function (ctx) {
-  const { D, U, C, h } = ctx;
-  const { icon } = U;
+  const { D, U, C } = ctx;
+  const { icon, esc, tpl, h } = U;
+  const T = D.COPY.advisorPage;
   const loading = `<div class="loading" aria-hidden="true"><i></i><i></i><i></i></div>`;
   const noscript = `<noscript><p class="card" style="margin:20px 0">هذه الصفحة تحتاج تفعيل JavaScript في المتصفح.</p></noscript>`;
   const G = D.ADVISOR.grams;
@@ -14,10 +15,10 @@ module.exports = function (ctx) {
       main: `<div class="adv-page">
   <aside class="adv-side">
     <div class="adv-side__b">
-      ${U.kicker("N°", "مستشار نُضْج")}
-      <h1 class="adv-side__t">قل المناسبة. <em>نحسبها بالجرام.</em></h1>
-      <p>كل إجابة تقدر ترجع لها وتغيّرها. وبعد الخطة تقدر تضيف مناسبة ثانية أو تعدّل أي وزن قبل الطلب.</p>
-      <h2 class="adv-side__h">كيف يحسب؟</h2>
+      ${U.kicker("N°", esc(T.kicker))}
+      <h1 class="adv-side__t">${esc(T.title)} <em>${esc(T.em)}</em></h1>
+      <p>${tpl(T.sub)}</p>
+      <h2 class="adv-side__h">${esc(T.rules)}</h2>
       <ul class="rules">
         <li><b class="num">${G.grill}</b><span>جم للشخص — مشاوي بدون عظم</span></li>
         <li><b class="num">${G.kabsa}</b><span>جم للشخص — كبسة ومندي بالعظم</span></li>
@@ -25,7 +26,7 @@ module.exports = function (ctx) {
         <li><b class="num">${G.stew}</b><span>جم للشخص — مرق وإيدام</span></li>
         <li><b class="num">1</b><span>كيس فحم لكل ${D.ADVISOR.charcoalKgPerBag} كجم مشاوي</span></li>
       </ul>
-      <p class="muted small">الكميات تقريبية للحم النيء وتُقرّب لأقرب نصف كيلو.</p>
+      <p class="muted small">${tpl(T.note)}</p>
       <div id="advPlans"></div>
     </div>
   </aside>

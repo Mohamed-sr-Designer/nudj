@@ -199,11 +199,15 @@ window.NUDJ_STORE = (function () {
     create({ lines, coupon, address, slot, payment, plan }) {
       const t = totals(lines, coupon);
       const items = lines.map(l => { const p = D.byId(l.id); const b = breakdown(l); return { id: l.id, name: p.name, sold: p.sold, kg: l.kg, qty: l.qty, opts: l.opts, note: l.note, unit: unitPrice(p, l.opts), base: b.base, adds: b.adds, price: b.total }; });
-      const o = { id: orderId(), date: Date.now(), items, totals: t, address, slot, payment, plan: plan || null, status: "placed" };
+      const u = user.get();
+      const o = { id: orderId(), date: Date.now(), items, totals: t, address, slot, payment, plan: plan || null, status: "placed", user: u ? { name: u.name, phone: u.phone } : null, log: [{ s: "placed", t: Date.now() }] };
       const l = read(K.orders, []); l.unshift(o); write(K.orders, l);
       emit("orders"); return o;
     },
-    cancel(id) { const l = read(K.orders, []); const o = l.find(x => x.id === id); if (!o || o.status !== "placed") return false; o.status = "cancelled"; write(K.orders, l); emit("orders"); return true; }
+    cancel(id) { const l = read(K.orders, []); const o = l.find(x => x.id === id); if (!o || o.status !== "placed") return false; o.status = "cancelled"; o.log = (o.log || []).concat([{ s: "cancelled", t: Date.now() }]); write(K.orders, l); emit("orders"); return true; },
+    /* من لوحة التحكم: placed → cutting → onway → done (أو cancelled) مع سجل الأوقات */
+    setStatus(id, st) { const l = read(K.orders, []); const o = l.find(x => x.id === id); if (!o) return false; o.status = st; o.log = (o.log || []).concat([{ s: st, t: Date.now() }]); write(K.orders, l); emit("orders"); return true; },
+    remove(id) { write(K.orders, read(K.orders, []).filter(x => x.id !== id)); emit("orders"); }
   };
 
   /* =========================================================

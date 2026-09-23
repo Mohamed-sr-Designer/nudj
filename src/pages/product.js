@@ -1,14 +1,15 @@
 /* صفحة ثابتة لكل منتج */
 module.exports = function (ctx) {
-  const { D, U, C, h } = ctx;
-  const { icon, esc } = U;
+  const { D, U, C } = ctx;
+  const { icon, esc, tpl, h } = U;
+  const T = D.COPY.product;
 
   return D.PRODUCTS.map(p => {
     const a = D.animal(p.animal);
     const isExtra = p.animal === "extra";
     const back = isExtra ? ["shop.html?a=extra", "عدّة الشواء"] : [p.animal + ".html", a.n];
     const related = (isExtra ? D.extras() : D.cutsOf(p.animal)).filter(x => x.id !== p.id).slice(0, 8);
-    const pair = isExtra ? [] : (p.uses.indexOf("grill") > -1 ? ["charcoal", "spice-grill", "skewers"] : p.uses.indexOf("kabsa") > -1 ? ["spice-kabsa", "spice-mandi", "trays"] : ["trays", "spice-kabsa"]).map(D.byId);
+    const pair = isExtra ? [] : (p.uses.indexOf("grill") > -1 ? ["charcoal", "spice-grill", "skewers"] : p.uses.indexOf("kabsa") > -1 ? ["spice-kabsa", "spice-mandi", "trays"] : ["trays", "spice-kabsa"]).map(D.byId).filter(x => x && !x.hidden);
     const imgs = [p.img].concat(p.gallery || []).filter(Boolean);
     const unit = p.sold === "kg" ? "للكيلو" : p.sold === "carcass" ? "حسب الحجم" : "لل" + (p.unitName || "حبة");
     const price = p.sold === "carcass" ? p.sizes[0].p : p.price;
@@ -18,7 +19,7 @@ module.exports = function (ctx) {
 
     /* مستشار صغير داخل الصفحة: كم أحتاج؟ */
     const helper = p.sold === "kg" ? `<div class="mini-adv" id="miniAdv">
-  <div class="mini-adv__h">${U.mark("mini-adv__mark")}<b>كم تحتاج؟</b><small>المستشار يحسبها لك</small></div>
+  <div class="mini-adv__h">${U.mark("mini-adv__mark")}<b>${esc(T.howMuch)}</b><small>المستشار يحسبها لك</small></div>
   <div class="mini-adv__row"><span>عدد الأشخاص</span><div class="stepper stepper--sm"><button type="button" data-mp="-1" aria-label="أقل">${icon("minus", "", 2.4)}</button><output class="num" id="mpV">4</output><button type="button" data-mp="1" aria-label="أكثر">${icon("plus", "", 2.4)}</button></div></div>
   <p class="mini-adv__out" id="mpOut"></p>
   <div class="mini-adv__btns"><button type="button" class="btn btn--line btn--sm" id="mpSet">اضبط الميزان</button><button type="button" class="btn btn--ghost btn--sm" data-advisor="open" data-sheet data-ask="${p.id}">اسأل المستشار عنها ${icon("chevL")}</button></div>
@@ -48,7 +49,7 @@ module.exports = function (ctx) {
       <div class="pd__meta"><span class="tag__code num">${p.code}</span><span>${a ? a.n : "عدّة الشواء"}${p.bone ? " · بالعظم" : ""}${p.zone ? " · " + D.ZONES[p.zone] : ""}</span></div>
       <h1 class="pd__t">${esc(p.name)}</h1>
       <p class="pd__short">${esc(p.short)}</p>
-      <div class="pd__price">${U.priceTag(p)}${p.sold === "kg" ? `<span class="pd__free">${icon("knife")}التقطيع مجاني</span>` : ""}</div>
+      <div class="pd__price">${U.priceTag(p)}${p.sold === "kg" ? `<span class="pd__free">${icon("knife")}${esc(T.free)}</span>` : ""}</div>
       ${helper}
       ${U.buyForm(p)}
     </div>
@@ -60,7 +61,7 @@ module.exports = function (ctx) {
     ${p.spec ? `<div class="pd-info__spec">${U.spec(p.spec)}</div>` : ""}
   </section>
   ${where}
-  ${pair.length ? `<section class="section"><div class="sec-head"><h2>يكمّلها</h2><p>عدّة وبهارات تناسب هذي القطعة.</p></div><div class="rail">${U.grid(pair)}</div></section>` : ""}
+  ${pair.length ? `<section class="section"><div class="sec-head"><h2>${esc(T.pair)}</h2><p>${tpl(T.pairSub)}</p></div><div class="rail">${U.grid(pair)}</div></section>` : ""}
   <section class="section"><div class="sec-head"><h2>${isExtra ? "عدّة ثانية" : "قطعيات " + a.n + " ثانية"}</h2><a class="seeall" href="${isExtra ? "shop.html?a=extra" : a.k + ".html"}">الكل ${icon("chevL")}</a></div><div class="rail">${U.grid(related)}</div></section>
 </div>`
     };

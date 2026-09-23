@@ -93,7 +93,7 @@
   }
   const slot = (key, cls, alt, o) => img(D.IMAGES[key] || "", alt, cls, o);
   const productImg = (p, cls, o) => img(p.img || "", p.name, cls, o);
-  const herdArt = (k, cls) => `<img class="herd-art${cls ? " " + cls : ""}" src="assets/img/herd/${k}.png" alt="" loading="lazy" decoding="async">`;
+  const herdArt = (k, cls) => { const a = D.animal(k); return `<img class="herd-art${cls ? " " + cls : ""}" src="${esc((a && a.art) || "assets/img/herd/" + k + ".png")}" alt="" loading="lazy" decoding="async">`; };
 
   /* ---------------- التسعير ---------------- */
   const sizeOf = (p, k) => (p.sizes || []).find(s => s.k === k) || (p.sizes || []).find(s => s.k === p.sizeDef) || (p.sizes || [])[0];
@@ -281,9 +281,38 @@
   const fmtTime = ts => new Date(ts).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const kicker = (n, t) => `<span class="kicker"><b class="num">${n}</b>${t}</span>`;
 
+  /* ---------------- نصوص قابلة للتعديل: استبدال الرموز {fee} {cities}… بقيمها ---------------- */
+  function tpl(str) {
+    if (str == null) return "";
+    const K = C.contact || {};
+    const V = {
+      fee: C.delivery.fee, freeOver: C.delivery.freeOver, cities: C.cities.join("، "), windows: C.windows.map(w => w.l).join("، "),
+      phone: K.phone, whatsapp: K.whatsapp, email: K.email, cr: K.cr, vatNo: K.vatNo, city: K.city, hours: K.hours, address: K.address,
+      skewer: D.SERVICES.skewer.p, vacuumKg: D.SERVICES.vacuum.p, vacuumCarcass: D.SERVICES.vacuum.carcass,
+      marinades: D.MARINADES.filter(m => m.p).map(m => `<b>تتبيلة ${m.n}:</b> ${m.d} — ${m.p} ر.س/كجم`).join("<br>"),
+      styles: D.STYLES.map(x => `<b>${x.n}:</b> ${x.d}`).join("<br>"),
+      cutsCount: D.live().filter(p => p.sold === "kg").length, carcassCount: D.carcasses().length
+    };
+    return String(str).replace(/\{(\w+)\}/g, (m, k) => V[k] != null ? V[k] : m);
+  }
+  /* مساعدات القوالب (المتصفح والبناء معاً) */
+  const h = {
+    crumbs(list) {
+      const items = [["الرئيسية", "index.html"]].concat(list);
+      return `<nav class="crumbs" aria-label="مسار التنقل">${items.map((c, i) => {
+        const last = i === items.length - 1;
+        return (i ? icon("chevL") : "") + (last || !c[1] ? `<span${last ? ' aria-current="page"' : ""}>${esc(c[0])}</span>` : `<a href="${c[1]}">${esc(c[0])}</a>`);
+      }).join("")}</nav>`;
+    },
+    faq(q, a) { return `<details><summary>${q}${icon("plus", "faq__ic", 2)}</summary><div class="a">${a}</div></details>`; }
+  };
+  /* شعارات الدفع في شارات بيضاء */
+  const payLogos = (p, cls) => (p.logos || []).length ? `<span class="paylogos${cls ? " " + cls : ""}">${p.logos.map(src => `<img src="${esc(src)}" alt="${esc(p.n)}" loading="lazy">`).join("")}</span>` : `<span class="paylogos paylogos--txt${cls ? " " + cls : ""}">${icon("cash")}</span>`;
+  const payments = () => (C.payments || []).filter(p => p.on !== false);
+
   root.NUDJ_UI = {
     esc, money, money2, cur, kgTxt, icon, logo, brand, mark, url, img, slot, productImg, herdArt, sizeOf, perTxt, priceTag, animalName,
     tagCard, grid, productRow, spec, herdCard, herdMap, barcode, receipt, lineForReceipt, optsText, chips, buyForm, scale,
-    empty, cell, group, fmtDate, fmtTime, kicker
+    empty, cell, group, fmtDate, fmtTime, kicker, tpl, h, payLogos, payments
   };
 })(typeof window !== "undefined" ? window : globalThis);
