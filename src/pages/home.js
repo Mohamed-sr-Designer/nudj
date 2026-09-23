@@ -22,6 +22,49 @@ module.exports = function (ctx) {
   const uses = ["grill", "kabsa", "steak", "slow", "mince"];
   const byUse = u => D.PRODUCTS.filter(p => p.sold === "kg" && p.uses[0] === u).slice(0, 8);
 
+
+  /* ============ «التقطيع مجاني»: سكين تقطّع الصورة إلى 7 شرائح (شكل تقطيع لكل شريحة) ============
+     الشرائح نسخ من نفس الصورة مقصوصة بمضلعات مائلة (--l/--r)، وخطوط القطع والسكين تُرسم فوقها.
+     حركة السكين تُولّد هنا لأن مواضع القطع تُحسب من عدد الأشكال. */
+  function cutBand() {
+    const forms = ["kabsa", "cubes", "slices", "steaks", "osso", "mince", "kebab"];
+    const N = forms.length, W = 100 / N, SL = 2.6, T = 100 / (N - 1), bg = D.IMAGES.texture || "";
+    const f = n => +n.toFixed(3);
+    const strips = forms.map((k, i) => {
+      const p = N - 1 - i, l = p ? f(p * W) : -12, r = p === N - 1 ? 112 : f((p + 1) * W);
+      return `<div class="cutband__s" style="--i:${i};--l:${l}%;--r:${r}%;--dir:${i % 2 ? 1 : -1};--mid:${f((p + .5) * W - SL)}%;background-image:url('${bg}')">
+      <span class="cutband__lbl"><b>${D.PREPS[k].n}</b><small>${D.PREPS[k].d}</small></span></div>`;
+    }).join("");
+    const lines = forms.slice(1).map((k, j) => { const x = 100 - (j + 1) * W; return `<line x1="${f(x + SL)}" y1="0" x2="${f(x - SL)}" y2="100" style="--k:${j}"/>`; }).join("");
+    /* مسار طرف السكين: ينزل على كل خط قطع ثم يقفز للخط التالي خارج الإطار */
+    let kf = "";
+    forms.slice(1).forEach((k, j) => {
+      const x = 100 - (j + 1) * W, st = j * T;
+      kf += `${f(st)}%{left:${f(x + SL + .4)}%;top:-6%;animation-timing-function:cubic-bezier(.55,0,.8,.4)}`;
+      kf += `${f(st + T * .6)}%{left:${f(x - SL - .2)}%;top:104%;animation-timing-function:linear}`;
+      kf += `${f(st + T * .8)}%{left:${f(x - SL - .6)}%;top:175%;animation-timing-function:steps(1,end)}`;
+    });
+    kf += `100%{left:${f(W - SL - .6)}%;top:175%}`;
+    return `<section class="cutband" data-cutband aria-labelledby="cutH">
+  <style>@keyframes knife{${kf}}</style>
+  <div class="cutband__stage" style="--sl:${SL}%" aria-hidden="true">
+    ${strips}
+    <svg class="cutband__lines" viewBox="0 0 100 100" preserveAspectRatio="none">${lines}</svg>
+    <svg class="cutband__knife" viewBox="0 0 60 300"><defs><linearGradient id="kbl" x1="0" x2="1"><stop offset="0" stop-color="#F3F5F7"/><stop offset=".55" stop-color="#B9C0C6"/><stop offset="1" stop-color="#7E868D"/></linearGradient><linearGradient id="khd" x1="0" x2="1"><stop offset="0" stop-color="#2B2522"/><stop offset="1" stop-color="#120F0E"/></linearGradient></defs>
+      <rect x="15" y="0" width="30" height="86" rx="9" fill="url(#khd)"/><circle cx="30" cy="20" r="3.2" fill="#C9CED3"/><circle cx="30" cy="43" r="3.2" fill="#C9CED3"/><circle cx="30" cy="66" r="3.2" fill="#C9CED3"/>
+      <rect x="12" y="84" width="36" height="12" rx="3" fill="#9AA2A9"/>
+      <path d="M12 96H46V262Q46 286 38 300Q20 276 14 250Q12 240 12 228Z" fill="url(#kbl)"/><path d="M40 100V258" stroke="#fff" stroke-opacity=".55" stroke-width="1.5"/><path d="M12 96V228Q12 240 14 250Q20 276 38 300" fill="none" stroke="#FF5A36" stroke-opacity=".7" stroke-width="1.2"/></svg>
+  </div>
+  <div class="wrap cutband__copy">
+    ${U.kicker(String(N).padStart(2, "0"), "أشكال تقطيع")}
+    <h2 id="cutH">التقطيع مجاني.<em>بأي شكل تبغاه.</em></h2>
+    <p>اختار الشكل وقت الطلب — والجزّار يقطّعها لك بدون أي رسوم.</p>
+  </div>
+  <button type="button" class="cutband__again" data-cut-again>${icon("knife")}قطّعها مرة ثانية</button>
+  <ul class="cutband__forms">${forms.map(k => `<li><b>${D.PREPS[k].n}</b><small>${D.PREPS[k].d}</small></li>`).join("")}</ul>
+</section>`;
+  }
+
   return [{
     name: "home", file: "index.html", tab: "home", nav: "", mode: "root", appTitle: "", scripts: ["home"],
     preload: D.IMAGES["home-hero"] || "",
@@ -94,10 +137,7 @@ module.exports = function (ctx) {
   </div>
 </section>
 
-<section class="band" aria-label="التقطيع مجاني">
-  ${U.slot("texture", "band__img", "")}
-  <div class="wrap band__in"><p class="band__t">التقطيع مجاني.<br><em>بأي شكل تبغاه.</em></p></div>
-</section>
+${cutBand()}
 
 <section class="section wrap carcass-cta" aria-labelledby="carH">
   <div class="carcass-cta__media">${U.slot("occ-carcass", "carcass-cta__img", "")}</div>
