@@ -5,9 +5,9 @@
   const { $ } = A;
   const inp = $("#sq"), root = $("#sRoot"), clr = $("#sClear"); if (!inp) return;
   const L = D.L || (ar => ar);
-  const SUGG = L(["ريش", "كبسة", "حاشي", "ستيك", "مفروم", "كبدة", "ذبيحة", "فحم"], ["Rack", "Kabsa", "Camel", "Steak", "Mince", "Liver", "Carcass", "Charcoal"]);
+  const SUGG = L(["ريش", "كبسة", "جمل", "ستيك", "مفروم", "كبدة", "ذبيحة", "فحم"], ["Rack", "Kabsa", "Camel", "Steak", "Mince", "Liver", "Carcass", "Charcoal"]);
   const idx = D.PRODUCTS.map(p => ({ p, h: A.norm([p.name, p.short, p.info, p.code, U.animalName(p), (p.uses || []).map(u => D.USES[u].n).join(" "), (p.preps || []).map(k => D.PREPS[k].n).join(" ")].join(" ")) }));
-  const ALIAS = { "خروف": "ضان", "غنم": "ضان", "جمل": "حاشي", "ابل": "حاشي", "تيس": "ماعز", "مشوي": "مشاوي", "شوي": "مشاوي",
+  const ALIAS = { "خروف": "ضان", "غنم": "ضان", "حاشي": "جمل", "ابل": "جمل", "قعود": "جمل", "تيس": "ماعز", "مشوي": "مشاوي", "شوي": "مشاوي",
     sheep: "lamb", mutton: "lamb", hashi: "camel", calf: "veal", cow: "beef", bbq: "grill", barbecue: "grill", ribs: "rack", chops: "rack", minced: "mince", ground: "mince" };
   function results(q) {
     const w = A.norm(q).split(" ").filter(Boolean).map(t => ALIAS[t] || t);

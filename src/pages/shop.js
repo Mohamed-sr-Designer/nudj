@@ -11,7 +11,7 @@ module.exports = function (ctx) {
   const uses = Object.keys(D.USES);
   pages.push({
     name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: T.shop.title, scripts: ["shop"], trail: ["search", "herd"],
-    title: L("المتجر — قطعيات ضأن وماعز وحاشي وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
+    title: L("المتجر — قطعيات ضأن وماعز وجمل وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
     desc: L("كل قطعيات نُضْج بالكيلو مع التقطيع المجاني، والذبائح الكاملة، وعدّة الشواء والبهارات.", "Every NUDJ cut by the kilo with free cutting, plus whole carcasses, BBQ kit and spices."),
     main: `<div class="wrap">
   ${h.crumbs([[T.shop.title]])}
@@ -32,7 +32,7 @@ module.exports = function (ctx) {
   /* ================= خريطة القطيع ================= */
   pages.push({
     name: "herd", file: "cuts.html", tab: "shop", nav: "herd", mode: "push", back: ["shop.html", T.shop.title], appTitle: T.herd.title,
-    title: L("القطيع — خريطة قطعيات الضأن والماعز والحاشي والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
+    title: L("القطيع — خريطة قطعيات الضأن والماعز والجمل والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
     desc: L("خريطة القطعيات لكل ماشية: اضغط على أي رقم لتشوف القطعة وسعرها والتقطيع المتاح.", "A cuts map for every animal: tap any number to see the cut, its price and the cutting styles available."),
     main: `<div class="wrap">
   ${h.crumbs([[T.herd.title]])}

@@ -161,7 +161,7 @@ const stub = (file, js, fallback) => {
   write(file, `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="robots" content="noindex, follow">
 <title>انتقال · نُضْج</title><meta http-equiv="refresh" content="1;url=${fallback}"><link rel="canonical" href="${C.base}${fallback}">
 <script>(function(){var q=new URLSearchParams(location.search);${js}location.replace(t||"${fallback}");})();</script></head>
-<body style="font-family:system-ui;padding:40px;text-align:center;background:#0E1216;color:#EDE8E1">جارٍ نقلك… <a style="color:#FF5A36" href="${fallback}">اضغط هنا إن لم يحدث تلقائياً</a></body></html>`);
+<body style="font-family:system-ui;padding:40px;text-align:center;background:#161A1F;color:#EDE8E1">جارٍ نقلك… <a style="color:#FF5A36" href="${fallback}">اضغط هنا إن لم يحدث تلقائياً</a></body></html>`);
   produced.push(file);
 };
 const idsJ = JSON.stringify(D.PRODUCTS.map(p => p.id));
@@ -202,7 +202,7 @@ const priceTxt = p => p.sold === "carcass" ? p.sizes.map(s => `${s.l} ≈${s.kg}
 write("llms.txt", `# نُضْج — NUDJ
 
 > English version: ${C.base}en/
-> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
+> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، جمل، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
 - كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
 - التقطيع مجاني. خدمات مدفوعة بالكيلو: تتبيل (${D.MARINADES.filter(m => m.p).map(m => m.n + " " + m.p).join("، ")} ر.س)، تسييخ ${D.SERVICES.skewer.p} ر.س، تغليف مفرّغ ${D.SERVICES.vacuum.p} ر.س (${D.SERVICES.vacuum.carcass} ر.س للذبيحة).
@@ -227,7 +227,7 @@ ${D.extras().map(p => `- [${p.name}](${C.base}${p.id}.html): ${p.short} — ${pr
 write("manifest.webmanifest", JSON.stringify({
   name: "نُضْج — ملحمة ومستشار طبخ", short_name: "نُضْج", lang: "ar", dir: "rtl",
   start_url: "./index.html", scope: "./", display: "standalone", orientation: "portrait",
-  background_color: "#0E1216", theme_color: "#0E1216",
+  background_color: "#161A1F", theme_color: "#161A1F",
   icons: [
     { src: "assets/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },
@@ -238,7 +238,7 @@ write("manifest.webmanifest", JSON.stringify({
 write("en/manifest.webmanifest", JSON.stringify({
   name: "NUDJ — Butcher & cooking advisor", short_name: "NUDJ", lang: "en", dir: "ltr",
   start_url: "./index.html", scope: "./", display: "standalone", orientation: "portrait",
-  background_color: "#0E1216", theme_color: "#0E1216",
+  background_color: "#161A1F", theme_color: "#161A1F",
   icons: [
     { src: "../assets/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     { src: "../assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },

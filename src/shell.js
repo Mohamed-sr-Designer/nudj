@@ -45,7 +45,7 @@ ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="can
 <link rel="alternate" hreflang="${EN ? "ar" : "en"}" href="${alt(m.file)}">
 <link rel="alternate" hreflang="x-default" href="${EN ? alt(m.file) : url(m.file)}">`}
 <meta name="nudj-content" content="${ctx.contentHash || "0"}" data-tpl="${V("assets/js/templates.js")}">
-<meta name="theme-color" content="#0E1216">
+<meta name="theme-color" content="#161A1F">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -140,7 +140,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
 ${m.chrome === false ? "" : ticker()}
 ${m.chrome === false ? "" : siteHeader(m)}
 ${appBar(m)}
-<main id="main">
+<main id="main"${m.tone === "light" ? ' class="tone-light"' : ""}>
 ${main}
 </main>
 ${m.footer === false ? "" : footer(m)}

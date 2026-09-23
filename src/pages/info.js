@@ -5,7 +5,7 @@ module.exports = function (ctx) {
   const T = D.COPY, K = C.contact;
   const draft = C.demo ? `<p class="demo-banner">${icon("info")}${L("نموذج مبدئي — راجع النص مع مستشار قانوني وعدّل ما بين [الأقواس] قبل الإطلاق.", "Draft template — review this text with a legal adviser and replace everything in [brackets] before launch.")}</p>` : "";
   const push = (name, file, title, appTitle, desc, main, extra) => Object.assign({
-    name, file, tab: "account", mode: "push", back: ["account.html", L("حسابي", "My account")], appTitle, title: title + L(" · نُضْج", " · NUDJ"), desc, main
+    name, file, tab: "account", mode: "push", back: ["account.html", L("حسابي", "My account")], appTitle, title: title + L(" · نُضْج", " · NUDJ"), desc, main, tone: "light"
   }, extra || {});
   const strip = s => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 

@@ -178,7 +178,7 @@ window.NUDJ_ADVISOR = (function () {
         else { pick = AD.dishPick[d.k][a.fAnimal]; g = AD.grams.kabsa; }
         const kg = up(g * a.people / 1000);
         lines.push({ id: pick[0], kg, opts: { prep: pick[1] }, why: g + " " + G + L(" للشخص", " per person") });
-        if (a.fAnimal === "camel" && d.k !== "marag") notes.push(L("الحاشي يحتاج وقت أطول من الضأن بنص ساعة إلى ساعة.", "Camel needs 30 minutes to an hour longer than lamb."));
+        if (a.fAnimal === "camel" && d.k !== "marag") notes.push(L("الجمل يحتاج وقت أطول من الضأن بنص ساعة إلى ساعة.", "Camel needs 30 minutes to an hour longer than lamb."));
       }
       const kg = meatKg(lines);
       if (a.spice === "yes") lines.push(tool(d.spice, Math.ceil(kg / AD.spiceKgPerPack), perBag(AD.spiceKgPerPack)));
@@ -488,7 +488,7 @@ window.NUDJ_ADVISOR = (function () {
       autoFill();
       if (current() !== cur) return save("new");
     } else if (n && st.a.people) { st.a.people = n; st.adj = {}; return save("new"); }
-    st.note = L("ما فهمت عليك تماماً — اختر من الخيارات تحت، أو اكتب مثل: «كبسة حاشي لـ 12 شخص».", "I didn't quite get that — pick from the options below, or type something like “camel kabsa for 12 people”.");
+    st.note = L("ما فهمت عليك تماماً — اختر من الخيارات تحت، أو اكتب مثل: «كبسة جمل لـ 12 شخص».", "I didn't quite get that — pick from the options below, or type something like “camel kabsa for 12 people”.");
     save("new");
   }
 

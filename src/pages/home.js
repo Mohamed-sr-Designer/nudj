@@ -133,7 +133,7 @@ module.exports = function (ctx) {
   <div class="carcass-cta__media">${U.slot("occ-carcass", "carcass-cta__img", "")}</div>
   <div class="carcass-cta__b">
     <div class="sec-head">${U.kicker(num(n), esc(T.carcass.kicker))}<h2 id="carH">${esc(T.carcass.title)}</h2><p>${tpl(T.carcass.sub)}</p></div>
-    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</b><small>${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg} ${KG}</small></a>`).join("")}</div>
+    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num"><bdi dir="ltr">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</bdi></b><small><bdi dir="ltr">${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg}</bdi> ${KG}</small></a>`).join("")}</div>
     <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="carcass">${esc(T.carcass.btn1)}</button><a class="btn btn--line" href="shop.html?a=carcass">${esc(T.carcass.btn2)}</a></div>
   </div>
 </section>`,
@@ -145,7 +145,11 @@ module.exports = function (ctx) {
   /* ترقيم الأقسام (01، 02…) حسب الظاهر منها فقط */
   const numbered = ["herd", "occasions", "how", "uses", "services", "carcass", "faq"];
   let counter = 0;
-  const main = D.HOME.filter(s => s.on !== false && SECTIONS[s.k]).map(s => SECTIONS[s.k](numbered.indexOf(s.k) > -1 ? ++counter : 0)).join("\n");
+  /* الأقسام الفاتحة تُلف بشريط «ورق» بعرض الصفحة */
+  const main = D.HOME.filter(s => s.on !== false && SECTIONS[s.k]).map(s => {
+    const html = SECTIONS[s.k](numbered.indexOf(s.k) > -1 ? ++counter : 0);
+    return s.tone === "light" ? `<div class="tone-light tone-band">${html}</div>` : html;
+  }).join("\n");
 
   return [{
     name: "home", file: "index.html", tab: "home", nav: "", mode: "root", appTitle: "", scripts: ["home"],

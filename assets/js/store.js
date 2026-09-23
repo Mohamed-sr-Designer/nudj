@@ -200,7 +200,7 @@ window.NUDJ_STORE = (function () {
     get: id => read(K.orders, []).find(o => o.id === id),
     create({ lines, coupon, address, slot, payment, plan }) {
       const t = totals(lines, coupon);
-      const items = lines.map(l => { const p = D.byId(l.id); const b = breakdown(l); return { id: l.id, name: p.name, sold: p.sold, kg: l.kg, qty: l.qty, opts: l.opts, note: l.note, unit: unitPrice(p, l.opts), base: b.base, adds: b.adds, price: b.total }; });
+      const items = lines.map(l => { const p = D.byId(l.id); const b = breakdown(l); return { id: l.id, name: p.name, sold: p.sold, kg: l.kg, qty: l.qty, opts: l.opts, note: l.note, unit: unitPrice(p, l.opts), base: b.base, adds: b.adds, price: b.total, src: l.src || "" }; });
       const u = user.get();
       const o = { id: orderId(), date: Date.now(), items, totals: t, address, slot, payment, plan: plan || null, status: "placed", user: u ? { name: u.name, phone: u.phone } : null, log: [{ s: "placed", t: Date.now() }] };
       const l = read(K.orders, []); l.unshift(o); write(K.orders, l);

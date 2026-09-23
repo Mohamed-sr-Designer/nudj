@@ -304,11 +304,18 @@
     openAdvisor({ occ: b.dataset.advisor && b.dataset.advisor !== "open" ? b.dataset.advisor : null, ask: b.dataset.ask || null, hints: b.dataset.animal ? { animal: b.dataset.animal } : null, sheet: b.hasAttribute("data-sheet") });
   });
   function initFab() {
-    if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]") || $("[data-advisor-inline]")) return;
+    if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]")) return;
+    /* في الرئيسية: يظهر بعد النزول عن مستشار البطل، ويختفي حين يعود للظهور */
+    const inline = $("[data-advisor-inline]");
+    if (inline && !("IntersectionObserver" in window)) return;
     const f = document.createElement("button");
     f.type = "button"; f.className = "fab"; f.setAttribute("data-advisor", "open"); f.setAttribute("data-sheet", ""); f.setAttribute("aria-label", L("اسأل مستشار نُضْج", "Ask the NUDJ advisor"));
     f.innerHTML = `<span class="fab__av">${U.mark("fab__mark")}</span><span class="fab__t">${L("اسأل المستشار", "Ask the advisor")}</span>`;
     document.body.appendChild(f);
+    if (inline) {
+      f.classList.add("is-away");
+      new IntersectionObserver(([e]) => f.classList.toggle("is-away", e.isIntersecting || e.boundingClientRect.top > 0), { threshold: 0 }).observe(inline);
+    }
   }
 
   /* =========================================================

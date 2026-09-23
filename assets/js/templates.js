@@ -51,7 +51,7 @@ ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="can
 <link rel="alternate" hreflang="${EN ? "ar" : "en"}" href="${alt(m.file)}">
 <link rel="alternate" hreflang="x-default" href="${EN ? alt(m.file) : url(m.file)}">`}
 <meta name="nudj-content" content="${ctx.contentHash || "0"}" data-tpl="${V("assets/js/templates.js")}">
-<meta name="theme-color" content="#0E1216">
+<meta name="theme-color" content="#161A1F">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -146,7 +146,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
 ${m.chrome === false ? "" : ticker()}
 ${m.chrome === false ? "" : siteHeader(m)}
 ${appBar(m)}
-<main id="main">
+<main id="main"${m.tone === "light" ? ' class="tone-light"' : ""}>
 ${main}
 </main>
 ${m.footer === false ? "" : footer(m)}
@@ -299,7 +299,7 @@ module.exports = function (ctx) {
   <div class="carcass-cta__media">${U.slot("occ-carcass", "carcass-cta__img", "")}</div>
   <div class="carcass-cta__b">
     <div class="sec-head">${U.kicker(num(n), esc(T.carcass.kicker))}<h2 id="carH">${esc(T.carcass.title)}</h2><p>${tpl(T.carcass.sub)}</p></div>
-    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</b><small>${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg} ${KG}</small></a>`).join("")}</div>
+    <div class="sizes">${D.carcasses().filter(p => /whole|half/.test(p.id)).map(p => `<a class="size" href="${U.url.product(p.id)}"><span>${esc(p.name)}</span><b class="num"><bdi dir="ltr">${U.money(p.sizes[0].p)}–${U.money(p.sizes[p.sizes.length - 1].p)}</bdi></b><small><bdi dir="ltr">${p.sizes[0].kg}–${p.sizes[p.sizes.length - 1].kg}</bdi> ${KG}</small></a>`).join("")}</div>
     <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="carcass">${esc(T.carcass.btn1)}</button><a class="btn btn--line" href="shop.html?a=carcass">${esc(T.carcass.btn2)}</a></div>
   </div>
 </section>`,
@@ -311,7 +311,11 @@ module.exports = function (ctx) {
   /* ترقيم الأقسام (01، 02…) حسب الظاهر منها فقط */
   const numbered = ["herd", "occasions", "how", "uses", "services", "carcass", "faq"];
   let counter = 0;
-  const main = D.HOME.filter(s => s.on !== false && SECTIONS[s.k]).map(s => SECTIONS[s.k](numbered.indexOf(s.k) > -1 ? ++counter : 0)).join("\n");
+  /* الأقسام الفاتحة تُلف بشريط «ورق» بعرض الصفحة */
+  const main = D.HOME.filter(s => s.on !== false && SECTIONS[s.k]).map(s => {
+    const html = SECTIONS[s.k](numbered.indexOf(s.k) > -1 ? ++counter : 0);
+    return s.tone === "light" ? `<div class="tone-light tone-band">${html}</div>` : html;
+  }).join("\n");
 
   return [{
     name: "home", file: "index.html", tab: "home", nav: "", mode: "root", appTitle: "", scripts: ["home"],
@@ -337,7 +341,7 @@ module.exports = function (ctx) {
   const uses = Object.keys(D.USES);
   pages.push({
     name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: T.shop.title, scripts: ["shop"], trail: ["search", "herd"],
-    title: L("المتجر — قطعيات ضأن وماعز وحاشي وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
+    title: L("المتجر — قطعيات ضأن وماعز وجمل وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
     desc: L("كل قطعيات نُضْج بالكيلو مع التقطيع المجاني، والذبائح الكاملة، وعدّة الشواء والبهارات.", "Every NUDJ cut by the kilo with free cutting, plus whole carcasses, BBQ kit and spices."),
     main: `<div class="wrap">
   ${h.crumbs([[T.shop.title]])}
@@ -358,7 +362,7 @@ module.exports = function (ctx) {
   /* ================= خريطة القطيع ================= */
   pages.push({
     name: "herd", file: "cuts.html", tab: "shop", nav: "herd", mode: "push", back: ["shop.html", T.shop.title], appTitle: T.herd.title,
-    title: L("القطيع — خريطة قطعيات الضأن والماعز والحاشي والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
+    title: L("القطيع — خريطة قطعيات الضأن والماعز والجمل والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
     desc: L("خريطة القطعيات لكل ماشية: اضغط على أي رقم لتشوف القطعة وسعرها والتقطيع المتاح.", "A cuts map for every animal: tap any number to see the cut, its price and the cutting styles available."),
     main: `<div class="wrap">
   ${h.crumbs([[T.herd.title]])}
@@ -584,7 +588,7 @@ module.exports = function (ctx) {
   const T = D.COPY, K = C.contact;
   const draft = C.demo ? `<p class="demo-banner">${icon("info")}${L("نموذج مبدئي — راجع النص مع مستشار قانوني وعدّل ما بين [الأقواس] قبل الإطلاق.", "Draft template — review this text with a legal adviser and replace everything in [brackets] before launch.")}</p>` : "";
   const push = (name, file, title, appTitle, desc, main, extra) => Object.assign({
-    name, file, tab: "account", mode: "push", back: ["account.html", L("حسابي", "My account")], appTitle, title: title + L(" · نُضْج", " · NUDJ"), desc, main
+    name, file, tab: "account", mode: "push", back: ["account.html", L("حسابي", "My account")], appTitle, title: title + L(" · نُضْج", " · NUDJ"), desc, main, tone: "light"
   }, extra || {});
   const strip = s => String(s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 

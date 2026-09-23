@@ -1,7 +1,7 @@
 # نُضْج — NUDJ
 
 > English version: https://mohamed-sr-designer.github.io/nudj/en/
-> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
+> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، جمل، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
 - كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
 - التقطيع مجاني. خدمات مدفوعة بالكيلو: تتبيل (كلاسيكي 8، مشاوي حار 10، ليمون وأعشاب 10، زبادي وبهارات 12 ر.س)، تسييخ 6 ر.س، تغليف مفرّغ 3 ر.س (35 ر.س للذبيحة).
@@ -36,14 +36,14 @@
 - [رقبة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-neck.html): للمرق والإيدام — 52 ر.س للكيلو
 - [مفروم ماعز](https://mohamed-sr-designer.github.io/nudj/goat-mince.html): مفروم قليل الدهن — 62 ر.س للكيلو
 
-## حاشي
-- [قطعيات حاشي](https://mohamed-sr-designer.github.io/nudj/camel.html): ألياف خشنة ونكهة خاصة وسنام دهني — للكبسة والطبخ الطويل.
-- [حاشي بالعظم](https://mohamed-sr-designer.github.io/nudj/camel-bone.html): للكبسة والمندي — 58 ر.س للكيلو
-- [فخذ حاشي](https://mohamed-sr-designer.github.io/nudj/camel-leg.html): لحم أحمر بلا عظم — 64 ر.س للكيلو
-- [ضلوع حاشي](https://mohamed-sr-designer.github.io/nudj/camel-ribs.html): ضلوع بطبقة دهن — 60 ر.س للكيلو
-- [سنام حاشي](https://mohamed-sr-designer.github.io/nudj/camel-hump.html): دهن نقي للكباب والطبخ — 45 ر.س للكيلو
-- [مفروم حاشي](https://mohamed-sr-designer.github.io/nudj/camel-mince.html): مفروم أحمر قليل الدهن — 56 ر.س للكيلو
-- [كبدة حاشي](https://mohamed-sr-designer.github.io/nudj/camel-liver.html): للمشاوي والفطور — 52 ر.س للكيلو
+## جمل
+- [قطعيات جمل](https://mohamed-sr-designer.github.io/nudj/camel.html): ألياف خشنة ونكهة خاصة وسنام دهني — للكبسة والطبخ الطويل.
+- [جمل بالعظم](https://mohamed-sr-designer.github.io/nudj/camel-bone.html): للكبسة والمندي — 58 ر.س للكيلو
+- [فخذ جمل](https://mohamed-sr-designer.github.io/nudj/camel-leg.html): لحم أحمر بلا عظم — 64 ر.س للكيلو
+- [ضلوع جمل](https://mohamed-sr-designer.github.io/nudj/camel-ribs.html): ضلوع بطبقة دهن — 60 ر.س للكيلو
+- [سنام جمل](https://mohamed-sr-designer.github.io/nudj/camel-hump.html): دهن نقي للكباب والطبخ — 45 ر.س للكيلو
+- [مفروم جمل](https://mohamed-sr-designer.github.io/nudj/camel-mince.html): مفروم أحمر قليل الدهن — 56 ر.س للكيلو
+- [كبدة جمل](https://mohamed-sr-designer.github.io/nudj/camel-liver.html): للمشاوي والفطور — 52 ر.س للكيلو
 
 ## عجل
 - [قطعيات عجل](https://mohamed-sr-designer.github.io/nudj/veal.html): لحم فاتح ناعم الألياف قليل الدهن — إسكالوب وستيك خفيف ومفروم.
