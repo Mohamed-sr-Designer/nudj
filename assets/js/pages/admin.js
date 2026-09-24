@@ -145,7 +145,7 @@
   const TOKENS = `<p class="adm-tip">${icon("info")}رموز تُستبدل تلقائياً داخل أي نص: <code>{fee}</code> رسوم التوصيل · <code>{freeOver}</code> حد التوصيل المجاني · <code>{cities}</code> · <code>{windows}</code> · <code>{phone}</code> · <code>{email}</code> · <code>{cr}</code> · <code>{vatNo}</code> · <code>{city}</code> · <code>{hours}</code> · <code>{skewer}</code> · <code>{vacuumKg}</code> · <code>{vacuumCarcass}</code> · <code>{marinades}</code> · <code>{styles}</code> · <code>{cutsCount}</code></p>`;
 
   /* =========================================================
-     التجارة (بأسلوب Shopify): الرئيسية، الطلبات، العملاء، التحليلات، الخصومات، المنتجات
+     التجارة (بأسلوب Shopify): الرئيسية، التحليلات، التقارير، الطلبات، العملاء، الخصومات، المنتجات، المخزون
      الأرقام من NUDJ_STATS والرسوم من NUDJ_CHARTS
      ========================================================= */
   const ST = window.NUDJ_STATS, CH = window.NUDJ_CHARTS;
@@ -153,15 +153,26 @@
   const rnd = v => Math.abs(v) >= 1000 ? Math.round(v) : v;
   const cur = v => `${U.money(rnd(v))} <small>ر.س</small>`;
   const sar = v => U.money(rnd(v)) + " ر.س";
+  const intF = v => Math.round(v || 0).toLocaleString("en-US");
+  const pctV = v => v == null ? "—" : (Math.round(v * 10) / 10) + "٪";
   /* الكمية بوحدتها: كجم أو ذبيحة أو كيس/علبة… */
   const qtyTxt = (id, t) => { const p = D.byId(id) || {}; return t.kg ? U.kgTxt(Math.round(t.kg * 10) / 10) : t.qty + " " + (p.sold === "carcass" ? "ذبيحة" : p.unitName || "حبة"); };
   const oid = id => `<bdi class="num">#${esc(id)}</bdi>`;
   const dayF = (t, o) => new Date(t).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn", o || { day: "numeric", month: "short" });
   const whenF = t => dayF(t) + " · " + U.fmtTime(t);
   const pctF = v => (Math.round(Math.abs(v) * 10) / 10) + "٪";
-  let range = +(sessionStorage.getItem("nudj_adm_range") || 30);
-  const RANGES = [[7, "7 أيام"], [30, "30 يوماً"], [90, "90 يوماً"]];
-  const rangeSeg = () => `<div class="seg-r" role="group" aria-label="الفترة">${RANGES.map(r => `<button type="button" data-range="${r[0]}" aria-pressed="${range === r[0]}">${r[1]}</button>`).join("")}</div>`;
+  const agoF = t => { const m = Math.round((Date.now() - t) / 6e4); return m < 1 ? "الآن" : m < 60 ? "قبل " + m + " د" : m < 1440 ? "قبل " + Math.round(m / 60) + " س" : dayF(t); };
+
+  /* ---------------- الفترة ---------------- */
+  let range = sessionStorage.getItem("nudj_adm_range") || "30"; if (!ST.RANGES[range]) range = "30";
+  const PR = () => ST.range(range);
+  const SHORT = { today: "اليوم", yesterday: "أمس", "7": "7 أيام", "30": "30 يوماً", "90": "90 يوماً", "365": "12 شهراً" };
+  const rangeSeg = () => `<div class="seg-r" role="group" aria-label="الفترة">${Object.keys(SHORT).map(k => `<button type="button" data-range="${k}" aria-pressed="${range === k}">${SHORT[k]}</button>`).join("")}</div>`;
+  const cmpLbl = p => p.key === "today" ? "مقارنة بأمس" : p.key === "yesterday" ? "مقارنة باليوم الذي قبله" : "مقارنة بالفترة السابقة";
+  const xFmt = p => p.gran === "hour" ? (t => new Date(t).getHours() + ":00") : p.gran === "week" ? (t => dayF(t, { month: "short", year: "numeric" })) : (t => dayF(t));
+  const tipFmt = p => p.gran === "hour" ? (t => dayF(t, { weekday: "long" }) + " · " + new Date(t).getHours() + ":00") : p.gran === "week" ? (t => "أسبوع " + dayF(t, { day: "numeric", month: "long" })) : (t => dayF(t, { weekday: "long", day: "numeric", month: "long" }));
+  const areaSlot = (p, s, o) => CH.slot("area", Object.assign({ values: s.values, prev: s.prev, labels: s.labels, h: 240, fmt: sar, fmtX: xFmt(p), fmtTip: tipFmt(p), names: ["الحالية", "السابقة"] }, o || {}));
+
   const animalsOpts = () => draft.ANIMALS.map(a => [a.k, a.n]).concat([["extra", "عدّة الشواء والبهارات"]]);
   const animalName = k => (animalsOpts().find(a => a[0] === k) || [k, k])[1];
   const stepName = k => k === "cancelled" ? "ملغي" : ((draft.ORDER_STEPS.find(s => s.k === k) || {}).n || k);
@@ -172,54 +183,203 @@
   const NEXT = { placed: ["cutting", "ابدأ التقطيع", "knife"], cutting: ["onway", "سلّم للمندوب", "truck"], onway: ["done", "تأكيد التسليم", "check"] };
   const custName = o => o.user ? (o.user.name || S.fmtPhone(o.user.phone)) : "ضيف";
   const payName = o => (o.payment && ((draft.CONFIG.payments || []).find(x => x.k === o.payment.k) || {}).n) || (o.payment && o.payment.n) || "—";
-  const deltaPill = v => v == null || !isFinite(v) ? "" : `<span class="dlt ${v >= 0 ? "is-up" : "is-down"}">${icon(v >= 0 ? "trendUp" : "trendDown", "", 2.2)}${pctF(v)}</span>`;
+  const payK = k => ((draft.CONFIG.payments || []).find(x => x.k === k) || {}).n || k;
+  const cityL = c => (S.cityLabel ? S.cityLabel(c) : c) || "—";
+  const SRC = { direct: "مباشر", search: "محركات البحث", instagram: "انستقرام", snapchat: "سناب شات", tiktok: "تيك توك", whatsapp: "واتساب", x: "إكس (تويتر)", facebook: "فيسبوك", youtube: "يوتيوب", other: "مواقع أخرى" };
+  const DEV = { mobile: "جوال", desktop: "كمبيوتر", tablet: "تابلت" };
+  const OCC = () => { const m = {}; (draft.ADVISOR.occasions || []).forEach(o => { m[o.k] = o.n; }); return m; };
+  const pageL = f => { const n = String(f || "").replace(/\.html$/, ""); const pr = draft.PRODUCTS.find(p => p.id === n), an = draft.ANIMALS.find(a => a.k === n); return pr ? pr.name : an ? an.n : ({ index: "الرئيسية", advisor: "المستشار", shop: "المتجر", cuts: "القطيع", help: "المساعدة", cart: "السلة", checkout: "إتمام الطلب", account: "حسابي", search: "البحث", about: "من نحن", contact: "تواصل معنا" })[n] || n; };
+  const deltaPill = (v, inv) => v == null || !isFinite(v) ? "" : `<span class="dlt ${(v >= 0) !== !!inv ? "is-up" : "is-down"}">${icon(v >= 0 ? "trendUp" : "trendDown", "", 2.2)}${pctF(v)}</span>`;
   const empty = (ic, t, s, cta) => `<div class="adm-empty">${icon(ic, "", 1.3)}<b>${t}</b>${s ? `<p>${s}</p>` : ""}${cta || ""}</div>`;
   const pageHead = (title, sub, act) => `<div class="adm-head"><div><h1>${title}</h1>${sub ? `<p>${sub}</p>` : ""}</div>${act ? `<div class="adm-head__act">${act}</div>` : ""}</div>`;
   const thumb = id => { const p = D.byId(id) || draft.PRODUCTS.find(x => x.id === id); return p && p.img ? `<img src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="ph0"></span>`; };
   const pname = (id, fb) => { const p = draft.PRODUCTS.find(x => x.id === id) || D.byId(id); return p ? p.name : fb || id; };
-  const demoBar = () => ST.hasDemo() ? `<div class="adm-demo">${icon("info")}<span>الأرقام تشمل <b>بيانات تجريبية للعرض</b> (عملاء باسم «عميل تجريبي») — ليست مبيعات حقيقية.</span><button type="button" class="btn btn--line btn--sm" data-act="demo-clear">حذف البيانات التجريبية</button></div>` : "";
-  const noOrders = () => card("", empty("chart", "لا توجد طلبات بعد", "طلبات نسخة العرض محفوظة في متصفح العميل، لذلك تظهر هنا طلبات هذا الجهاز فقط (وعند ربط قاعدة بيانات تظهر كل الطلبات). لتشوف شكل التقارير والرسوم الآن، ولّد بيانات تجريبية واضحة الوسم — تحذفها بضغطة.",
-    `<div class="row-btns" style="justify-content:center"><button type="button" class="btn btn--ember" data-act="demo-seed">${icon("spark")}ولّد بيانات تجريبية للعرض</button><a class="btn btn--line" href="index.html" target="_blank">جرّب طلباً من المتجر</a></div>`));
+  const demoBar = () => ST.hasDemo() ? `<div class="adm-demo">${icon("info")}<span>الأرقام تشمل <b>بيانات تجريبية للعرض</b> (طلبات وزيارات «عميل تجريبي») — ليست مبيعات حقيقية.</span><button type="button" class="btn btn--line btn--sm" data-act="demo-clear">حذف البيانات التجريبية</button></div>` : "";
+  const noData = () => card("", empty("chart", "لا توجد بيانات بعد", "طلبات وزيارات نسخة العرض محفوظة في متصفح العميل، لذلك تظهر هنا بيانات هذا الجهاز فقط (وعند ربط خادم تظهر كل البيانات). لتشوف شكل التقارير الآن، ولّد بيانات تجريبية واضحة الوسم — تحذفها بضغطة.",
+    `<div class="row-btns" style="justify-content:center"><button type="button" class="btn btn--ember" data-act="demo-seed">${icon("spark")}ولّد بيانات تجريبية للعرض</button><a class="btn btn--line" href="index.html" target="_blank">افتح المتجر وجرّب</a></div>`));
+  const anyData = () => ST.orders().length || ST.hasDemo() || (function () { try { return (JSON.parse(localStorage.getItem("nudj_track")) || { sessions: [] }).sessions.length; } catch (e) { return 0; } })();
   /* أعمدة أفقية متحركة */
-  const hbars = (items, fmt, color) => { const max = Math.max.apply(null, items.map(i => i.v).concat([1])); return items.length ? `<div class="hb">${items.map((it, i) => `<div class="hb__r"><span class="hb__l" title="${esc(it.l)}">${esc(it.l)}</span><span class="hb__t"><i style="--w:${(it.v / max * 100).toFixed(1)}%;--d:${i * 70}ms${it.c || color ? ";--c:" + (it.c || color) : ""}"></i></span><b class="num">${fmt ? fmt(it.v) : it.v}</b></div>`).join("")}</div>` : `<p class="muted small">لا بيانات في هذه الفترة.</p>`; };
-  const donutBox = (parts, center, sub) => { const ps = parts.filter(p => p.value > 0); return ps.length ? `<div class="dn">${CH.slot("donut", { parts: ps, center, sub, size: 168 })}<ul class="dn__lg">${ps.map((p, i) => `<li><i style="background:${p.color || CH.PALETTE[i % CH.PALETTE.length]}"></i><span>${esc(p.label)}</span><b class="num">${p.fmt || p.value}</b></li>`).join("")}</ul></div>` : `<p class="muted small">لا بيانات في هذه الفترة.</p>`; };
+  const hbars = (items, fmt, color) => { const max = Math.max.apply(null, items.map(i => i.v).concat([1])); return items.length ? `<div class="hb">${items.map((it, i) => `<div class="hb__r"><span class="hb__l" title="${esc(it.l)}">${esc(it.l)}</span><span class="hb__t"><i style="--w:${(it.v / max * 100).toFixed(1)}%;--d:${i * 60}ms${it.c || color ? ";--c:" + (it.c || color) : ""}"></i></span><b class="num">${fmt ? fmt(it.v) : it.v}</b></div>`).join("")}</div>` : `<p class="muted small">لا بيانات في هذه الفترة.</p>`; };
+  const donutBox = (parts, center, sub) => { const ps = parts.filter(p => p.value > 0); return ps.length ? `<div class="dn">${CH.slot("donut", { parts: ps, center, sub, size: 160 })}<ul class="dn__lg">${ps.map((p, i) => `<li><i style="background:${p.color || CH.PALETTE[i % CH.PALETTE.length]}"></i><span>${esc(p.label)}</span><b class="num">${p.fmt || p.value}</b></li>`).join("")}</ul></div>` : `<p class="muted small">لا بيانات في هذه الفترة.</p>`; };
+  const mapBars = (m, label, fmt, color, n) => hbars(Object.keys(m).map(k => ({ l: label ? label(k) : k, v: typeof m[k] === "object" ? m[k].v : m[k] })).sort((a, b) => b.v - a.v).slice(0, n || 7), fmt, color);
+  const kpi = (label, val, d, spark, o) => { o = o || {}; return `<${o.href ? `a href="${o.href}"` : "div"} class="kpi"${o.tip ? ` title="${esc(o.tip)}"` : ""}><span class="kpi__l">${label}</span><b class="kpi__v">${val}</b><span class="kpi__d">${deltaPill(d, o.inv)}<small>${o.sub || ""}</small></span>${spark ? CH.slot("spark", { values: spark, color: o.color }) : '<div class="ch"></div>'}</${o.href ? "a" : "div"}>`; };
+  /* قمع التحويل */
+  function funnel(steps) {
+    const top = steps[0].v || 1;
+    return `<div class="fn">${steps.map((s, i) => `<div class="fn__s"><div class="fn__h"><span>${s.l}</span><b class="num">${intF(s.v)}</b></div><div class="fn__bar"><i style="--w:${Math.max(1.5, s.v / top * 100).toFixed(1)}%;--d:${i * 90}ms"></i></div><small>${i ? `${pctV(steps[i - 1].v ? s.v / steps[i - 1].v * 100 : 0)} من السابقة · ` : ""}${pctV(s.v / top * 100)} من الجلسات</small></div>`).join("")}</div>`;
+  }
   const ordersTable = (list, o) => {
     o = o || {};
     return `<div class="tbl-wrap"><table class="tbl"><thead><tr>${o.select ? `<th style="width:34px"><input type="checkbox" data-osel-all aria-label="تحديد الكل"${list.length && list.every(x => oSel.has(x.id)) ? " checked" : ""}></th>` : ""}<th>الطلب</th><th>التاريخ</th><th>العميل</th><th>الإجمالي</th><th>الدفع</th><th>الحالة</th><th>المنتجات</th></tr></thead><tbody>
       ${list.map(x => `<tr data-href="#orders/${encodeURIComponent(x.id)}">${o.select ? `<td><input type="checkbox" data-osel="${esc(x.id)}"${oSel.has(x.id) ? " checked" : ""} aria-label="تحديد"></td>` : ""}<td><b>${oid(x.id)}</b>${x.demo ? " " + badge("تجريبي", "demo") : ""}</td><td>${whenF(x.date)}</td><td>${esc(custName(x))}</td><td class="num">${sar(x.totals.total)}</td><td>${payBadge(x)}</td><td>${stBadge(x.status)}</td><td>${(x.items || []).length} ${(x.items || []).length === 1 ? "منتج" : "منتجات"}</td></tr>`).join("")}</tbody></table></div>`;
   };
+  const tableHTML = (cols, rows) => `<div class="tbl-wrap"><table class="tbl"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>${rows.length ? rows.map(r => `<tr>${r.map(c => `<td>${c == null ? "—" : c}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${cols.length}" class="muted">لا بيانات في هذه الفترة.</td></tr>`}</tbody></table></div>`;
 
-  /* ---------------- الرئيسية: ملخص المبيعات والأرباح ---------------- */
+  /* ---------------- الرئيسية: اليوم ومهامك ---------------- */
   function vHome() {
-    const all = ST.orders(), h = new Date().getHours();
-    const head = pageHead(h < 12 ? "صباح الخير" : "مساء الخير", "هذا ملخص متجر نُضْج — " + dayF(Date.now(), { weekday: "long", day: "numeric", month: "long" }), rangeSeg());
-    const quick = card("اختصارات", `<div class="qlinks"><a href="#products">${icon("tag")}المنتجات والأسعار</a><a href="#sections">${icon("grid")}أقسام الرئيسية</a><a href="#copy">${icon("doc")}نصوص الصفحات</a><a href="#advisor">${icon("chat")}المستشار</a><a href="#settings">${icon("gear")}الدفع والتوصيل</a><a href="#publish">${icon("share")}النشر</a></div>`);
-    if (!all.length) return head + noOrders() + quick;
-    const k = ST.kpis(range), c = k.cur, s = ST.series(range, 0), sp = ST.series(range, 1), oc = ST.series(range, 0, "orders"), pr = ST.series(range, 0, "profit"), b = ST.breakdown(range), sc = ST.statusCounts();
-    const kpi = (label, val, d, spark, color, sub) => `<div class="kpi"><span class="kpi__l">${label}</span><b class="kpi__v">${val}</b><span class="kpi__d">${deltaPill(d)}<small>${sub || "مقابل الفترة السابقة"}</small></span>${spark ? CH.slot("spark", { values: spark, color }) : '<div class="ch"></div>'}</div>`;
-    const kpis = `<div class="kpis">${kpi("إجمالي المبيعات", cur(c.gross), k.d.gross, s.values)}${kpi("الطلبات", c.orders, k.d.orders, oc.values, "#3E6FD8")}${kpi("متوسط قيمة الطلب", cur(c.aov), k.d.aov, null)}${kpi("صافي الربح التقديري", c.profit == null ? "—" : cur(c.profit), k.d.profit, c.profit == null ? null : pr.values, "#1F8A70", c.profit == null ? '<a href="#settings" class="link">حدّد نسبة التكلفة</a>' : "")}</div>`;
-    const sales = card("المبيعات عبر الوقت", `<div class="ch-head"><b class="ch-head__v">${cur(c.gross)}</b>${deltaPill(k.d.gross)}<span class="ch-legend"><span><i></i>آخر ${range} يوماً</span><span><i class="is-p"></i>الفترة السابقة</span></span></div>` +
-      CH.slot("area", { values: s.values, prev: sp.values, labels: s.labels, h: 280, fmt: sar, fmtX: t => dayF(t), fmtTip: t => dayF(t, { weekday: "long", day: "numeric", month: "long" }), names: ["الحالية", "السابقة"] }));
+    const p = PR(), h = new Date().getHours();
+    const head = pageHead(h < 12 ? "صباح الخير" : "مساء الخير", "ملخص متجر نُضْج — " + dayF(Date.now(), { weekday: "long", day: "numeric", month: "long" }), rangeSeg());
+    const quick = card("اختصارات", `<div class="qlinks"><a href="#products">${icon("tag")}المنتجات والأسعار</a><a href="#inventory">${icon("box")}المخزون</a><a href="#sections">${icon("grid")}أقسام الرئيسية</a><a href="#copy">${icon("doc")}نصوص الصفحات</a><a href="#advisor">${icon("chat")}المستشار</a><a href="#publish">${icon("share")}النشر</a></div>`);
+    if (!anyData()) return head + noData() + quick;
+    const k = ST.kpis(p), c = k.cur, s = ST.series(p, "sales", true), ses = ST.series(p, "sessions"), oc = ST.series(p, "orders"), cv = ST.series(p, "conv"), sc = ST.statusCounts();
+    const inv = ST.inventory(draft.PRODUCTS), invBad = inv.filter(x => x.status === "out" || x.status === "low").length;
+    const zero = Object.keys(k.t.zero).length;
+    const task = (n, ic, t, s2, href, tone) => n ? `<a class="task${tone ? " task--" + tone : ""}" href="${href}">${icon(ic)}<span><b>${t}</b><small>${s2}</small></span>${icon("chevL", "task__go")}</a>` : "";
+    const tasks = [
+      task(sc.placed, "receipt", `${sc.placed} ${sc.placed === 1 ? "طلب بانتظار" : "طلبات بانتظار"} التجهيز`, "ابدأ التقطيع وحدّث المرحلة", "#orders", "warn"),
+      task(k.t.abandoned, "cart", `${intF(k.t.abandoned)} سلة متروكة`, `بقيمة ${sar(k.t.abandonedVal)} — ${p.label}`, "#reports/abandoned"),
+      task(invBad, "box", `${invBad} ${invBad === 1 ? "منتج نفد أو قارب" : "منتجات نفدت أو قاربت"}`, "راجع المخزون", "#inventory", "danger"),
+      task(zero, "search", `${zero} ${zero === 1 ? "عبارة بحث" : "عبارات بحث"} بلا نتائج`, "طلب على منتجات غير موجودة", "#reports/search"),
+      task(!isPublishedSame(), "edit", "تعديلات غير منشورة", "عاينها ثم انشرها", "#publish")
+    ].filter(Boolean);
+    const kp = `<div class="kpis">${kpi("إجمالي المبيعات", cur(c.gross), k.d.gross, s.values, { sub: cmpLbl(p), href: "#reports/sales-time" })}${kpi("الجلسات", intF(k.t.sessions), k.d.sessions, ses.values, { color: "#3E6FD8", sub: intF(k.t.visitors) + " زائر", href: "#reports/sessions-time" })}${kpi("الطلبات", intF(c.orders), k.d.orders, oc.values, { color: "#8C6FD1", href: "#orders" })}${kpi("معدل التحويل", pctV(k.t.conv), k.d.conv, cv.values, { color: "#1F8A70", sub: "طلبات ÷ جلسات", href: "#reports/funnel" })}</div>`;
+    const sales = card(`المبيعات <small>${p.label}</small>`, `<div class="ch-head"><b class="ch-head__v">${cur(c.gross)}</b>${deltaPill(k.d.gross)}<span class="ch-legend"><span><i></i>${p.label}</span><span><i class="is-p"></i>${cmpLbl(p).replace("مقارنة ب", "")}</span></span></div>` + areaSlot(p, s, { h: 260 }));
+    const act = ST.activity(9);
+    const ACT = { order: ["receipt", "طلب جديد"], cancel: ["x", "طلب ملغي"], abandon: ["cart", "سلة متروكة عند الدفع"], search: ["search", "بحث"], zero: ["search", "بحث بلا نتائج"], advisor: ["chat", "خطة من المستشار"] };
+    const feed = card(`النشاط الأخير <a class="link" href="#orders">الطلبات</a>`, act.length ? `<ol class="feed">${act.map(e => { const a = ACT[e.k] || ["info", e.k]; return `<li class="feed__${e.k}">${icon(a[0])}<span><b>${a[1]}</b><small>${e.o ? oid(e.o.id) + " · " + esc(custName(e.o)) + " · " + sar(e.o.totals.total) : e.q ? "«" + esc(e.q) + "»" : e.v ? sar(e.v) : e.occ ? esc(OCC()[e.occ] || e.occ) : ""}</small></span><time>${agoF(e.t)}</time></li>`; }).join("")}</ol>` : `<p class="muted small">لا نشاط بعد.</p>`);
+    const b = ST.breakdown(p), maxTop = Math.max.apply(null, b.top.slice(0, 5).map(t => t.v).concat([1]));
+    const top = card(`الأكثر مبيعاً <a class="link" href="#reports/sales-product">التقرير</a>`, b.top.length ? `<div class="tp">${b.top.slice(0, 5).map(t => `<a href="#products" data-find-product="${esc(t.id)}">${thumb(t.id)}<span class="tp__b"><b>${esc(pname(t.id))}</b><small>${qtyTxt(t.id, t)}</small><span class="tp__bar"><i style="--w:${(t.v / maxTop * 100).toFixed(1)}%"></i></span></span><span class="tp__v num">${sar(t.v)}</span></a>`).join("")}</div>` : `<p class="muted small">لا مبيعات في هذه الفترة.</p>`);
+    const recent = `<section class="adm-card adm-card--flush"><h3 class="adm-card__t" style="padding:14px 16px 0">آخر الطلبات <a class="link" href="#orders">عرض الكل</a></h3>${ordersTable(ST.orders().slice(0, 6))}</section>`;
+    return head + demoBar() + (tasks.length ? `<div class="tasks">${tasks.join("")}</div>` : "") + kp + sales + `<div class="adm-grid adm-grid--main">${feed}${top}</div>` + recent;
+  }
+
+  /* ---------------- التحليلات: لوحة شاملة ---------------- */
+  function vAnalytics() {
+    const p = PR();
+    const head = pageHead("التحليلات", `${p.label} · ${cmpLbl(p)}`, `${rangeSeg()}<a class="btn btn--line btn--sm" href="#reports">${icon("doc")}كل التقارير</a>`);
+    if (!anyData()) return head + noData();
+    const k = ST.kpis(p), c = k.cur, t = k.t, b = ST.breakdown(p), bd = ST.salesBreakdown(p);
+    const s = ST.series(p, "sales", true), ses = ST.series(p, "sessions", true), cv = ST.series(p, "conv", true), aov = ST.series(p, "aov"), oc = ST.series(p, "orders"), nw = ST.series(p, "new"), rt = ST.series(p, "returning"), pr = ST.series(p, "profit");
+    const kp = `<div class="kpis kpis--8">${kpi("إجمالي المبيعات", cur(c.gross), k.d.gross, s.values, { href: "#reports/sales-time" })}${kpi("الطلبات", intF(c.orders), k.d.orders, oc.values, { color: "#8C6FD1", href: "#reports/orders-time" })}${kpi("متوسط قيمة الطلب", cur(c.aov), k.d.aov, aov.values, { color: "#E7A33E", href: "#reports/aov-time" })}${kpi("صافي الربح التقديري", c.profit == null ? "—" : cur(c.profit), k.d.profit, c.profit == null ? null : pr.values, { color: "#1F8A70", sub: c.profit == null ? '<a href="#settings" class="link">حدّد التكلفة</a>' : "هامش " + pctV(c.margin), href: "#reports/profit-time" })}
+      ${kpi("الجلسات", intF(t.sessions), k.d.sessions, ses.values, { color: "#3E6FD8", href: "#reports/sessions-time" })}${kpi("الزوار", intF(t.visitors), k.d.visitors, null, { tip: "أجهزة مختلفة زارت المتجر" })}${kpi("معدل التحويل", pctV(t.conv), k.d.conv, cv.values, { color: "#1F8A70", href: "#reports/funnel", tip: "نسبة الجلسات التي انتهت بطلب" })}${kpi("نسبة العملاء العائدين", pctV(c.returningRate), k.d.returningRate, null, { color: "#8C6FD1", href: "#reports/customers-new-ret", sub: c.returning + " من " + c.customers + " عميل" })}</div>`;
+    const salesCard = card(`المبيعات عبر الوقت <a class="link" href="#reports/sales-time">التقرير</a>`, `<div class="ch-head"><b class="ch-head__v">${cur(c.gross)}</b>${deltaPill(k.d.gross)}<span class="ch-legend"><span><i></i>${p.label}</span><span><i class="is-p"></i>الفترة السابقة</span></span></div>` + areaSlot(p, s));
+    const bdRow = (l, v, cls, neg) => `<div class="pf__r${cls ? " " + cls : ""}"><span>${l}</span><b>${neg && v ? "− " : ""}${cur(Math.abs(v))}</b></div>`;
+    const bdCard = card(`ملخص المبيعات <a class="link" href="#reports/sales-breakdown">التقرير</a>`, `<div class="pf">${bdRow("إجمالي المبيعات", bd.gross)}${bdRow("الخصومات", bd.discounts, "is-neg", 1)}${bdRow("المرتجعات (الملغاة)", bd.returns, "is-neg", 1)}${bdRow("صافي المبيعات", bd.net, "is-sub")}${bdRow("رسوم التوصيل", bd.shipping)}${bdRow("الضرائب", bd.taxes)}${bdRow("المبيعات", bd.total, "is-total")}</div><p class="muted small" style="margin-top:8px">المبالغ بدون ضريبة، والضريبة في سطرها.</p>`);
+    const fnCard = card(`قمع التحويل <a class="link" href="#reports/funnel">التقرير</a>`, funnel([{ l: "الجلسات", v: t.sessions }, { l: "شاهدوا منتجاً", v: t.viewed }, { l: "أضافوا للسلة", v: t.carted }, { l: "وصلوا لإتمام الطلب", v: t.checkout }, { l: "أتمّوا الطلب", v: t.bought }]));
+    const sesCard = card(`الجلسات عبر الوقت <a class="link" href="#reports/sessions-time">التقرير</a>`, `<div class="ch-head"><b class="ch-head__v">${intF(t.sessions)}</b>${deltaPill(k.d.sessions)}<span class="muted small">${pctV(t.bounceRate)} ارتداد · ${t.pps} صفحة للجلسة</span></div>` + areaSlot(p, ses, { fmt: v => intF(v) + " جلسة", color: "#3E6FD8", h: 200 }));
+    const devCard = card(`الجلسات حسب الجهاز`, donutBox(Object.keys(t.dev).map((d, i) => ({ label: DEV[d] || d, value: t.dev[d], fmt: pctV(t.dev[d] / (t.sessions || 1) * 100), color: ["#3E6FD8", "#FF5A36", "#E7A33E"][i] })), intF(t.sessions), "جلسة"));
+    const srcCard = card(`حسب المصدر <a class="link" href="#reports/sessions-source">التقرير</a>`, mapBars(t.src, x => SRC[x] || x, v => intF(v), "#3E6FD8"));
+    const cityCard = card(`الجلسات حسب المدينة`, mapBars(t.city, cityL, v => intF(v), "#1F8A70", 6));
+    const land = Object.keys(t.land).map(f => [f, t.land[f]]).sort((a, b2) => b2[1] - a[1]).slice(0, 6);
+    const landCard = card(`صفحات الهبوط <a class="link" href="#reports/landing">التقرير</a>`, tableHTML(["الصفحة", "الجلسات", "الحصة"], land.map(l => [esc(pageL(l[0])), intF(l[1]), pctV(l[1] / (t.sessions || 1) * 100)])), { cls: "adm-card--flushbody" });
+    const custCard = card(`العملاء: جدد وعائدون <a class="link" href="#reports/customers-new-ret">التقرير</a>`, donutBox([{ label: "عملاء جدد", value: c.newCustomers, fmt: intF(c.newCustomers), color: "#E7A33E" }, { label: "عملاء عائدون", value: c.returning, fmt: intF(c.returning), color: "#8C6FD1" }], pctV(c.returningRate), "عائدون") + CH.slot("area", { values: rt.values, prev: nw.values, labels: rt.labels, h: 120, color: "#8C6FD1", fmt: v => intF(v) + " طلب", fmtX: xFmt(p), fmtTip: tipFmt(p), names: ["عائدون", "جدد"] }));
+    const cvCard = card(`معدل التحويل عبر الوقت`, `<div class="ch-head"><b class="ch-head__v">${pctV(t.conv)}</b>${deltaPill(k.d.conv)}</div>` + areaSlot(p, cv, { fmt: v => pctV(v), color: "#1F8A70", h: 200 }));
+    const OC = OCC();
+    const advCard = card(`المستشار <a class="link" href="#reports/advisor">التقرير</a>`, funnel([{ l: "بدأوا محادثة", v: t.adv.start }, { l: "وصلوا لخطة", v: t.adv.plan }, { l: "أضافوا الخطة للسلة", v: t.adv.cart }]) + `<p class="muted small" style="margin-top:10px">مبيعات من المستشار: <b>${sar(b.advisorSales)}</b> (${pctV(b.advisorShare)} من المبيعات)</p>` + `<h4 class="h4s">أكثر المناسبات</h4>` + mapBars(t.occ, x => OC[x] || x, v => intF(v), "#FF5A36", 5));
+    const srTop = Object.keys(t.searches).map(q => [q, t.searches[q]]).sort((a, b2) => b2[1] - a[1]).slice(0, 6), zr = Object.keys(t.zero).map(q => [q, t.zero[q]]).sort((a, b2) => b2[1] - a[1]).slice(0, 5);
+    const searchCard = card(`البحث في المتجر <a class="link" href="#reports/search">التقرير</a>`, srTop.length ? hbars(srTop.map(x => ({ l: x[0], v: x[1] })), v => intF(v), "#3E6FD8") + (zr.length ? `<h4 class="h4s">بلا نتائج — طلب على منتجات غير موجودة</h4><div class="chips-z">${zr.map(x => `<span>${esc(x[0])} <b class="num">${x[1]}</b></span>`).join("")}</div>` : "") : `<p class="muted small">لا عمليات بحث في هذه الفترة.</p>`);
+    const abCard = card(`السلات المتروكة <a class="link" href="#reports/abandoned">التقرير</a>`, `<div class="big-n"><b class="num">${intF(t.abandoned)}</b><span>وصلوا لإتمام الطلب ولم يكملوا</span></div><div class="pf"><div class="pf__r"><span>قيمة السلات المتروكة</span><b>${cur(t.abandonedVal)}</b></div><div class="pf__r"><span>نسبة الترك عند الدفع</span><b>${pctV(t.checkout ? t.abandoned / t.checkout * 100 : 0)}</b></div><div class="pf__r"><span>نسبة الإضافة للسلة</span><b>${pctV(t.sessions ? t.carted / t.sessions * 100 : 0)}</b></div></div>`);
     const vatPct = Math.round((D.CONFIG.vat || .15) * 100);
     const profit = card(`ملخص الأرباح <small>${c.profit == null ? "حدّد نسبة التكلفة لحساب الربح" : "تقديري · " + (ST.costs().assumed ? "تكلفة " + ST.costs().pct + "٪ (افتراض للعرض)" : "تكلفة " + ST.costs().pct + "٪")}</small><a class="link" href="#settings">التكلفة</a>`,
-      `<div class="pf-wrap"><div class="pf">
-        <div class="pf__r"><span>إجمالي المبيعات</span><b>${cur(c.gross)}</b></div>
-        <div class="pf__r is-neg"><span>الضريبة المشمولة (${vatPct}٪)</span><b>− ${cur(c.vat)}</b></div>
-        <div class="pf__r is-neg"><span>التوصيل (يُدفع للمندوب)</span><b>− ${cur(c.delivery / (1 + (D.CONFIG.vat || 0)))}</b></div>
-        <div class="pf__r is-neg"><span>تكلفة البضاعة والخدمات</span><b>${c.cogs == null ? "—" : "− " + cur(c.cogs)}</b></div>
-        <div class="pf__r is-total"><span>صافي الربح التقديري</span><b>${c.profit == null ? "—" : cur(c.profit)}</b></div></div>
-        <div class="mring">${CH.slot("donut", { parts: c.profit == null ? [] : [{ label: "الربح", value: Math.max(0, c.profit), color: "#1F8A70" }, { label: "الباقي", value: Math.max(0, c.net - c.profit), color: "#EBEBEB" }], center: c.margin == null ? "—" : Math.round(c.margin) + "٪", sub: "هامش الربح", size: 150 })}</div></div>`);
-    const src = card("مصادر الإيراد", donutBox([
-      { label: "اللحم", value: c.meat, fmt: sar(c.meat), color: "#FF5A36" }, { label: "الخدمات (تتبيل، تسييخ، تغليف)", value: c.services, fmt: sar(c.services), color: "#E7A33E" },
-      { label: "عدّة الشواء والبهارات", value: c.extras, fmt: sar(c.extras), color: "#3E6FD8" }, { label: "التوصيل", value: c.delivery, fmt: sar(c.delivery), color: "#9AA3AB" }
-    ], CH.short(c.gross), "ر.س") + (c.discount ? `<p class="muted small" style="margin-top:10px">الخصومات المطبّقة: − ${sar(c.discount)}</p>` : ""));
-    const maxTop = Math.max.apply(null, b.top.slice(0, 5).map(t => t.v).concat([1]));
-    const top = card(`الأكثر مبيعاً <a class="link" href="#analytics">التحليلات</a>`, b.top.length ? `<div class="tp">${b.top.slice(0, 5).map(t => `<a href="#products" data-find-product="${esc(t.id)}">${thumb(t.id)}<span class="tp__b"><b>${esc(pname(t.id))}</b><small>${qtyTxt(t.id, t)}</small><span class="tp__bar"><i style="--w:${(t.v / maxTop * 100).toFixed(1)}%"></i></span></span><span class="tp__v num">${sar(t.v)}</span></a>`).join("")}</div>` : `<p class="muted small">لا بيانات في هذه الفترة.</p>`);
-    const byAnimal = card("المبيعات حسب الماشية", hbars(Object.keys(b.animal).map(a => ({ l: animalName(a), v: Math.round(b.animal[a]) })).sort((x, y) => y.v - x.v), v => sar(v)));
-    const flow = ["placed", "cutting", "onway", "done", "cancelled"];
-    const status = card(`حالة الطلبات <a class="link" href="#orders">كل الطلبات</a>`, `<div class="stl">${flow.map(f => `<a href="#orders" data-otab="${f}"><span>${stBadge(f)}</span><b class="num">${sc[f] || 0}</b></a>`).join("")}</div><p class="muted small" style="margin-top:10px">${sc.placed ? `<b>${sc.placed}</b> طلب بانتظار التجهيز` : "لا طلبات بانتظار التجهيز"}</p>`);
-    const recent = `<section class="adm-card adm-card--flush"><h3 class="adm-card__t" style="padding:14px 16px 0">آخر الطلبات <a class="link" href="#orders">عرض الكل</a></h3>${ordersTable(all.slice(0, 6))}</section>`;
-    return head + demoBar() + kpis + sales + `<div class="adm-grid adm-grid--main">${profit}${src}</div><div class="adm-grid adm-grid--3">${top}${byAnimal}${status}</div>` + recent;
+      `<div class="pf-wrap"><div class="pf"><div class="pf__r"><span>إجمالي المبيعات</span><b>${cur(c.gross)}</b></div><div class="pf__r is-neg"><span>الضريبة المشمولة (${vatPct}٪)</span><b>− ${cur(c.vat)}</b></div><div class="pf__r is-neg"><span>التوصيل (يُدفع للمندوب)</span><b>− ${cur(c.delivery / (1 + (D.CONFIG.vat || 0)))}</b></div><div class="pf__r is-neg"><span>تكلفة البضاعة والخدمات</span><b>${c.cogs == null ? "—" : "− " + cur(c.cogs)}</b></div><div class="pf__r is-total"><span>صافي الربح التقديري</span><b>${c.profit == null ? "—" : cur(c.profit)}</b></div></div>
+        <div class="mring">${CH.slot("donut", { parts: c.profit == null ? [] : [{ label: "الربح", value: Math.max(0, c.profit), color: "#1F8A70" }, { label: "الباقي", value: Math.max(0, c.net - c.profit), color: "#EBEBEB" }], center: c.margin == null ? "—" : Math.round(c.margin) + "٪", sub: "هامش الربح", size: 140 })}</div></div>`);
+    const srcRev = card("مصادر الإيراد", donutBox([{ label: "اللحم", value: c.meat, fmt: sar(c.meat), color: "#FF5A36" }, { label: "الخدمات (تتبيل، تسييخ، تغليف)", value: c.services, fmt: sar(c.services), color: "#E7A33E" }, { label: "عدّة الشواء والبهارات", value: c.extras, fmt: sar(c.extras), color: "#3E6FD8" }, { label: "التوصيل", value: c.delivery, fmt: sar(c.delivery), color: "#9AA3AB" }], CH.short(c.gross), "ر.س"));
+    const maxTop = Math.max.apply(null, b.top.slice(0, 5).map(x => x.v).concat([1]));
+    const top = card(`الأكثر مبيعاً <a class="link" href="#reports/sales-product">التقرير</a>`, b.top.length ? `<div class="tp">${b.top.slice(0, 5).map(x => `<a href="#products" data-find-product="${esc(x.id)}">${thumb(x.id)}<span class="tp__b"><b>${esc(pname(x.id))}</b><small>${qtyTxt(x.id, x)}</small><span class="tp__bar"><i style="--w:${(x.v / maxTop * 100).toFixed(1)}%"></i></span></span><span class="tp__v num">${sar(x.v)}</span></a>`).join("")}</div>` : `<p class="muted small">لا بيانات.</p>`);
+    const byAnimal = card(`حسب الماشية <a class="link" href="#reports/sales-animal">التقرير</a>`, mapBars(b.animal, animalName, sar));
+    const aovCard = card(`متوسط قيمة الطلب عبر الوقت`, `<div class="ch-head"><b class="ch-head__v">${cur(c.aov)}</b>${deltaPill(k.d.aov)}</div>` + areaSlot(p, aov, { color: "#E7A33E", h: 160 }));
+    return head + demoBar() + kp + `<div class="adm-grid adm-grid--main">${salesCard}${bdCard}</div><div class="adm-grid adm-grid--2">${fnCard}${sesCard}</div><div class="adm-grid adm-grid--3">${devCard}${srcCard}${cityCard}</div><div class="adm-grid adm-grid--3">${landCard}${custCard}${cvCard}</div><div class="adm-grid adm-grid--3">${advCard}${searchCard}${abCard}</div><div class="adm-grid adm-grid--main">${profit}${srcRev}</div><div class="adm-grid adm-grid--3">${top}${byAnimal}${aovCard}</div>`;
+  }
+
+  /* ---------------- التقارير: مكتبة مثل Shopify ---------------- */
+  const REPORTS = [
+    ["المبيعات", [
+      ["sales-time", "المبيعات عبر الوقت", "إجمالي المبيعات والطلبات لكل يوم أو ساعة"],
+      ["sales-breakdown", "ملخص المبيعات", "إجمالي ← خصومات ← مرتجعات ← صافي + توصيل + ضرائب"],
+      ["sales-product", "المبيعات حسب المنتج", "الكمية والطلبات والمبيعات والربح لكل منتج"],
+      ["sales-animal", "المبيعات حسب الماشية", "حصة كل ماشية من المبيعات"],
+      ["sales-city", "المبيعات حسب المدينة", "الطلبات والمبيعات لكل مدينة توصيل"],
+      ["sales-payment", "المبيعات حسب طريقة الدفع", "مدى، Apple Pay، تمارا، عند الاستلام…"],
+      ["sales-discount", "المبيعات حسب كود الخصم", "استخدام كل كود وقيمة الخصم"],
+      ["sales-hour", "المبيعات حسب ساعة الطلب", "متى يطلب العملاء خلال اليوم"],
+      ["sales-weekday", "المبيعات حسب اليوم", "أيام الأسبوع الأعلى طلباً"],
+      ["services", "الخدمات والتتبيلات", "نسبة الطلبات التي أضافت تتبيلاً أو تسييخاً أو تغليفاً"]]],
+    ["الطلبات", [
+      ["orders-time", "الطلبات عبر الوقت", "عدد الطلبات لكل فترة"],
+      ["aov-time", "متوسط قيمة الطلب عبر الوقت", "قيمة الطلب الواحد"],
+      ["orders-status", "الطلبات حسب المرحلة", "استلمنا ← التقطيع ← الطريق ← وصل، والملغاة"],
+      ["orders-slot", "الطلبات حسب فترة التوصيل", "الفترات الأكثر طلباً"]]],
+    ["الزيارات", [
+      ["sessions-time", "الجلسات عبر الوقت", "الزيارات والارتداد والصفحات لكل جلسة"],
+      ["sessions-source", "الجلسات حسب المصدر", "انستقرام، سناب، محركات البحث، مباشر…"],
+      ["sessions-device", "الجلسات حسب الجهاز", "جوال، كمبيوتر، تابلت"],
+      ["sessions-city", "الجلسات حسب المدينة", "من وين يزورون المتجر"],
+      ["landing", "صفحات الهبوط", "أول صفحة يدخل منها الزائر"]]],
+    ["السلوك", [
+      ["funnel", "قمع التحويل", "من الجلسة إلى الطلب — وأين يتوقف العملاء"],
+      ["conv-time", "معدل التحويل عبر الوقت", "نسبة الجلسات التي انتهت بطلب"],
+      ["product-funnel", "أداء المنتجات", "المشاهدات، الإضافة للسلة، الطلبات، ونِسبها"],
+      ["search", "البحث في المتجر", "أكثر ما يبحثون عنه، وما لا يجدونه"],
+      ["abandoned", "السلات المتروكة", "عدد وقيمة من وصل للدفع ولم يكمل"]]],
+    ["العملاء", [
+      ["customers-new-ret", "العملاء الجدد والعائدون", "طلبات العملاء الجدد مقابل العائدين عبر الوقت"],
+      ["segments", "شرائح العملاء", "مخلصون، عائدون، جدد، معرّضون للفقد…"],
+      ["cohorts", "تحليل الأفواج", "من عاد يطلب بعد شهر وشهرين وثلاثة"],
+      ["top-customers", "أفضل العملاء", "الأعلى إنفاقاً"]]],
+    ["الأرباح", [
+      ["profit-time", "الربح عبر الوقت", "صافي الربح التقديري لكل فترة"],
+      ["profit-product", "الربح حسب المنتج", "الربح والهامش لكل منتج"]]],
+    ["المستشار", [
+      ["advisor", "أداء المستشار", "المحادثات، الخطط، الإضافة للسلة، والمناسبات"]]]
+  ];
+  const REP_ICON = { "المبيعات": "chart", "الطلبات": "receipt", "الزيارات": "eye", "السلوك": "cart", "العملاء": "people", "الأرباح": "percent", "المستشار": "chat" };
+  let lastReport = null;
+  function buildReport(id, p) {
+    const k = () => ST.kpis(p), bk = () => ST.breakdown(p), tr = () => ST.traffic(p);
+    const series = (metric, fmt, color) => { const s = ST.series(p, metric, true); return { chart: areaSlot(p, s, { fmt, color, h: 280 }), cols: ["الفترة", "الحالية", "السابقة", "التغيّر"], rows: s.labels.map((l, i) => [tipFmt(p)(l), fmt(s.values[i]), fmt(s.prev[i] || 0), s.prev[i] ? pctV((s.values[i] - s.prev[i]) / s.prev[i] * 100) : "—"]).reverse() }; };
+    const mapRep = (m, lab, cols, row, color, fmt) => { const ks = Object.keys(m).sort((a, b2) => (m[b2].v != null ? m[b2].v : m[b2]) - (m[a].v != null ? m[a].v : m[a])); return { chart: hbars(ks.slice(0, 10).map(x => ({ l: lab(x), v: m[x].v != null ? m[x].v : m[x] })), fmt, color), cols, rows: ks.map(x => row(x, m[x])) }; };
+    switch (id) {
+      case "sales-time": return series("sales", sar);
+      case "orders-time": return series("orders", v => intF(v) + " طلب", "#8C6FD1");
+      case "aov-time": return series("aov", sar, "#E7A33E");
+      case "sessions-time": return series("sessions", v => intF(v), "#3E6FD8");
+      case "conv-time": return series("conv", pctV, "#1F8A70");
+      case "profit-time": return ST.costs().pct == null ? { note: 'حدّد نسبة التكلفة من <a class="link" href="#settings">الإعدادات</a> لعرض الربح.', cols: [], rows: [] } : series("profit", sar, "#1F8A70");
+      case "sales-breakdown": { const b = ST.salesBreakdown(p), pv = ST.salesBreakdown(p.prev); const L2 = [["gross", "إجمالي المبيعات"], ["discounts", "الخصومات"], ["returns", "المرتجعات (الملغاة)"], ["net", "صافي المبيعات"], ["shipping", "رسوم التوصيل"], ["taxes", "الضرائب"], ["total", "المبيعات"]];
+        return { chart: hbars(L2.map(x => ({ l: x[1], v: b[x[0]] })), sar, "#FF5A36"), cols: ["البند", "الحالية", "السابقة", "التغيّر"], rows: L2.map(x => [x[1], sar(b[x[0]]), sar(pv[x[0]]), pv[x[0]] ? pctV((b[x[0]] - pv[x[0]]) / pv[x[0]] * 100) : "—"]) }; }
+      case "sales-product": { const b = bk(); return { chart: hbars(b.top.slice(0, 10).map(x => ({ l: pname(x.id), v: x.v })), sar), cols: ["المنتج", "الماشية", "الكمية", "الطلبات", "المبيعات", "الربح التقديري"], rows: b.top.map(x => [esc(pname(x.id)), esc(animalName((D.byId(x.id) || {}).animal)), qtyTxt(x.id, x), intF(x.orders), sar(x.v), x.profit == null ? "—" : sar(x.profit)]) }; }
+      case "sales-animal": { const b = bk(), tot = Object.values(b.animal).reduce((a, c2) => a + c2, 0) || 1; return mapRep(b.animal, animalName, ["الماشية", "المبيعات", "الحصة"], (x, v) => [esc(animalName(x)), sar(v), pctV(v / tot * 100)], "#FF5A36", sar); }
+      case "sales-city": return mapRep(bk().city, cityL, ["المدينة", "الطلبات", "المبيعات", "متوسط الطلب"], (x, v) => [esc(cityL(x)), intF(v.n), sar(v.v), sar(v.v / v.n)], "#1F8A70", sar);
+      case "sales-payment": return mapRep(bk().pay, payK, ["طريقة الدفع", "الطلبات", "المبيعات", "متوسط الطلب"], (x, v) => [esc(payK(x)), intF(v.n), sar(v.v), sar(v.v / v.n)], "#3E6FD8", sar);
+      case "sales-discount": { const d = bk().disc; return Object.keys(d).length ? mapRep(d, x => x, ["الكود", "الاستخدام", "قيمة الخصم", "المبيعات"], (x, v) => [`<b class="num">${esc(x)}</b>`, intF(v.n), sar(v.d), sar(v.v)], "#D24C7B", sar) : { note: "لم يُستخدم أي كود خصم في هذه الفترة.", cols: [], rows: [] }; }
+      case "sales-hour": { const b = bk(); return { chart: hbars(b.hours.map((v, h) => ({ l: h + ":00", v: Math.round(v) })).filter(x => x.v), sar, "#FF5A36"), cols: ["الساعة", "المبيعات"], rows: b.hours.map((v, h) => [h + ":00", sar(v)]).filter((r, h) => b.hours[h]) }; }
+      case "sales-weekday": { const b = bk(), WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"]; return { chart: hbars(WD.map((d, i) => ({ l: d, v: Math.round(b.week[i]) })), sar), cols: ["اليوم", "المبيعات"], rows: WD.map((d, i) => [d, sar(b.week[i])]) }; }
+      case "orders-status": { const sc = ST.statusCounts(), tot = Object.values(sc).reduce((a, c2) => a + c2, 0) || 1, F = ["placed", "cutting", "onway", "done", "cancelled"]; return { chart: hbars(F.map(f => ({ l: stepName(f), v: sc[f] || 0, c: { placed: "#E7A33E", cutting: "#3E6FD8", onway: "#8C6FD1", done: "#1F8A70", cancelled: "#9AA3AB" }[f] })), v => intF(v)), cols: ["المرحلة", "الطلبات", "الحصة"], rows: F.map(f => [stBadge(f), intF(sc[f] || 0), pctV((sc[f] || 0) / tot * 100)]) }; }
+      case "orders-slot": { const b = bk(), W = h => ((draft.CONFIG.windows || []).find(w => w.h === +h) || {}).l || h + ":00"; return mapRep(b.slot, W, ["فترة التوصيل", "الطلبات"], (x, v) => [esc(W(x)), intF(v)], "#8C6FD1", v => intF(v)); }
+      case "sessions-source": { const t = tr(); const rows = Object.keys(t.src).sort((a, b2) => t.src[b2] - t.src[a]); return { chart: hbars(rows.map(x => ({ l: SRC[x] || x, v: t.src[x] })), v => intF(v), "#3E6FD8"), cols: ["المصدر", "الجلسات", "الحصة"], rows: rows.map(x => [esc(SRC[x] || x), intF(t.src[x]), pctV(t.src[x] / (t.sessions || 1) * 100)]) }; }
+      case "sessions-device": { const t = tr(); return { chart: donutBox(Object.keys(t.dev).map((d, i) => ({ label: DEV[d] || d, value: t.dev[d], fmt: intF(t.dev[d]), color: ["#3E6FD8", "#FF5A36", "#E7A33E"][i] })), intF(t.sessions), "جلسة"), cols: ["الجهاز", "الجلسات", "الحصة"], rows: Object.keys(t.dev).map(d => [DEV[d] || d, intF(t.dev[d]), pctV(t.dev[d] / (t.sessions || 1) * 100)]) }; }
+      case "sessions-city": { const t = tr(); return mapRep(t.city, cityL, ["المدينة", "الجلسات", "الحصة"], (x, v) => [esc(cityL(x)), intF(v), pctV(v / (t.sessions || 1) * 100)], "#1F8A70", v => intF(v)); }
+      case "landing": { const t = tr(); return mapRep(t.land, pageL, ["صفحة الهبوط", "الجلسات", "الحصة"], (x, v) => [esc(pageL(x)), intF(v), pctV(v / (t.sessions || 1) * 100)], "#3E6FD8", v => intF(v)); }
+      case "funnel": { const t = tr(), st2 = [["الجلسات", t.sessions], ["شاهدوا منتجاً", t.viewed], ["أضافوا للسلة", t.carted], ["وصلوا لإتمام الطلب", t.checkout], ["أتمّوا الطلب", t.bought]];
+        return { chart: funnel(st2.map(x => ({ l: x[0], v: x[1] }))), cols: ["المرحلة", "الجلسات", "من السابقة", "من كل الجلسات"], rows: st2.map((x, i) => [x[0], intF(x[1]), i ? pctV(st2[i - 1][1] ? x[1] / st2[i - 1][1] * 100 : 0) : "—", pctV(x[1] / (t.sessions || 1) * 100)]) }; }
+      case "product-funnel": { const ps = ST.productStats(p); return { chart: hbars(ps.filter(x => x.views).sort((a, b2) => b2.views - a.views).slice(0, 10).map(x => ({ l: pname(x.id), v: x.views })), v => intF(v) + " مشاهدة", "#3E6FD8"), cols: ["المنتج", "المشاهدات", "أُضيف للسلة", "الطلبات", "من المشاهدة للسلة", "المبيعات"], rows: ps.map(x => [esc(pname(x.id)), intF(x.views), intF(x.carts), intF(x.orders), pctV(x.viewToCart), sar(x.v)]) }; }
+      case "search": { const t = tr(), ks = Object.keys(t.searches).sort((a, b2) => t.searches[b2] - t.searches[a]); return { chart: hbars(ks.slice(0, 10).map(q => ({ l: q, v: t.searches[q], c: t.zero[q] ? "#D24C7B" : "#3E6FD8" })), v => intF(v)), cols: ["عبارة البحث", "مرات البحث", "النتائج"], rows: ks.map(q => [esc(q), intF(t.searches[q]), t.zero[q] ? badge("بلا نتائج", "warn") : badge("وجد نتائج", "ok")]), note: "العبارات بلا نتائج تعني طلباً على منتجات غير موجودة في المتجر." }; }
+      case "abandoned": { const t = tr(); return { chart: `<div class="big-n"><b class="num">${intF(t.abandoned)}</b><span>سلة متروكة بقيمة ${sar(t.abandonedVal)}</span></div>` + funnel([{ l: "أضافوا للسلة", v: t.carted }, { l: "وصلوا لإتمام الطلب", v: t.checkout }, { l: "أتمّوا الطلب", v: t.bought }]), cols: ["المؤشر", "القيمة"], rows: [["سلات متروكة عند الدفع", intF(t.abandoned)], ["قيمتها", sar(t.abandonedVal)], ["نسبة الترك عند الدفع", pctV(t.checkout ? t.abandoned / t.checkout * 100 : 0)], ["متوسط السلة المتروكة", sar(t.abandoned ? t.abandonedVal / t.abandoned : 0)]], note: "لاسترجاعها عند الإطلاق: رسالة واتساب أو SMS بالسلة لمن سجّل رقمه." }; }
+      case "customers-new-ret": { const nw = ST.series(p, "new"), rt = ST.series(p, "returning"); return { chart: CH.slot("area", { values: rt.values, prev: nw.values, labels: rt.labels, h: 260, color: "#8C6FD1", fmt: v => intF(v) + " طلب", fmtX: xFmt(p), fmtTip: tipFmt(p), names: ["عائدون", "جدد"] }), cols: ["الفترة", "طلبات عملاء جدد", "طلبات عملاء عائدين"], rows: rt.labels.map((l, i) => [tipFmt(p)(l), intF(nw.values[i]), intF(rt.values[i])]).reverse() }; }
+      case "segments": { const sg = ST.segments(); return { chart: donutBox(sg.map(x => ({ label: x.n, value: x.cnt, fmt: intF(x.cnt), color: x.c })), intF(sg.reduce((a, x) => a + x.cnt, 0)), "عميل"), cols: ["الشريحة", "التعريف", "العملاء", "إنفاقهم", "متوسط إنفاق العميل"], rows: sg.map(x => [`<b>${esc(x.n)}</b>`, esc(x.d), intF(x.cnt), sar(x.v), x.cnt ? sar(x.v / x.cnt) : "—"]) }; }
+      case "services": { const b = bk(), n = b.count || 1, MN = k2 => (draft.MARINADES.find(m2 => m2.k === k2) || {}).n || k2, sv = [["التتبيل", b.svc.marinade], ["التسييخ", b.svc.skewer], ["التغليف المفرّغ", b.svc.vacuum]], mk = Object.keys(b.mar).sort((a, b2) => b.mar[b2] - b.mar[a]);
+        return { chart: hbars(sv.map(r => ({ l: r[0], v: Math.round(r[1] / n * 1000) / 10 })), v => v + "٪", "#E7A33E") + `<h4 class="h4s">التتبيلات الأكثر طلباً</h4>` + hbars(mk.map(k2 => ({ l: MN(k2), v: Math.round(b.mar[k2] * 10) / 10 })), v => U.kgTxt(v), "#E7A33E"),
+          cols: ["الخدمة", "الطلبات", "من كل الطلبات"], rows: sv.map(r => [r[0], intF(r[1]), pctV(r[1] / n * 100)]).concat(mk.map(k2 => ["تتبيلة " + esc(MN(k2)), U.kgTxt(Math.round(b.mar[k2] * 10) / 10), "—"])) }; }
+      case "cohorts": { const co = ST.cohorts(); const cell = v => v == null ? "—" : `<span class="coh" style="--a:${Math.min(1, v / 60).toFixed(2)}">${pctV(v)}</span>`; return { cols: ["شهر أول طلب", "العملاء", "بعد شهر", "بعد شهرين", "بعد 3 أشهر", "بعد 4 أشهر"], rows: co.map(r => [dayF(r.label, { month: "long", year: "numeric" }), intF(r.size)].concat(r.pct.map(cell))), note: "النسبة = من عاد وطلب مرة ثانية في الشهر المحدد بعد أول طلب." }; }
+      case "top-customers": { const cs = ST.customers().sort((a, b2) => b2.spent - a.spent).slice(0, 25); return { chart: hbars(cs.slice(0, 10).map(x => ({ l: x.name || S.fmtPhone(x.phone), v: x.spent })), sar, "#8C6FD1"), cols: ["العميل", "الجوال", "الطلبات", "متوسط الطلب", "إجمالي الإنفاق", "الشريحة"], rows: cs.map(x => [esc(x.name || "—"), `<span class="num" dir="ltr">${S.fmtPhone(x.phone)}</span>`, intF(x.orders), sar(x.aov), sar(x.spent), esc((ST.SEG.find(s2 => s2.k === ST.segOf(x)) || {}).n || "")]) }; }
+      case "profit-product": { if (ST.costs().pct == null) return { note: 'حدّد نسبة التكلفة من <a class="link" href="#settings">الإعدادات</a> لعرض الربح.', cols: [], rows: [] }; const b = bk(); const rows = b.top.filter(x => x.profit != null).sort((a, b2) => b2.profit - a.profit); return { chart: hbars(rows.slice(0, 10).map(x => ({ l: pname(x.id), v: x.profit })), sar, "#1F8A70"), cols: ["المنتج", "المبيعات", "الربح التقديري", "الهامش", "تكلفة ٪"], rows: rows.map(x => [esc(pname(x.id)), sar(x.v), sar(x.profit), pctV(x.v ? x.profit / (x.v / (1 + (D.CONFIG.vat || 0))) * 100 : 0), pctV(ST.pctOf(x.id))]) }; }
+      case "advisor": { const t = tr(), b = bk(), OC = OCC(); return { chart: funnel([{ l: "بدأوا محادثة", v: t.adv.start }, { l: "وصلوا لخطة", v: t.adv.plan }, { l: "أضافوا الخطة للسلة", v: t.adv.cart }]) + `<h4 class="h4s">المناسبات</h4>` + mapBars(t.occ, x => OC[x] || x, v => intF(v), "#FF5A36", 8),
+        cols: ["المؤشر", "القيمة"], rows: [["محادثات بدأت", intF(t.adv.start)], ["خطط اكتملت", intF(t.adv.plan)], ["خطط أُضيفت للسلة", intF(t.adv.cart)], ["من المحادثة للخطة", pctV(t.adv.start ? t.adv.plan / t.adv.start * 100 : 0)], ["من الخطة للسلة", pctV(t.adv.plan ? t.adv.cart / t.adv.plan * 100 : 0)], ["مبيعات من المستشار", sar(b.advisorSales)], ["حصتها من المبيعات", pctV(b.advisorShare)], ["نسبة الجلسات التي استخدمت المستشار", pctV(t.sessions ? t.adv.start / t.sessions * 100 : 0)]] }; }
+    }
+    return { note: "تقرير غير معروف.", cols: [], rows: [] };
+  }
+  function vReports() {
+    return pageHead("التقارير", "كل تقرير فيه رسم وجدول وتصدير CSV، ويتغيّر مع الفترة المختارة.", rangeSeg()) + demoBar() +
+      `<div class="rep-grid">${REPORTS.map(g => `<section class="adm-card"><h3 class="adm-card__t">${icon(REP_ICON[g[0]] || "doc")}${g[0]}</h3><div class="rep-list">${g[1].map(r => `<a href="#reports/${r[0]}"><b>${r[1]}</b><small>${r[2]}</small>${icon("chevL", "rep-go")}</a>`).join("")}</div></section>`).join("")}</div>`;
+  }
+  /* تقارير على كل البيانات (لا تتغير بالفترة) */
+  const ALLTIME = { cohorts: 1, segments: 1, "top-customers": 1, "orders-status": 1 };
+  function vReport(id) {
+    const p = PR(), meta = REPORTS.reduce((a, g) => a || g[1].find(r => r[0] === id), null);
+    if (!meta) return vReports();
+    const r = buildReport(id, p), all = ALLTIME[id]; lastReport = { title: meta[1], cols: r.cols, rows: r.rows };
+    return `<div class="adm-head"><a class="icon-btn" href="#reports" aria-label="كل التقارير">${icon("chevR")}</a><div><h1>${meta[1]}</h1><p>${meta[2]} · ${all ? "كل الفترات" : p.label}</p></div><div class="adm-head__act">${all ? "" : rangeSeg()}${r.rows.length ? `<button type="button" class="btn btn--line btn--sm" data-export="report">${icon("download")}CSV</button>` : ""}</div></div>` + demoBar() +
+      (!anyData() ? noData() : (r.chart ? card("", r.chart) : "") + (r.note ? `<p class="adm-tip">${icon("info")}${r.note}</p>` : "") + (r.cols.length ? `<section class="adm-card adm-card--flush">${tableHTML(r.cols, r.rows)}<div class="tbl-foot">${r.rows.length} صف</div></section>` : ""));
   }
 
   /* ---------------- الطلبات ---------------- */
@@ -233,9 +393,11 @@
     Array.from(oSel).forEach(id => { if (!all.some(o => o.id === id)) oSel.delete(id); });
     const head = pageHead("الطلبات", "غيّر مرحلة أي طلب وتتحدث فاتورة العميل ومراحلها الأربع مباشرة.",
       `<button type="button" class="btn btn--line btn--sm" data-export="orders">${icon("download")}تصدير CSV</button>${all.length ? "" : `<button type="button" class="btn btn--ember btn--sm" data-act="demo-seed">${icon("spark")}بيانات تجريبية</button>`}`);
-    if (!all.length) return head + noOrders();
+    if (!all.length) return head + noData();
+    const today = all.filter(o => o.date >= ST.range("today").start), todayOk = today.filter(o => o.status !== "cancelled");
+    const strip = `<div class="kpis kpis--4s"><div class="kpi"><span class="kpi__l">طلبات اليوم</span><b class="kpi__v">${today.length}</b></div><div class="kpi"><span class="kpi__l">مبيعات اليوم</span><b class="kpi__v">${cur(todayOk.reduce((a, o) => a + o.totals.total, 0))}</b></div><div class="kpi"><span class="kpi__l">بانتظار التجهيز</span><b class="kpi__v">${sc.placed}</b></div><div class="kpi"><span class="kpi__l">في الطريق</span><b class="kpi__v">${sc.onway}</b></div></div>`;
     const bulk = oSel.size ? `<div class="tbl-bulk"><b>تم تحديد ${oSel.size}</b><span class="muted">نقل إلى:</span>${["cutting", "onway", "done"].map(s => `<button type="button" class="btn btn--line btn--sm" data-bulk="${s}">${esc(stepName(s))}</button>`).join("")}<button type="button" class="btn btn--ghost btn--sm btn--danger-t" data-bulk="cancelled">إلغاء</button><button type="button" class="link small" data-osel-none>إلغاء التحديد</button></div>` : "";
-    return head + demoBar() + `<section class="adm-card adm-card--flush"><div class="tbl-tabs">${tabs.map(t => `<button type="button" data-otab="${t[0]}" aria-pressed="${oTab === t[0]}">${esc(t[1])}<small class="num">${t[2]}</small></button>`).join("")}</div>
+    return head + demoBar() + strip + `<section class="adm-card adm-card--flush"><div class="tbl-tabs">${tabs.map(t => `<button type="button" data-otab="${t[0]}" aria-pressed="${oTab === t[0]}">${esc(t[1])}<small class="num">${t[2]}</small></button>`).join("")}</div>
       <div class="tbl-bar"><input class="input" type="search" placeholder="ابحث برقم الطلب أو اسم العميل أو الجوال" data-oq value="${esc(oQ)}"></div>${bulk}
       ${rows.length ? ordersTable(rows.slice(0, oLimit), { select: true }) + (rows.length > oLimit ? `<div class="tbl-more"><button type="button" class="btn btn--line btn--sm" data-omore>عرض ${Math.min(50, rows.length - oLimit)} طلب إضافي</button></div>` : "") : `<div style="padding:10px 16px 20px">${empty("search", "لا طلبات مطابقة", "جرّب تبويباً آخر أو امسح البحث.")}</div>`}
       <div class="tbl-foot">يعرض ${Math.min(rows.length, oLimit)} من ${rows.length} · الإجمالي ${all.length} طلب محفوظ على هذا الجهاز</div></section>` +
@@ -257,8 +419,9 @@
     }).join("") + `<div class="osum"><div><span>اللحم</span><b class="num">${sar(t.meat || 0)}</b></div>${t.services ? `<div><span>الخدمات</span><b class="num">${sar(t.services)}</b></div>` : ""}${t.extras ? `<div><span>عدّة الشواء والبهارات</span><b class="num">${sar(t.extras)}</b></div>` : ""}${t.discount ? `<div><span>خصم ${esc(t.coupon || "")}</span><b class="num">− ${sar(t.discount)}</b></div>` : ""}<div><span>التوصيل</span><b class="num">${t.delivery ? sar(t.delivery) : "مجاني"}</b></div><div class="muted"><span>منها ضريبة</span><span class="num">${sar(t.vat || 0)}</span></div><div class="is-total"><span>الإجمالي</span><b class="num">${sar(t.total || 0)}</b></div></div>`);
     const log = (o.log && o.log.length ? o.log : [{ s: "placed", t: o.date }]).slice().reverse();
     const tl = card("السجل", `<ol class="tl">${log.map(e => `<li><span></span><span>${esc(stepName(e.s))}</span><small class="num">${whenF(e.t)}</small></li>`).join("")}</ol>`);
-    const u = o.user || {}, cnt = ST.orders().filter(x => x.user && u.phone && x.user.phone === u.phone).length, a = o.address;
-    const side = card("العميل", `<div class="kv"><b>${esc(u.name || "بدون اسم")}</b>${u.phone ? `<a href="#orders?q=${encodeURIComponent(u.phone)}" class="num" dir="ltr">${S.fmtPhone(u.phone)}</a>` : ""}<span class="muted small">${cnt} ${cnt === 1 ? "طلب" : "طلبات"}</span></div>
+    const u = o.user || {}, mine = ST.orders().filter(x => x.user && u.phone && x.user.phone === u.phone && x.status !== "cancelled"), a = o.address;
+    const seg = u.phone ? (ST.customers().find(c => c.phone === u.phone) || null) : null;
+    const side = card("العميل", `<div class="kv"><b>${esc(u.name || "بدون اسم")}</b>${u.phone ? `<a href="#orders?q=${encodeURIComponent(u.phone)}" class="num" dir="ltr">${S.fmtPhone(u.phone)}</a>` : ""}<span class="muted small">${mine.length} ${mine.length === 1 ? "طلب" : "طلبات"} · ${sar(mine.reduce((x, y) => x + y.totals.total, 0))}${seg ? " · " + esc((ST.SEG.find(s2 => s2.k === ST.segOf(seg)) || {}).n || "") : ""}</span></div>
       ${a ? `<div class="kv"><h4>عنوان التوصيل</h4><span>${esc(a.label || "")}</span><span class="muted small">${esc(A.addrLine(a))}</span>${a.notes ? `<span class="muted small">${esc(a.notes)}</span>` : ""}</div>` : ""}
       ${o.slot ? `<div class="kv"><h4>موعد التوصيل</h4><span>${o.slot.date ? dayF(o.slot.date, { weekday: "long", day: "numeric", month: "long" }) : esc(o.slot.dateLabel || "")} · ${esc(((draft.CONFIG.windows || []).find(w => w.h === o.slot.h) || {}).l || o.slot.time || "")}</span></div>` : ""}
       <div class="kv"><h4>الدفع</h4><span>${esc(payName(o))}</span></div>`) +
@@ -267,39 +430,20 @@
   }
 
   /* ---------------- العملاء ---------------- */
-  let cQ = "";
+  let cQ = "", cSeg = "all";
   function vCustomers() {
     const all = ST.customers(), q = cQ.trim();
-    const list = all.filter(c => !q || (c.name + " " + c.phone).indexOf(q) > -1);
-    const head = pageHead("العملاء", "من الطلبات المسجّلة — الاسم والجوال وعدد الطلبات وقيمتها.", `<button type="button" class="btn btn--line btn--sm" data-export="customers">${icon("download")}تصدير CSV</button>`);
-    if (!all.length) return head + noOrders();
-    const rep = all.filter(c => c.orders > 1).length, spent = all.reduce((t, c) => t + c.spent, 0);
-    const kp = `<div class="kpis kpis--3"><div class="kpi"><span class="kpi__l">العملاء</span><b class="kpi__v">${all.length}</b></div><div class="kpi"><span class="kpi__l">عملاء متكررون</span><b class="kpi__v">${Math.round(rep / all.length * 100)}٪ <small>(${rep})</small></b></div><div class="kpi"><span class="kpi__l">متوسط إنفاق العميل</span><b class="kpi__v">${cur(spent / all.length)}</b></div></div>`;
-    return head + demoBar() + kp + `<section class="adm-card adm-card--flush"><div class="tbl-bar"><input class="input" type="search" placeholder="ابحث بالاسم أو الجوال" data-cq value="${esc(cQ)}"></div>
-      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>العميل</th><th>الجوال</th><th>المدينة</th><th>الطلبات</th><th>إجمالي الإنفاق</th><th>آخر طلب</th></tr></thead><tbody>
-      ${list.map(c => `<tr data-href="#orders?q=${encodeURIComponent(c.phone || c.name)}"><td><span class="cust"><span class="cust__av">${esc((c.name || "؟").trim().slice(0, 1))}</span><b>${esc(c.name || "بدون اسم")}</b>${c.demo ? " " + badge("تجريبي", "demo") : ""}</span></td><td class="num" dir="ltr" style="text-align:end">${c.phone ? S.fmtPhone(c.phone) : "—"}</td><td>${esc(c.city || "—")}</td><td class="num">${c.orders}</td><td class="num">${sar(c.spent)}</td><td>${dayF(c.last)}</td></tr>`).join("")}</tbody></table></div>
-      <div class="tbl-foot">${list.length} عميل</div></section>`;
-  }
-
-  /* ---------------- التحليلات ---------------- */
-  function vAnalytics() {
-    const all = ST.orders();
-    const head = pageHead("التحليلات", "أداء المتجر في الفترة المختارة مقارنة بالفترة السابقة.", rangeSeg());
-    if (!all.length) return head + noOrders();
-    const k = ST.kpis(range), c = k.cur, b = ST.breakdown(range);
-    const oc = ST.series(range, 0, "orders"), ocp = ST.series(range, 1, "orders"), pr = ST.series(range, 0, "profit"), prp = ST.series(range, 1, "profit");
-    const area = (title, v, p, fmt, color, total, d) => card(title, `<div class="ch-head"><b class="ch-head__v">${total}</b>${deltaPill(d)}</div>` + CH.slot("area", { values: v.values, prev: p.values, labels: v.labels, h: 220, fmt, color, fmtX: t => dayF(t), fmtTip: t => dayF(t, { weekday: "long", day: "numeric", month: "long" }), names: ["الحالية", "السابقة"] }));
-    const WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
-    const winL = h => ((draft.CONFIG.windows || []).find(w => w.h === +h) || {}).l || h + ":00";
-    const n = b.count || 1;
-    const payParts = Object.keys(b.pay).map((pk, i) => ({ label: ((draft.CONFIG.payments || []).find(x => x.k === pk) || {}).n || pk, value: b.pay[pk].n, fmt: b.pay[pk].n + " طلب", color: CH.PALETTE[i % CH.PALETTE.length] }));
-    const marNames = k2 => (draft.MARINADES.find(m2 => m2.k === k2) || {}).n || k2;
-    return head + demoBar() +
-      `<div class="kpis"><div class="kpi"><span class="kpi__l">إجمالي المبيعات</span><b class="kpi__v">${cur(c.gross)}</b><span class="kpi__d">${deltaPill(k.d.gross)}</span></div><div class="kpi"><span class="kpi__l">الطلبات</span><b class="kpi__v">${c.orders}</b><span class="kpi__d">${deltaPill(k.d.orders)}</span></div><div class="kpi"><span class="kpi__l">الكمية المباعة</span><b class="kpi__v">${U.kgTxt(Math.round(c.kg))}</b><span class="kpi__d"><small>لحم</small></span></div><div class="kpi"><span class="kpi__l">العملاء</span><b class="kpi__v">${c.customers}</b><span class="kpi__d">${deltaPill(k.d.customers)}</span></div></div>` +
-      `<div class="adm-grid adm-grid--2">${area("الطلبات عبر الوقت", oc, ocp, v => v + " طلب", "#3E6FD8", c.orders, k.d.orders)}${c.profit == null ? card("الربح التقديري عبر الوقت", `<p class="muted small">حدّد نسبة التكلفة من <a class="link" href="#settings">الإعدادات</a> لعرض الربح.</p>`) : area("الربح التقديري عبر الوقت", pr, prp, sar, "#1F8A70", cur(c.profit), k.d.profit)}</div>` +
-      `<div class="adm-grid adm-grid--3">${card("المبيعات حسب اليوم", hbars(WD.map((d, i) => ({ l: d, v: Math.round(b.week[i]) })), sar, "#FF5A36"))}${card("حسب فترة التوصيل", hbars(Object.keys(b.slot).sort((x, y) => x - y).map(h => ({ l: winL(h), v: b.slot[h] })), v => v + " طلب", "#8C6FD1"))}${card("حسب المدينة", hbars(Object.keys(b.city).map(ck => ({ l: S.cityLabel ? S.cityLabel(ck) : ck, v: Math.round(b.city[ck]) })).sort((x, y) => y.v - x.v).slice(0, 6), sar, "#1F8A70"))}</div>` +
-      `<div class="adm-grid adm-grid--3">${card("طرق الدفع", donutBox(payParts, String(b.count), "طلب"))}${card("حصة المستشار من المبيعات", donutBox([{ label: "من المستشار", value: b.advisorShare, fmt: Math.round(b.advisorShare) + "٪", color: "#FF5A36" }, { label: "شراء مباشر", value: 100 - b.advisorShare, fmt: Math.round(100 - b.advisorShare) + "٪", color: "#D9D9D9" }], Math.round(b.advisorShare) + "٪", "المستشار"))}${card("الخدمات الإضافية <small>نسبة الطلبات</small>", hbars([{ l: "التتبيل", v: Math.round(b.svc.marinade / n * 100) }, { l: "التسييخ", v: Math.round(b.svc.skewer / n * 100) }, { l: "التغليف المفرّغ", v: Math.round(b.svc.vacuum / n * 100) }], v => v + "٪", "#E7A33E") + `<h4 style="margin:16px 0 8px;font-size:.8rem">التتبيلات الأكثر طلباً</h4>` + hbars(Object.keys(b.mar).map(mk => ({ l: marNames(mk), v: Math.round(b.mar[mk] * 10) / 10 })).sort((x, y) => y.v - x.v), v => U.kgTxt(v), "#E7A33E"))}</div>` +
-      card("المنتجات حسب المبيعات", `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>المنتج</th><th>الماشية</th><th>الكمية</th><th>المبيعات</th><th>الحصة</th></tr></thead><tbody>${b.top.slice(0, 12).map(t => { const p = D.byId(t.id) || {}; const tot = b.top.reduce((x, y) => x + y.v, 0) || 1; return `<tr><td><span class="cust">${thumb(t.id).replace("<img", '<img class="pth"')}<b>${esc(pname(t.id))}</b></span></td><td>${esc(animalName(p.animal))}</td><td class="num">${qtyTxt(t.id, t)}</td><td class="num">${sar(t.v)}</td><td class="num">${(t.v / tot * 100).toFixed(1)}٪</td></tr>`; }).join("")}</tbody></table></div>`, { cls: "adm-card--flushbody" });
+    const list = all.filter(c => (!q || (c.name + " " + c.phone).indexOf(q) > -1) && (cSeg === "all" || ST.segOf(c) === cSeg));
+    const head = pageHead("العملاء", "من الطلبات المسجّلة — الاسم والجوال وعدد الطلبات وقيمتها وشريحة كل عميل.", `<button type="button" class="btn btn--line btn--sm" data-export="customers">${icon("download")}تصدير CSV</button><a class="btn btn--line btn--sm" href="#reports/cohorts">الأفواج</a>`);
+    if (!all.length) return head + noData();
+    const rep = all.filter(c => c.orders > 1).length, spent = all.reduce((t, c) => t + c.spent, 0), sg = ST.segments();
+    const kp = `<div class="kpis"><div class="kpi"><span class="kpi__l">العملاء</span><b class="kpi__v">${intF(all.length)}</b></div><div class="kpi"><span class="kpi__l">عملاء اشتروا أكثر من مرة</span><b class="kpi__v">${pctV(rep / all.length * 100)} <small>(${rep})</small></b></div><div class="kpi"><span class="kpi__l">متوسط إنفاق العميل</span><b class="kpi__v">${cur(spent / all.length)}</b></div><div class="kpi"><span class="kpi__l">متوسط الطلبات للعميل</span><b class="kpi__v">${(all.reduce((t, c) => t + c.orders, 0) / all.length).toFixed(1)}</b></div></div>`;
+    const segs = `<div class="segs">${sg.map(x => `<button type="button" class="seg-card" data-cseg="${cSeg === x.k ? "all" : x.k}" aria-pressed="${cSeg === x.k}" style="--c:${x.c}"><span><i></i>${esc(x.n)}</span><b class="num">${intF(x.cnt)}</b><small>${esc(x.d)}</small><em class="num">${sar(x.v)}</em></button>`).join("")}</div>`;
+    return head + demoBar() + kp + segs +
+      `<section class="adm-card adm-card--flush"><div class="tbl-bar"><input class="input" type="search" placeholder="ابحث بالاسم أو الجوال" data-cq value="${esc(cQ)}">${cSeg !== "all" ? `<button type="button" class="btn btn--ghost btn--sm" data-cseg="all">كل الشرائح</button>` : ""}</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th>العميل</th><th>الجوال</th><th>المدينة</th><th>الطلبات</th><th>إجمالي الإنفاق</th><th>الشريحة</th><th>آخر طلب</th></tr></thead><tbody>
+      ${list.slice(0, 200).map(c => `<tr data-href="#orders?q=${encodeURIComponent(c.phone || c.name)}"><td><span class="cust"><span class="cust__av">${esc((c.name || "؟").trim().slice(0, 1))}</span><b>${esc(c.name || "بدون اسم")}</b>${c.demo ? " " + badge("تجريبي", "demo") : ""}</span></td><td class="num" dir="ltr" style="text-align:end">${c.phone ? S.fmtPhone(c.phone) : "—"}</td><td>${esc(cityL(c.city))}</td><td class="num">${c.orders}</td><td class="num">${sar(c.spent)}</td><td>${badge((ST.SEG.find(s2 => s2.k === ST.segOf(c)) || {}).n || "", "mute")}</td><td>${dayF(c.last)}</td></tr>`).join("")}</tbody></table></div>
+      <div class="tbl-foot">${list.length} عميل${list.length > 200 ? " · يعرض أول 200" : ""}</div></section>`;
   }
 
   /* ---------------- الخصومات ---------------- */
@@ -307,7 +451,7 @@
     const LF = TR() ? "label_en" : "label";
     const coupons = Object.keys(draft.CONFIG.coupons || {}).map(code => ({ code, pct: draft.CONFIG.coupons[code].pct, label: draft.CONFIG.coupons[code].label, label_en: draft.CONFIG.coupons[code].label_en }));
     const use = {}; ST.orders().forEach(o => { const cp = o.totals && o.totals.coupon; if (!cp || o.status === "cancelled") return; const u = use[cp] = use[cp] || { n: 0, d: 0, s: 0 }; u.n++; u.d += o.totals.discount || 0; u.s += o.totals.total || 0; });
-    return pageHead("الخصومات", "أكواد الخصم تنطبق على اللحوم فقط (لا تشمل الخدمات وعدّة الشواء).", `<button type="button" class="btn btn--ember btn--sm" data-act="coupon-add">${icon("plus")}كود جديد</button>`) +
+    return pageHead("الخصومات", "أكواد الخصم تنطبق على اللحوم فقط (لا تشمل الخدمات وعدّة الشواء).", `<a class="btn btn--line btn--sm" href="#reports/sales-discount">التقرير</a><button type="button" class="btn btn--ember btn--sm" data-act="coupon-add">${icon("plus")}كود جديد</button>`) +
       `<section class="adm-card adm-card--flush"><div class="tbl-wrap"><table class="tbl"><thead><tr><th>الكود</th><th>الوصف</th><th>الخصم</th><th>الحالة</th><th>الاستخدام</th><th>قيمة الخصومات</th><th>مبيعات بالكود</th></tr></thead><tbody>
       ${coupons.map(c => { const u = use[c.code] || { n: 0, d: 0, s: 0 }; return `<tr><td><b class="num">${esc(c.code)}</b></td><td>${esc(c[LF] || c.label || "")}</td><td class="num">${c.pct}٪</td><td>${badge("نشط", "ok", 1)}</td><td class="num">${u.n}</td><td class="num">${sar(u.d)}</td><td class="num">${sar(u.s)}</td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">لا أكواد بعد.</td></tr>`}</tbody></table></div></section>` +
       card("تعديل الأكواد", `<div class="af-list">${coupons.map((c, i) => `<div class="af-row">${grid2(`<label class="af"><span class="af__l">الكود</span><input class="input num" dir="ltr" data-coupon="${i}" data-f="code" value="${esc(c.code)}"></label>`, `<label class="af"><span class="af__l">الخصم ٪</span><input class="input num" type="number" data-coupon="${i}" data-f="pct" value="${c.pct}"></label>`, `<label class="af"><span class="af__l">الوصف${TR() ? ' <em class="af__lang">EN</em>' : ""}</span><input class="input" data-coupon="${i}" data-f="${LF}" value="${esc(c[LF] || "")}"${TR() ? ` dir="ltr" placeholder="${esc(c.label)}"` : ""}></label>`)}<span class="af-row__act"><button type="button" class="icon-btn is-del" data-coupon-del="${esc(c.code)}" aria-label="حذف">${icon("trash")}</button></span></div>`).join("") || `<p class="muted small">لا أكواد.</p>`}</div>`);
@@ -316,21 +460,44 @@
   /* ---------------- المنتجات ---------------- */
   let pFilter = "all", pSearch = "";
   function vProducts() {
-    const b = ST.breakdown(30), sold = {}; b.top.forEach(t => { sold[t.id] = t; });
+    const ps = ST.productStats(ST.range("30")), st2 = {}; ps.forEach(x => { st2[x.id] = x; });
     const rows = draft.PRODUCTS.map((p, i) => [p, i]).filter(([p]) => (pFilter === "all" || p.animal === pFilter) && (!pSearch || (p.name + " " + p.code + " " + p.id).indexOf(pSearch) > -1));
     const live = draft.PRODUCTS.filter(p => !p.hidden).length;
-    return pageHead("المنتجات", `${live} ظاهر من ${draft.PRODUCTS.length} منتج · الأسعار شاملة الضريبة`, `<button type="button" class="btn btn--ember btn--sm" data-act="new-product">${icon("plus")}منتج جديد</button>`) +
+    return pageHead("المنتجات", `${live} ظاهر من ${draft.PRODUCTS.length} منتج · الأسعار شاملة الضريبة · الأداء لآخر 30 يوماً`, `<a class="btn btn--line btn--sm" href="#inventory">${icon("box")}المخزون</a><a class="btn btn--line btn--sm" href="#reports/product-funnel">أداء المنتجات</a><button type="button" class="btn btn--ember btn--sm" data-act="new-product">${icon("plus")}منتج جديد</button>`) +
       `<section class="adm-card adm-card--flush"><div class="tbl-tabs">${[["all", "الكل"]].concat(animalsOpts()).map(a => `<button type="button" data-pf="${a[0]}" aria-pressed="${pFilter === a[0]}">${esc(a[1])}<small class="num">${a[0] === "all" ? draft.PRODUCTS.length : draft.PRODUCTS.filter(p => p.animal === a[0]).length}</small></button>`).join("")}</div>
       <div class="tbl-bar"><input class="input" type="search" placeholder="ابحث بالاسم أو الكود" data-psearch value="${esc(pSearch)}"></div>
-      <div class="tbl-wrap"><table class="tbl tbl--prod"><thead><tr><th style="width:52px"></th><th>المنتج</th><th>الحالة</th><th>الماشية</th><th>السعر</th><th>مبيعات 30 يوماً</th><th></th></tr></thead><tbody>
-      ${rows.map(([p, i]) => { const s = sold[p.id]; return `<tr class="${p.hidden ? "is-off" : ""}"><td>${p.img ? `<img class="pth" src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="pth"></span>`}</td>
+      <div class="tbl-wrap"><table class="tbl tbl--prod"><thead><tr><th style="width:52px"></th><th>المنتج</th><th>الحالة</th><th>الماشية</th><th>السعر</th><th>المخزون</th><th>المشاهدات</th><th>التحويل</th><th>المبيعات</th><th></th></tr></thead><tbody>
+      ${rows.map(([p, i]) => { const s = st2[p.id] || {}; const stock = p.stock == null || p.stock === "" ? null : +p.stock; return `<tr class="${p.hidden ? "is-off" : ""}"><td>${p.img ? `<img class="pth" src="${esc(p.img)}" alt="" loading="lazy">` : `<span class="pth"></span>`}</td>
         <td><b>${esc(p.name)}</b><br><small class="muted num">${esc(p.code || "")} · ${p.sold === "kg" ? "بالكيلو" : p.sold === "carcass" ? "ذبيحة" : "بالحبة"}</small></td>
         <td><label class="toggle toggle--mini" title="ظاهر في المتجر"><input type="checkbox" data-p="PRODUCTS.${i}.hidden" data-t="inv"${p.hidden ? "" : " checked"}><span class="toggle__sw"></span></label> ${p.hidden ? badge("مخفي", "mute") : badge("نشط", "ok")}</td>
         <td>${esc(animalName(p.animal))}</td>
         <td>${p.sold === "carcass" ? `<span class="num">${(p.sizes || []).map(z => U.money(z.p)).join(" / ")}</span>` : `<span class="pin-price"><input class="input input--sm num" type="number" step="any" data-p="PRODUCTS.${i}.price" data-t="num" value="${p.price}"><small>${p.sold === "kg" ? "ر.س/كجم" : "ر.س"}</small></span>`}</td>
-        <td class="num">${s ? sar(s.v) + `<br><small class="muted">${qtyTxt(p.id, s)}</small>` : "—"}</td>
-        <td><button type="button" class="btn btn--line btn--sm" data-edit-product="${i}">${icon("edit")}تعديل</button></td></tr>`; }).join("") || `<tr><td colspan="7" class="muted">لا نتائج.</td></tr>`}</tbody></table></div>
+        <td>${stock == null ? `<span class="muted small">غير متتبّع</span>` : stock <= 0 ? badge("نفد", "danger") : `<span class="num">${stock}</span> <small class="muted">${p.sold === "kg" ? "كجم" : p.sold === "carcass" ? "ذبيحة" : esc(p.unitName || "حبة")}</small>`}</td>
+        <td class="num">${s.views ? intF(s.views) : "—"}</td><td class="num">${s.views ? pctV(Math.min(100, (s.orders || 0) / s.views * 100)) : "—"}</td>
+        <td class="num">${s.v ? sar(s.v) + `<br><small class="muted">${qtyTxt(p.id, s)}</small>` : "—"}</td>
+        <td><button type="button" class="btn btn--line btn--sm" data-edit-product="${i}">${icon("edit")}تعديل</button></td></tr>`; }).join("") || `<tr><td colspan="10" class="muted">لا نتائج.</td></tr>`}</tbody></table></div>
       <div class="tbl-foot">${rows.length} منتج</div></section>`;
+  }
+
+  /* ---------------- المخزون ---------------- */
+  let iTab = "all";
+  function vInventory() {
+    const inv = ST.inventory(draft.PRODUCTS), cnt = { all: inv.length, out: 0, low: 0, ok: 0, untracked: 0 };
+    inv.forEach(x => { cnt[x.status]++; });
+    const value = inv.reduce((a, x) => a + x.value, 0);
+    const rows = inv.filter(x => iTab === "all" || x.status === iTab);
+    const SB = { out: badge("نفد", "danger", 1), low: badge("منخفض", "warn", 1), ok: badge("متوفر", "ok", 1), untracked: badge("غير متتبّع", "mute") };
+    const unit = p => p.sold === "kg" ? "كجم" : p.sold === "carcass" ? "ذبيحة" : p.unitName || "حبة";
+    return pageHead("المخزون", "الكمية المتوفرة لكل منتج، وسرعة البيع، وكم يوماً تكفي.", `<a class="btn btn--line btn--sm" href="#products">${icon("tag")}المنتجات</a>`) +
+      `<div class="kpis kpis--5"><div class="kpi"><span class="kpi__l">نفدت الكمية</span><b class="kpi__v">${cnt.out}</b></div><div class="kpi"><span class="kpi__l">كمية منخفضة</span><b class="kpi__v">${cnt.low}</b></div><div class="kpi"><span class="kpi__l">متوفر</span><b class="kpi__v">${cnt.ok}</b></div><div class="kpi"><span class="kpi__l">غير متتبّع</span><b class="kpi__v">${cnt.untracked}</b></div><div class="kpi"><span class="kpi__l">قيمة المخزون (سعر البيع)</span><b class="kpi__v">${cur(value)}</b></div></div>` +
+      `<p class="adm-tip">${icon("info")}المخزون يُنشر مع المحتوى: المنتج الذي كميته صفر يظهر في المتجر «نفدت الكمية» ولا يُضاف للسلة. في نسخة العرض لا تُخصم الكمية تلقائياً مع كل طلب — هذا يحتاج خادماً عند الإطلاق. «يكفي لـ» = الكمية ÷ متوسط البيع اليومي آخر 30 يوماً.</p>` +
+      `<section class="adm-card adm-card--flush"><div class="tbl-tabs">${[["all", "الكل"], ["out", "نفد"], ["low", "منخفض"], ["ok", "متوفر"], ["untracked", "غير متتبّع"]].map(t => `<button type="button" data-itab="${t[0]}" aria-pressed="${iTab === t[0]}">${t[1]}<small class="num">${cnt[t[0]]}</small></button>`).join("")}</div>
+      <div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:52px"></th><th>المنتج</th><th>الحالة</th><th>المتوفر</th><th>تنبيه عند</th><th>مبيع 30 يوماً</th><th>يومياً</th><th>يكفي لـ</th></tr></thead><tbody>
+      ${rows.map(x => `<tr><td>${x.p.img ? `<img class="pth" src="${esc(x.p.img)}" alt="" loading="lazy">` : `<span class="pth"></span>`}</td><td><b>${esc(x.p.name)}</b><br><small class="muted num">${esc(x.p.code || "")}</small></td><td>${SB[x.status]}</td>
+        <td><span class="pin-price"><input class="input input--sm num" type="number" min="0" step="${x.p.sold === "kg" ? "0.5" : "1"}" data-p="PRODUCTS.${x.i}.stock" data-t="num" value="${x.stock == null ? "" : x.stock}" placeholder="—"><small>${esc(unit(x.p))}</small></span></td>
+        <td><input class="input input--sm num" type="number" min="0" data-p="PRODUCTS.${x.i}.lowAt" data-t="num" value="${x.p.lowAt == null ? "" : x.p.lowAt}" placeholder="—" style="width:70px"></td>
+        <td class="num">${x.units ? x.units + " " + esc(unit(x.p)) : "—"}</td><td class="num">${x.perDay || "—"}</td>
+        <td>${x.cover == null ? "—" : x.cover === Infinity ? "بلا مبيعات" : `<b class="num">${x.cover}</b> يوم`}</td></tr>`).join("") || `<tr><td colspan="8" class="muted">لا منتجات هنا.</td></tr>`}</tbody></table></div></section>`;
   }
 
   function productForm(i) {
@@ -451,17 +618,17 @@
         <p class="muted small">بديل النشر اليدوي: نزّل الملف وضعه مكان <code>assets/js/content.js</code> في المشروع ثم شغّل <code>node build.js</code> ليُطبع داخل الصفحات.</p>`) +
       card("التراجع", `<div class="row-btns"><button type="button" class="btn btn--ghost" data-act="discard">تجاهل المسودة (الرجوع للمنشور)</button><button type="button" class="btn btn--ghost btn--danger-t" data-act="original">الرجوع لمحتوى الموقع الأصلي</button></div>`);
   }
-  const VIEWFN = { home: vHome, orders: vOrders, customers: vCustomers, analytics: vAnalytics, discounts: vDiscounts, products: vProducts, sections: vSections, herd: vHerd, services: vServices, advisor: vAdvisor, copy: vCopy, faq: vFaq, images: vImages, settings: vSettings, theme: vTheme, publish: vPublish };
+  const VIEWFN = { home: vHome, orders: vOrders, customers: vCustomers, analytics: vAnalytics, reports: vReports, discounts: vDiscounts, products: vProducts, inventory: vInventory, sections: vSections, herd: vHerd, services: vServices, advisor: vAdvisor, copy: vCopy, faq: vFaq, images: vImages, settings: vSettings, theme: vTheme, publish: vPublish };
   /* القائمة الجانبية (بأسلوب Shopify): التجارة ثم المتجر الإلكتروني ثم الإعدادات */
   const NAV = [
-    ["home", "الرئيسية", "home"], ["orders", "الطلبات", "receipt"], ["products", "المنتجات", "tag"], ["customers", "العملاء", "people"], ["analytics", "التحليلات", "chart"], ["discounts", "الخصومات", "percent"],
+    ["home", "الرئيسية", "home"], ["orders", "الطلبات", "receipt"], ["products", "المنتجات", "tag"], ["inventory", "المخزون", "box", 1], ["customers", "العملاء", "people"], ["analytics", "التحليلات", "chart"], ["reports", "التقارير", "doc", 1], ["discounts", "الخصومات", "percent"],
     ["-", "المتجر الإلكتروني", "store"],
     ["sections", "أقسام الرئيسية", "grid"], ["copy", "نصوص الصفحات", "doc"], ["herd", "القطيع والمواشي", "map"], ["services", "التقطيع والخدمات", "knife"], ["advisor", "المستشار", "chat"], ["faq", "الأسئلة والمساعدة", "help"], ["images", "الصور", "image"], ["theme", "الهوية والألوان", "spark"],
     ["-", "", ""],
     ["settings", "الإعدادات", "gear"], ["publish", "النشر والنسخ", "share"]
   ];
   const ALIAS = { dash: "home", checkout: "settings" };
-  const COMMERCE = { home: 1, orders: 1, customers: 1, analytics: 1, discounts: 1, products: 1 };
+  const COMMERCE = { home: 1, orders: 1, customers: 1, analytics: 1, reports: 1, discounts: 1, products: 1, inventory: 1 };
   let sub = null;
 
   function frame() {
@@ -478,7 +645,7 @@
         <a class="btn btn--ember btn--sm" href="#publish">نشر</a>
       </header>
       <div class="adm-shell">
-        <aside class="adm-side"><nav>${NAV.map(n => n[0] === "-" ? `<div class="adm-side__g">${n[2] ? icon(n[2]) : ""}${n[1]}</div>` : `<a href="#${n[0]}" data-nav="${n[0]}">${icon(n[2])}<span>${n[1]}</span>${n[0] === "orders" ? '<b class="nb" data-nb hidden></b>' : ""}</a>`).join("")}</nav>
+        <aside class="adm-side"><nav>${NAV.map(n => n[0] === "-" ? `<div class="adm-side__g">${n[2] ? icon(n[2]) : ""}${n[1]}</div>` : `<a href="#${n[0]}" data-nav="${n[0]}"${n[3] ? ' class="is-sub"' : ""}>${icon(n[2])}<span>${n[1]}</span>${n[0] === "orders" ? '<b class="nb" data-nb hidden></b>' : ""}</a>`).join("")}</nav>
           <div class="adm-side__foot"><a href="index.html" target="_blank">${icon("eye")}<span>المتجر بالعربي</span></a><a href="en/index.html" target="_blank">${icon("eye")}<span>English store</span></a></div></aside>
         <div class="adm-main"><div class="adm-page" id="admBody"></div></div>
       </div></div>`;
@@ -492,14 +659,14 @@
     document.documentElement.classList.remove("nav-open");
     const body = $("#admBody");
     const title = (NAV.find(n => n[0] === view) || NAV[0])[1];
-    const tip = TR() && view !== "home" && view !== "analytics" && view !== "customers" ? `<p class="adm-tip adm-tip--en">${icon("info")}تعدّل الآن <b>النسخة الإنجليزية</b> (الموقع في /en/). النص العربي يظهر كتلميح داخل كل حقل، والحقل الفارغ يعرض العربي في الموقع الإنجليزي. الأسعار والصور والإعدادات مشتركة بين اللغتين.</p>` : "";
-    const html = view === "orders" && sub ? vOrder(sub) : (VIEWFN[view] || vHome)();
+    const tip = TR() && !{ home: 1, analytics: 1, reports: 1, customers: 1, orders: 1 }[view] ? `<p class="adm-tip adm-tip--en">${icon("info")}تعدّل الآن <b>النسخة الإنجليزية</b> (الموقع في /en/). النص العربي يظهر كتلميح داخل كل حقل، والحقل الفارغ يعرض العربي في الموقع الإنجليزي. الأسعار والصور والإعدادات مشتركة بين اللغتين.</p>` : "";
+    const html = view === "orders" && sub ? vOrder(sub) : view === "reports" && sub ? vReport(sub) : (VIEWFN[view] || vHome)();
     body.innerHTML = COMMERCE[view] ? tip + html : pageHead(title) + tip + html;
     document.title = title + " · لوحة تحكم نُضْج";
     CH.mount(body);
     paintStatus();
   }
-  /* التوجيه: #orders · #orders/رقم · #orders?q=جوال */
+  /* التوجيه: #orders · #orders/رقم · #orders?q=جوال · #reports/تقرير */
   function route() {
     const h = decodeURIComponent((location.hash || "#home").slice(1)), qi = h.indexOf("?");
     const path = qi > -1 ? h.slice(0, qi) : h, q = new URLSearchParams(qi > -1 ? h.slice(qi + 1) : "");
@@ -530,9 +697,13 @@
       const rows = [["الطلب", "التاريخ", "العميل", "الجوال", "المدينة", "الحالة", "الدفع", "اللحم", "الخدمات", "العدّة", "الخصم", "التوصيل", "الضريبة", "الإجمالي", "تجريبي"]];
       ST.orders().forEach(o => { const t = o.totals || {}; rows.push([o.id, new Date(o.date).toISOString().slice(0, 16).replace("T", " "), (o.user || {}).name || "", (o.user || {}).phone || "", (o.address || {}).city || "", stepName(o.status), payName(o), t.meat, t.services, t.extras, t.discount, t.delivery, t.vat, t.total, o.demo ? "نعم" : ""]); });
       download("nudj-orders.csv", csv(rows), "text/csv");
+    } else if (kind === "report") {
+      if (!lastReport) return;
+      const txt = v => String(v == null ? "" : v).replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/\s+/g, " ").trim();
+      download("nudj-" + (sub || "report") + "-" + range + ".csv", csv([lastReport.cols].concat(lastReport.rows.map(r => r.map(txt)))), "text/csv");
     } else {
-      const rows = [["الاسم", "الجوال", "المدينة", "الطلبات", "إجمالي الإنفاق", "آخر طلب", "تجريبي"]];
-      ST.customers().forEach(c => rows.push([c.name, c.phone, c.city, c.orders, c.spent, new Date(c.last).toISOString().slice(0, 10), c.demo ? "نعم" : ""]));
+      const rows = [["الاسم", "الجوال", "المدينة", "الطلبات", "إجمالي الإنفاق", "متوسط الطلب", "الشريحة", "أول طلب", "آخر طلب", "تجريبي"]];
+      ST.customers().forEach(c => rows.push([c.name, c.phone, c.city, c.orders, c.spent, c.aov, (ST.SEG.find(x => x.k === ST.segOf(c)) || {}).n || "", new Date(c.first).toISOString().slice(0, 10), new Date(c.last).toISOString().slice(0, 10), c.demo ? "نعم" : ""]));
       download("nudj-customers.csv", csv(rows), "text/csv");
     }
   }
@@ -661,9 +832,11 @@
       const ca = t.closest("[data-copy-ar]"); if (ca) { set(enPath(ca.dataset.copyAr), clone(get(ca.dataset.copyAr) || [])); render(); return; }
       const ep = t.closest("[data-edit-product]"); if (ep) { e.preventDefault(); const r = $(".adm-search__res"); if (r) r.hidden = true; openProduct(+ep.dataset.editProduct); return; }
       const fp = t.closest("[data-find-product]"); if (fp) { e.preventDefault(); const i = draft.PRODUCTS.findIndex(p => p.id === fp.dataset.findProduct); if (i > -1) openProduct(i); return; }
-      const rg = t.closest("[data-range]"); if (rg) { range = +rg.dataset.range; try { sessionStorage.setItem("nudj_adm_range", range); } catch (x) { } render(); return; }
+      const rg = t.closest("[data-range]"); if (rg) { range = rg.dataset.range; try { sessionStorage.setItem("nudj_adm_range", range); } catch (x) { } render(); return; }
       const ot = t.closest("[data-otab]"); if (ot) { e.preventDefault(); oTab = ot.dataset.otab; oSel.clear(); oLimit = 50; if (view !== "orders" || sub) location.hash = "orders"; else render(); return; }
       const pf = t.closest("[data-pf]"); if (pf) { pFilter = pf.dataset.pf; render(); return; }
+      const cs = t.closest("[data-cseg]"); if (cs) { cSeg = cs.dataset.cseg; render(); return; }
+      const it = t.closest("[data-itab]"); if (it) { iTab = it.dataset.itab; render(); return; }
       if (t.closest("[data-osel-none]")) { oSel.clear(); render(); return; }
       if (t.closest("[data-omore]")) { oLimit += 50; render(); return; }
       const bk = t.closest("[data-bulk]"); if (bk) {
@@ -721,6 +894,7 @@
         }; fr.readAsText(t.files[0]);
       }
       if (t.matches("[data-p$='.hidden']") && view === "products") setTimeout(render, 30);
+      if (t.matches("[data-p$='.stock'],[data-p$='.lowAt']") && view === "inventory") setTimeout(render, 30);
     });
     root.addEventListener("input", e => {
       const t = e.target;
@@ -742,7 +916,7 @@
     document.addEventListener("keydown", e => { if (e.key === "Escape") { const r = $(".adm-search__res"); if (r) r.hidden = true; } if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName)) { e.preventDefault(); const s = $("[data-gsearch]"); if (s) s.focus(); } });
     window.addEventListener("hashchange", () => { route(); window.scrollTo(0, 0); });
     /* الطلبات من المتجر في تبويب آخر تظهر مباشرة */
-    window.addEventListener("storage", e => { if (e.key === "nudj_orders" && (view === "orders" || view === "home")) render(); });
+    window.addEventListener("storage", e => { if ((e.key === "nudj_orders" || e.key === "nudj_track") && COMMERCE[view] && !$(".sheet")) render(); });
     /* سحب نقاط القطعيات على الرسم */
     let drag = null;
     root.addEventListener("pointerdown", e => { const p = e.target.closest(".pins-ed__p"); if (!p) return; e.preventDefault(); drag = { p, box: p.parentNode, i: +p.parentNode.dataset.pins, z: p.dataset.zone }; p.setPointerCapture(e.pointerId); p.classList.add("is-drag"); });

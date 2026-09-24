@@ -123,8 +123,8 @@
   function tagCard(p, o) {
     o = o || {};
     const href = url.product(p.id);
-    const a = D.animal(p.animal);
-    return `<article class="tag-card${p.animal === "extra" ? " is-extra" : ""}" data-id="${p.id}">
+    const a = D.animal(p.animal), out = D.soldOut && D.soldOut(p);
+    return `<article class="tag-card${p.animal === "extra" ? " is-extra" : ""}${out ? " is-out" : ""}" data-id="${p.id}">${out ? `<span class="tag-card__out">${L("نفدت الكمية", "Sold out")}</span>` : ""}
   <a class="tag-card__media" href="${href}" tabindex="-1" aria-hidden="true">${productImg(p)}</a>
   <button class="tag-card__wish" type="button" data-wish="${p.id}" aria-label="${L("أضف " + esc(p.name) + " للمفضلة", "Add " + esc(p.name) + " to wishlist")}" aria-pressed="false">${icon("heart")}</button>
   <div class="tag">
@@ -132,7 +132,7 @@
     <div class="tag__meta"><span class="tag__code num">${p.code}</span><span>${a ? a.n : L("إضافات", "Extras")}${p.bone ? L(" · بالعظم", " · bone-in") : ""}</span></div>
     <h3 class="tag__name"><a href="${href}">${esc(p.name)}</a></h3>
     <p class="tag__short">${esc(p.short || "")}</p>
-    <div class="tag__foot">${priceTag(p)}<button class="tag__add" type="button" data-quick="${p.id}" aria-label="${L("أضف " + esc(p.name) + " للسلة", "Add " + esc(p.name) + " to cart")}">${icon("plus", "", 2.4)}</button></div>
+    <div class="tag__foot">${priceTag(p)}<button class="tag__add" type="button" data-quick="${p.id}"${out ? " disabled" : ""} aria-label="${out ? L("نفدت كمية " + esc(p.name), esc(p.name) + " is sold out") : L("أضف " + esc(p.name) + " للسلة", "Add " + esc(p.name) + " to cart")}">${icon("plus", "", 2.4)}</button></div>
   </div>
 </article>`;
   }
@@ -282,7 +282,7 @@
     return `<form class="buy-form" data-product="${p.id}" novalidate>
   ${parts.join("")}
   <div class="buy-sum" data-sum></div>
-  <div class="buy-row">${stepper}<button class="btn btn--ember btn--lg buy-submit" type="submit">${icon("cart")}<span>${L("أضف للسلة", "Add to cart")}</span><b class="num" data-total></b></button></div>
+  ${D.soldOut && D.soldOut(p) ? `<p class="buy-out">${icon("info")}${L("نفدت الكمية حالياً — تتوفر قريباً.", "Sold out for now — back soon.")}</p>` : ""}<div class="buy-row">${stepper}<button class="btn btn--ember btn--lg buy-submit" type="submit"${D.soldOut && D.soldOut(p) ? " disabled" : ""}>${icon("cart")}<span>${D.soldOut && D.soldOut(p) ? L("نفدت الكمية", "Sold out") : L("أضف للسلة", "Add to cart")}</span><b class="num" data-total></b></button></div>
 </form>`;
   }
 

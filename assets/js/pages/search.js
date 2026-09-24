@@ -24,10 +24,13 @@
       <div class="res-group"><h2>${L("اقتراحات", "Suggestions")}</h2><div class="sugg">${SUGG.map(s => `<button class="sg" type="button" data-s="${s}">${s}</button>`).join("")}</div></div>
       <div class="res-group"><h2>${L("تصفّح القطيع", "Browse the herd")}</h2><div class="herd-rail herd-rail--sm">${D.ANIMALS.map((a, i) => U.herdCard(a, i)).join("")}</div></div>`;
   }
+  let first = true;
   function run(push) {
     const q = inp.value.trim();
     clr.hidden = !q;
     root.innerHTML = q ? results(q) : idle();
+    if (q && (push || first) && window.NUDJ_TRACK) window.NUDJ_TRACK.ev("search", { q, n: root.querySelectorAll(".prow").length });
+    first = false;
     try { history.replaceState(null, "", "search.html" + (q ? "?q=" + encodeURIComponent(q) : "")); } catch (e) { }
     if (push && q) S.recent.push(q);
   }

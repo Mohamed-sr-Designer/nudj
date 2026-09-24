@@ -131,7 +131,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
 
   /* en.js يُحمَّل في الإنجليزية ولوحة التحكم و404 (التي تخدم اللغتين) */
   const SCRIPTS = m => ["assets/js/data.js"].concat(EN || m.name === "admin" || m.file === "404.html" ? ["assets/js/en.js"] : [],
-    ["assets/js/images.js", "assets/js/content.js", "assets/js/cms.js", "assets/js/store.js", "assets/js/ui.js", "assets/js/app.js", "assets/js/advisor.js"]);
+    ["assets/js/images.js", "assets/js/content.js", "assets/js/cms.js", "assets/js/store.js", "assets/js/ui.js"], m.name === "admin" ? [] : ["assets/js/track.js"], ["assets/js/app.js", "assets/js/nlu.js", "assets/js/advisor.js"]);
 
   function render(m, main) {
     const mode = m.mode || "root";

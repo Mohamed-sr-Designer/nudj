@@ -433,6 +433,8 @@ window.NUDJ = (function () {
 
   /* المنتجات المخفية من لوحة التحكم لا تظهر في المتجر لكنها تبقى صالحة في السلات والطلبات القديمة */
   const live = list => (list || PRODUCTS).filter(p => !p.hidden);
+  /* نفدت الكمية: مخزون متتبَّع ووصل صفر (من لوحة التحكم ← المخزون) */
+  const soldOut = p => !!p && p.stock != null && p.stock !== "" && +p.stock <= 0;
 
   /* ---------- تحويل البيانات للإنجليزي (صفحات /en/ فقط) ----------
      كل حقل له نسخة «_en» (من en.js أو لوحة التحكم) يحل محله، ويُحفظ الأصل في «_ar».
@@ -457,5 +459,5 @@ window.NUDJ = (function () {
     if (FAQ_en.length) { FAQ.length = 0; FAQ_en.forEach(x => FAQ.push(x)); }
   }
 
-  return { lang: LANG, L, R, localize, CONFIG, IMAGES, ANIMALS, animal, PREPS, MARINADES, marinade, SERVICES, STYLES, style, USES, PRODUCTS, byId, cutsOf, carcasses, extras, live, ZONES, ADVISOR, FAQ, FAQ_en, COPY, HOME, HELP, THEME, ORDER_STEPS };
+  return { lang: LANG, L, R, localize, CONFIG, IMAGES, ANIMALS, animal, PREPS, MARINADES, marinade, SERVICES, STYLES, style, USES, PRODUCTS, byId, cutsOf, carcasses, extras, live, soldOut, ZONES, ADVISOR, FAQ, FAQ_en, COPY, HOME, HELP, THEME, ORDER_STEPS };
 })();

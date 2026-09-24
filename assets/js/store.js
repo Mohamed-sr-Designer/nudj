@@ -73,7 +73,7 @@ window.NUDJ_STORE = (function () {
   /* يضيف سطراً أو يدمجه مع سطر مطابق */
   function add(id, o) {
     o = o || {};
-    const p = D.byId(id); if (!p) return null;
+    const p = D.byId(id); if (!p || (D.soldOut && D.soldOut(p))) return null;
     const c = getCart(), opts = clean(p, o.opts || {}), key = lineKey(id, opts, o.note);
     let ex = c.find(l => l.key === key);
     if (p.sold === "kg") {

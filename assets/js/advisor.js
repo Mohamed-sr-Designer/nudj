@@ -20,7 +20,7 @@ window.NUDJ_ADVISOR = (function () {
   const r2 = n => Math.round(n * 100) / 100;
 
   /* ---------------- الحالة ---------------- */
-  const fresh = () => ({ v: 3, a: {}, sections: [], hints: {}, pre: {}, adj: {}, added: 0, note: "", seq: 0 });
+  const fresh = () => ({ v: 3, a: {}, sections: [], hints: {}, pre: {}, adj: {}, added: 0, note: "", said: "", seq: 0 });
   let st = load();
   function load() { try { const s = JSON.parse(sessionStorage.getItem(KEY)); if (s && s.v === 3) return s; } catch (e) { } return fresh(); }
   function save(anim) { st.seq++; st.anim = anim || null; try { sessionStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { } S.emit("advisor"); }
@@ -246,6 +246,8 @@ window.NUDJ_ADVISOR = (function () {
 
   function logHTML() {
     const out = [];
+    /* ما كتبه العميل (نص حر) + رد المستشار عليه — الرد مبني بنصوص آمنة */
+    const said = () => { if (st.said) out.push(`<div class="bb bb--me bb--typed"><span>${esc(st.said)}</span></div>`); if (st.note) out.push(bot(st.note, "is-note")); };
     /* الأقسام السابقة في الخطة */
     st.sections.forEach((s, i) => {
       out.push(`<details class="bb-sec"><summary>${icon("check", "", 2.4)}<b>${esc(s.title)}</b><span class="num">${U.money2(total(s.lines))} ${CUR}</span>${icon("chevD")}</summary>${sectionReceipt(s)}<button type="button" class="link" data-drop-sec="${i}">${L("احذفها من الخطة", "Remove from plan")}</button></details>`);
@@ -258,14 +260,14 @@ window.NUDJ_ADVISOR = (function () {
       const custom = AD.q && AD.q[k] && (!EN || AD.q[k + "_ar"] !== undefined);
       const q = !n.html && custom && !(k === "occ" && st.sections.length) ? AD.q[k] : n.ask(st.a);
       if (v == null) {
-        if (k === cur) out.push(bot(n.type === "occ" ? esc(q) + occGrid() : n.html ? q : esc(q), "is-q"));
+        if (k === cur) { said(); out.push(bot(n.type === "occ" ? esc(q) + occGrid() : n.html ? q : esc(q), "is-q")); }
         break;
       }
       out.push(bot(n.html ? q : esc(q) + (n.type === "occ" ? "" : "")));
       out.push(`<button class="bb bb--me" type="button" data-edit="${k}" aria-label="${L("عدّل: ", "Edit: ")}${esc(label(k, v))}"><span>${esc(label(k, v))}</span>${icon("edit")}</button>`);
     }
-    if (st.note) out.push(bot(esc(st.note), "is-note"));
     if (!cur && st.a.occ) {
+      said();
       const s = compute();
       if (s.notes.length) out.push(bot(s.notes.map(esc).join("<br>")));
       out.push(bot(`<p>${L("هذي خطتك — عدّل أي وزن بـ − و + قبل ما تطلب:", "Here's your plan — adjust any weight with − and + before you order:")}</p>${sectionReceipt(s, true)}`, "is-result"));
@@ -353,20 +355,14 @@ window.NUDJ_ADVISOR = (function () {
   S.on("advisor", repaint);
 
   /* ---------------- التفاعل ---------------- */
+  /* قياس المستشار للوحة التحكم: بدأ، اكتملت الخطة، أُضيفت للسلة */
+  const TRK = (k, occ) => { try { if (window.NUDJ_TRACK) window.NUDJ_TRACK.ev("adv", { k, occ }); } catch (e) { } };
+  function trackPlan() { if (!current() && st.a.occ) { const key = JSON.stringify(st.a); if (st.planKey !== key) { st.planKey = key; TRK("plan", st.a.occ); } } }
   function answer(k, v) {
-    st.a[k] = v; delete st.pre[k]; st.note = ""; st.added = 0; st.adj = {};
-    autoFill();
+    st.a[k] = v; delete st.pre[k]; st.note = ""; st.said = ""; st.added = 0; st.adj = {};
+    if (k === "occ") TRK("start", v);
+    autoFill(); trackPlan();
     save("new");
-  }
-  /* ما كتبه المستخدم مسبقاً (العدد أو الماشية) يُعبّأ تلقائياً حين يأتي سؤاله */
-  function autoFill() {
-    for (let i = 0; i < 6; i++) {
-      const cur = current(); if (!cur) return;
-      if (cur === "people" && st.hints.people) { st.a.people = st.hints.people; delete st.hints.people; continue; }
-      if (/Animal$/.test(cur) && st.hints.animal && opts(cur).some(o => o.k === st.hints.animal)) { st.a[cur] = st.hints.animal; delete st.hints.animal; continue; }
-      if (cur === "dish" && st.hints.dish) { st.a.dish = st.hints.dish; delete st.hints.dish; continue; }
-      return;
-    }
   }
   function edit(k) {
     const f = flow(), i = f.indexOf(k);
@@ -375,16 +371,16 @@ window.NUDJ_ADVISOR = (function () {
     if (k === "people") delete st.a.people;
     else f.slice(i).forEach(x => { if (x !== "occ" || k === "occ") delete st.a[x]; });
     if (k === "occ") { st.a = {}; }
-    st.adj = {}; st.note = ""; st.added = 0;
+    st.adj = {}; st.note = ""; st.said = ""; st.added = 0;
     save();
   }
   function reset() { st = fresh(); save("new"); }
   function addToCart() {
     const s = compute(), all = st.sections.concat([s]);
-    let n = 0;
-    all.forEach(sec => sec.lines.forEach(l => { const o = { opts: l.opts, src: "advisor" }; if (l.kg != null) o.kg = l.kg; else o.qty = l.qty; if (S.cart.add(l.id, o)) n++; }));
-    st.added = n; save("new");
-    const A = window.NUDJ_APP; if (A) { A.bump(); A.toast(L("أُضيفت الخطة للسلة (" + n + " أسطر)", "Plan added to cart (" + n + " lines)"), { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } }); }
+    let n = 0, miss = 0;
+    all.forEach(sec => sec.lines.forEach(l => { const o = { opts: l.opts, src: "advisor" }; if (l.kg != null) o.kg = l.kg; else o.qty = l.qty; if (S.cart.add(l.id, o)) n++; else miss++; }));
+    st.added = n; TRK("cart", st.a.occ); save("new");
+    const A = window.NUDJ_APP; if (A) { A.bump(); A.toast(L("أُضيفت الخطة للسلة (" + n + " أسطر)", "Plan added to cart (" + n + " lines)") + (miss ? L(" — " + miss + " نفدت كميته", " — " + miss + " sold out") : ""), { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } }); }
   }
   function savePlan() {
     const s = compute(), all = st.sections.concat([s]);
@@ -410,7 +406,7 @@ window.NUDJ_ADVISOR = (function () {
         else if (k === "cart") addToCart();
         else if (k === "save") savePlan();
         else if (k === "people") edit("people");
-        else if (k === "more") { const s = compute(); if (!st.added) st.sections.push(s); else st.sections = []; st.a = {}; st.adj = {}; st.added = 0; st.note = ""; save("new"); }
+        else if (k === "more") { const s = compute(); if (!st.added) st.sections.push(s); else st.sections = []; st.a = {}; st.adj = {}; st.added = 0; st.note = ""; st.said = ""; save("new"); }
         return;
       }
       /* الأشخاص */
@@ -453,42 +449,178 @@ window.NUDJ_ADVISOR = (function () {
   }
   function hint(v, msg) { const A = window.NUDJ_APP; if (A) A.toast(msg, { icon: "info" }); }
 
-  /* ---------------- فهم النص المكتوب ---------------- */
-  const norm = s => String(s || "").replace(/[٠-٩]/g, c => "٠١٢٣٤٥٦٧٨٩".indexOf(c)).replace(/[ً-ٰٟـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").toLowerCase();
-  /* يفهم العربي والإنجليزي معاً */
-  const KW = {
-    occ: [["steak", /ستيك|ريب ?اي|تندرلوين|انتركوت|ستربلوين|steak|ribeye|rib eye|tenderloin|entrecote|striploin|sirloin/], ["grill", /مشاوي|شوي|شواء|شوايه|باربكيو|bbq|اوصال|تكه|كباب|grill|barbecue|barbeque|kebab|kabab|shish|skewer|cook ?out/], ["carcass", /ذبيحه|خروف|تيس|نفر|ذبح|carcass|whole (lamb|goat|sheep)|slaughter/], ["weekly", /اسبوع|شهر|مقاضي|يومي|للبيت|week|month|groceries|daily|household/], ["feast", /عزيمه|عزومه|وليمه|كبسه|مندي|مرق|ضيوف|مظبي|غدا|اكله|feast|gathering|guests|party|dinner|lunch|kabsa|kabsah|mandi|stew|broth/], ["ask", /الفرق|وش احسن|ايش احسن|قطعه|سؤال|تنفع|difference|which cut|best cut|question|what is/]],
-    animal: [["lamb", /ضان|غنم|خروف|نعيمي|حري|lamb|sheep|mutton/], ["goat", /ماعز|تيس|عنز|goat/], ["camel", /حاشي|جمل|ابل|قعود|camel|hashi/], ["veal", /عجل|veal|calf/], ["beef", /بقر|beef|cow/], ["buffalo", /جاموس|buffalo/]],
-    dish: [["kabsa", /كبسه|kabsa|kabsah/], ["mandi", /مندي|mandi/], ["marag", /مرق|ايدام|stew|broth|marag/], ["oven", /فرن|oven|roast/]]
+  /* ---------------- فهم النص المكتوب ----------------
+     NUDJ_NLU يستخرج كل ما في الجملة (المناسبة، العدد، الماشية، الطبق، التتبيلة…)،
+     والمستشار يعبّئ منه كل الأسئلة الممكنة دفعة واحدة، ويجاوب الأسئلة الجانبية
+     (التوصيل، السعر، الدفع…) ويكمل. لا يقول للعميل «ما فهمت» أبداً — يقترح ويكمل. */
+  const NLU = window.NUDJ_NLU;
+  const has = (k, v) => opts(k).some(o => o.k === v);
+  const near = (list, v) => list.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a);
+  /* قيمة سؤال معيّن من نتيجة التحليل (أو من الملاحظات المحفوظة) — direct: الجملة موجّهة لهذا السؤال */
+  function valueFor(k, r, direct) {
+    if (!r) return null;
+    const pickOpt = v => v != null && has(k, v) ? v : null;
+    switch (k) {
+      case "people": return r.people ? Math.min(200, Math.max(1, r.people)) : null;
+      case "forms": { const f = (r.forms || []).filter(x => has(k, x)).slice(0, 3); return f.length ? f : direct && (r.mix || r.all) ? ["cubes", "kebab", "whole"].filter(x => has(k, x)) : null; }
+      case "gAnimal": case "wAnimal": return pickOpt(r.animal) || (direct && r.mix ? "mix" : null);
+      case "fAnimal": case "qAnimal": case "cAnimal": return pickOpt(r.animal) || (k === "qAnimal" && r.products && r.products[0] ? r.products[0].animal : null);
+      case "marinade": return pickOpt(r.marinade) || (direct && r.no ? "none" : direct && r.yes ? "classic" : null);
+      case "sMarinade": return pickOpt(r.marinade) || (direct && r.no ? "none" : direct && r.yes ? "herb" : null);
+      case "skewer": return r.skewer || (direct && r.yes ? "yes" : direct && r.no ? "no" : null);
+      case "vacuum": return r.vacuum || (direct && r.yes ? "yes" : direct && r.no ? "no" : null);
+      case "spice": case "trays": return direct ? (r.yes ? "yes" : r.no ? "no" : null) : null;
+      case "tools": { const t = (r.tools || []).filter(x => has(k, x)); return t.length ? t : direct && r.all ? opts(k).map(o => o.k) : direct && r.no ? [] : direct && r.yes ? ["charcoal"] : null; }
+      case "dish": return pickOpt(r.dish);
+      case "mode": return r.mode || (direct && r.dish ? null : null);
+      case "bone": return r.bone;
+      case "style": return pickOpt(r.style) || pickOpt(r.dish === "mandi" ? "mandi" : r.dish === "kabsa" ? "kabsa" : null);
+      case "cSpice": { if (!direct) return null; const m = { kabsa: "spice-kabsa", mandi: "spice-mandi" }; const l = []; if (r.dish && m[r.dish]) l.push(m[r.dish]); if ((r.forms || []).length || r.occ === "grill") l.push("spice-grill"); return l.length ? l : r.all ? opts(k).map(o => o.k) : r.no ? [] : null; }
+      case "steakCut": return pickOpt(r.steakCut) || (r.products || []).map(p => p.id).find(id => has(k, id)) || (direct && r.mix ? "mix" : null);
+      case "where": return r.where;
+      case "days": return r.days ? String(near([3, 5, 7], r.days)) : null;
+      case "items": { const it = (r.items || []).filter(x => has(k, x)); return it.length ? it : direct && (r.mix || r.all) ? opts(k).map(o => o.k) : null; }
+      case "qCut": return (r.products || []).map(p => p.id).find(id => has(k, id)) || null;
+      case "qNext": return r.people || r.occ === "feast" || r.occ === "grill" ? "plan" : null;
+    }
+    return null;
+  }
+  /* مطابقة نص الجملة بأسماء الخيارات الظاهرة (تشمل بيانات لوحة التحكم والإنجليزي) */
+  function optionByName(k, r) {
+    const toks = new Set(r.tokens);
+    let best = null, score = 0;
+    opts(k).forEach(o => {
+      const w = NLU.norm(o.n).split(" ").filter(x => x.length > 2);
+      const n = w.filter(x => toks.has(x) || r.tokens.some(t => t.length > 3 && NLU.lev(t, x, 1) <= 1)).length;
+      if (w.length && n / w.length > score && n / w.length >= .5) { score = n / w.length; best = o; }
+    });
+    return best && !best.act ? best.k : null;
+  }
+  /* ما كتبه العميل سابقاً يُعبّأ تلقائياً حين يصل سؤاله — ثم تُحذف الملاحظة حتى لا تعود لو غيّر إجابته */
+  const HK = { people: "people", gAnimal: "animal", fAnimal: "animal", cAnimal: "animal", wAnimal: "animal", qAnimal: "animal", dish: "dish", forms: "forms", marinade: "marinade", sMarinade: "marinade",
+    skewer: "skewer", vacuum: "vacuum", tools: "tools", mode: "mode", bone: "bone", style: "style", steakCut: "steakCut", where: "where", days: "days", items: "items", qCut: "products" };
+  function autoFill() {
+    for (let i = 0; i < 14; i++) {
+      const cur = current(); if (!cur) return;
+      const v = valueFor(cur, st.hints, false);
+      if (v == null || (Array.isArray(v) && !v.length && ["tools", "cSpice"].indexOf(cur) < 0)) return;
+      st.a[cur] = v; st.filled = (st.filled || 0) + 1;
+      if (HK[cur]) delete st.hints[HK[cur]];
+    }
+  }
+  function remember(r) {
+    const h = st.hints;
+    ["people", "animal", "dish", "marinade", "bone", "style", "mode", "steakCut", "where", "days", "skewer", "vacuum"].forEach(k => { if (r[k] != null) h[k] = r[k]; });
+    ["forms", "items", "tools"].forEach(k => { if ((r[k] || []).length) h[k] = r[k]; });
+    if (r.products && r.products.length) h.products = r.products;
+  }
+
+  /* ---------------- ردود جانبية (ثم يكمل المستشار سؤاله) ---------------- */
+  const joinL = a => a.join(L("، ", ", "));
+  const pName = p => esc(p.name);
+  const priceLine = p => p.sold === "carcass"
+    ? `<b>${pName(p)}</b>: ${L("من", "from")} <b class="num">${U.money(p.sizes[0].p)}</b> ${L("إلى", "to")} <b class="num">${U.money(p.sizes[p.sizes.length - 1].p)}</b> ${CUR} (${p.sizes.map(z => esc(z.l) + " ≈ " + z.kg + " " + KG).join(L("، ", ", "))})`
+    : `<b>${pName(p)}</b>: <b class="num">${U.money(p.price)}</b> ${CUR}/${p.sold === "kg" ? KG : esc(p.unitName || L("حبة", "piece"))}`;
+  const REPLY = {
+    greet: r => /سلام|salam/.test(r.text) ? L("وعليكم السلام ورحمة الله، حيّاك!", "Wa alaykum as-salam, welcome!") : L("هلا والله، حيّاك!", "Hi, welcome!"),
+    thanks: () => L("العفو، بالعافية مقدماً! أي شي ثاني أنا حاضر.", "You're welcome! Anything else, I'm here."),
+    delivery: () => { const c = D.CONFIG, d = c.delivery; return L(`التوصيل <b class="num">${d.fee}</b> ${CUR}، ومجاني للطلبات من <b class="num">${d.freeOver}</b> ${CUR}. نوصّل حالياً: ${joinL(c.cities.map(esc))}. وتختار اليوم والفترة عند إتمام الطلب: ${joinL(c.windows.map(w => esc(w.l)))}.`,
+      `Delivery is <b class="num">${d.fee}</b> ${CUR}, and free on orders from <b class="num">${d.freeOver}</b> ${CUR}. We currently deliver to: ${joinL(c.cities.map(esc))}. You pick the day and slot at checkout: ${joinL(c.windows.map(w => esc(w.l)))}.`); },
+    payment: () => L(`تقدر تدفع بـ: ${joinL(U.payments().map(p => esc(p.n)))}. والأسعار شاملة الضريبة.`, `You can pay with: ${joinL(U.payments().map(p => esc(p.n)))}. Prices include VAT.`),
+    cutting: () => L(`التقطيع مجاني بأي شكل: ${joinL(["kabsa", "cubes", "slices", "steaks", "mince", "kebab"].filter(k => D.PREPS[k]).map(k => esc(D.PREPS[k].n)))}… المدفوع فقط التتبيل والتسييخ والتغليف المفرّغ، وسعرها يظهر قبل ما تضيفها.`,
+      `Cutting is free in any style: ${joinL(["kabsa", "cubes", "slices", "steaks", "mince", "kebab"].filter(k => D.PREPS[k]).map(k => esc(D.PREPS[k].n)))}… Only marinating, skewering and vacuum packing are paid, and you see their price before adding them.`),
+    cancel: () => L("تقدر تلغي طلبك من صفحة الطلب قبل ما نبدأ التجهيز. ولأن اللحم طازج، ما يُسترجع بعد الاستلام إلا إذا وصل بحالة غير سليمة أو مخالفة لطلبك.", "You can cancel from the order page before preparation starts. Because meat is fresh, it can't be returned after delivery unless it arrives in poor condition or doesn't match your order."),
+    contact: () => { const k = D.CONFIG.contact; return L(`تقدر تكلمنا على <span class="num" dir="ltr">${esc(k.phone)}</span> أو واتساب <span class="num" dir="ltr">${esc(k.whatsapp)}</span>. وأنا هنا أحسب لك أي طلب.`, `You can reach us on <span class="num" dir="ltr">${esc(k.phone)}</span> or WhatsApp <span class="num" dir="ltr">${esc(k.whatsapp)}</span>. And I'm here to work out any order for you.`); }
   };
-  const find = (list, t) => { const x = list.find(r => r[1].test(t)); return x ? x[0] : null; };
+  function priceReply(r) {
+    if (r.products.length) return r.products.slice(0, 4).map(priceLine).join("<br>");
+    if (r.animal) { const l = D.cutsOf(r.animal).filter(p => p.sold === "kg").sort((a, b) => a.price - b.price); const a = D.animal(r.animal); return L(`أسعار ${esc(a.n)} تبدأ من <b class="num">${U.money(l[0].price)}</b> ${CUR}/${KG}:`, `${esc(a.n)} starts from <b class="num">${U.money(l[0].price)}</b> ${CUR}/${KG}:`) + "<br>" + l.slice(0, 4).map(priceLine).join("<br>"); }
+    const kg = D.live().filter(p => p.sold === "kg"), min = Math.min.apply(null, kg.map(p => p.price)), car = D.carcasses(), cmin = car.length ? Math.min.apply(null, car.map(p => p.sizes[0].p)) : 0;
+    return L(`القطعيات تبدأ من <b class="num">${U.money(min)}</b> ${CUR} للكيلو${car.length ? `، والذبائح من <b class="num">${U.money(cmin)}</b> ${CUR}` : ""}. قل لي اسم القطعة وأعطيك سعرها بالضبط.`, `Cuts start from <b class="num">${U.money(min)}</b> ${CUR}/kg${car.length ? `, and carcasses from <b class="num">${U.money(cmin)}</b> ${CUR}` : ""}. Tell me the cut and I'll give you its exact price.`);
+  }
+  function compareReply(list) {
+    const K3 = L(["الطراوة", "الدهن", "النكهة"], ["tenderness", "fat", "flavour"]);
+    return L("الفرق باختصار:", "The difference in short:") + "<br>" + list.slice(0, 3).map(p => `• ${priceLine(p)}${p.spec ? " — " + p.spec.map((v, i) => K3[i] + " " + v + "/5").join(L("، ", ", ")) : ""}${p.short ? " — " + esc(p.short) : ""}`).join("<br>");
+  }
+  /* ما التقطناه من الجملة (لتأكيده للعميل) */
+  function ackList(r) {
+    const out = [];
+    if (r.people) out.push(people(r.people));
+    if (r.animal && D.animal(r.animal)) out.push(esc(D.animal(r.animal).n));
+    if (r.dish) { const d = AD.dishes.find(x => x.k === r.dish); if (d) out.push(esc(d.n)); }
+    (r.forms || []).forEach(f => { const g = AD.grillForms.find(x => x.k === f); if (g) out.push(esc(g.n)); });
+    if (r.marinade) out.push(esc(D.marinade(r.marinade).n));
+    if (r.bone) out.push(r.bone === "bone" ? L("بالعظم", "bone-in") : L("بدون عظم", "boneless"));
+    return out;
+  }
+  /* توضيح لطيف للسؤال الحالي — بدون «ما فهمت» */
+  function helpFor(k) {
+    const n = NODES[k]; if (!n) return "";
+    if (n.type === "people") return L("اكتب العدد بالأرقام أو بالكلام (مثل: عشرة، خمسة وعشرين) — أو اختر من الأرقام تحت.", "Type the number in digits or words (like “ten”), or pick one below.");
+    if (n.type === "occ") return "";
+    const ex = opts(k).filter(o => !o.act).slice(0, 3).map(o => "«" + esc(o.n) + "»").join(L(" أو ", " or "));
+    return ex ? L(`تقدر تختار من تحت، أو تكتبها بطريقتك — مثل ${ex}.`, `Pick one below, or say it your way — like ${ex}.`) : "";
+  }
+
   function understand(txt) {
-    const t = norm(txt);
-    const num = (t.match(/\d{1,3}/) || [])[0], n = num ? +num : /شخصين|اثنين|\btwo\b|couple/.test(t) ? 2 : null;
-    const occ = find(KW.occ, t), ani = find(KW.animal, t), dsh = find(KW.dish, t);
-    const cur = current();
-    st.note = "";
-    if (!st.a.occ || (cur === "occ")) {
-      if (occ || dsh) {
-        if (n) st.hints.people = n; if (ani) st.hints.animal = ani; if (dsh) st.hints.dish = dsh;
-        return answer("occ", occ || "feast");
+    const r = NLU.parse(txt), I = r.intents, notes = [];
+    st.said = txt; st.note = ""; st.filled = 0;
+    if (I.reset && !r.occ) { reset(); return; }
+    const cur0 = current();
+    /* الأسئلة الجانبية تُجاب أولاً ثم نكمل */
+    if (I.greet) notes.push(REPLY.greet(r));
+    if (I.delivery) notes.push(REPLY.delivery());
+    if (I.payment) notes.push(REPLY.payment());
+    if (I.cancel) notes.push(REPLY.cancel());
+    if (I.contact) notes.push(REPLY.contact());
+    if (I.cutting && (I.free || I.price || r.question)) notes.push(REPLY.cutting());
+    if (r.products.length >= 2 && (r.question || r.found["occ:ask"])) notes.push(compareReply(r.products));
+    else if (I.price && !I.delivery && !(I.cutting && (I.free || r.question))) notes.push(priceReply(r));
+    if (I.thanks && !notes.length) notes.push(REPLY.thanks());
+    remember(r);
+    const sideOnly = notes.length && !r.occ && !r.people && !r.animal && !r.dish && !r.forms.length;
+
+    if (!st.a.occ || cur0 === "occ") {
+      let occ = r.occ;
+      /* قطعة محددة بلا مناسبة ← «سؤال عن قطعة» عنها مباشرة */
+      if (!occ && r.products.length === 1 && r.products[0].sold === "kg" && !I.price && has("occ", "ask")) { const p = r.products[0]; st.a = { occ: "ask", qAnimal: p.animal, qCut: p.id }; }
+      else if (!occ && !sideOnly && (r.question || r.found["occ:ask"]) && r.animal && has("occ", "ask")) occ = "ask";
+      else if (!occ && !sideOnly && r.kg && r.products.length === 1) { const p = r.products[0]; st.a = { occ: "ask", qAnimal: p.animal, qCut: p.id }; }
+      if (occ && has("occ", occ)) { st.a.occ = occ; }
+      if (st.a.occ) { autoFill(); if (current() && st.filled >= 1 && ackList(r).length) notes.push(L("تمام، سجّلت: ", "Got it: ") + ackList(r).join(L("، ", ", ")) + "."); }
+      else if (!notes.length) {
+        const got = ackList(r);
+        notes.push(got.length ? L(`تمام، سجّلت ${got.join("، ")}. بقي تختار المناسبة عشان أحسبها لك صح:`, `Got it: ${got.join(", ")}. Now pick the occasion so I can work it out properly:`)
+          : L("حيّاك! عشان أحسبها لك صح، اختر أقرب مناسبة لطلبك — أو اكتبها بكلامك مثل «مشاوي لـ 8» أو «كبسة جمل لعشرين».", "Welcome! To get it right, pick the closest occasion — or say it your way, like “BBQ for 8” or “camel kabsa for twenty”."));
+      } else if (!sideOnly) notes.push(L("وش المناسبة؟ اختر من تحت وأكمل معك.", "What's the occasion? Pick below and I'll take it from there."));
+    } else if (cur0) {
+      const node = NODES[cur0];
+      let v = valueFor(cur0, r, true);
+      if (v == null && (node.type === "chips" || node.type === "multi")) { const o = optionByName(cur0, r); if (o) v = node.type === "multi" ? [o] : o; }
+      if (cur0 === "qNext" && v === "plan") { if (r.people) st.hints.people = r.people; }
+      if (v != null && !(node.type === "multi" && Array.isArray(v) && !v.length && (node.min == null ? 1 : node.min) > 0)) {
+        st.a[cur0] = v; if (HK[cur0]) delete st.hints[HK[cur0]]; autoFill();
+      } else {
+        autoFill();
+        if (current() === cur0) {
+          const got = ackList(r);
+          if (got.length) notes.push(L("تمام، سجّلت: ", "Noted: ") + got.join(L("، ", ", ")) + ".");
+          else if (!notes.length) notes.push(helpFor(cur0) || L("خلني أساعدك — اختر من الخيارات تحت.", "Let me help — pick from the options below."));
+          /* مناسبة جديدة مكتوبة وسط الأسئلة ← نبدأها */
+          if (r.occ && r.occ !== st.a.occ && !got.length && (r.found["occ:" + r.occ] || 0) >= 1.4) { st.a = { occ: r.occ }; autoFill(); notes.length = 0; }
+        }
       }
-    } else if (cur) {
-      const node = NODES[cur];
-      if (node.type === "people" && n) return answer("people", Math.min(200, n));
-      if (n) st.hints.people = n; if (ani) st.hints.animal = ani; if (dsh) st.hints.dish = dsh;
-      if (node.type === "chips") {
-        const o = opts(cur).find(x => (ani && x.k === ani) || (dsh && x.k === dsh) || norm(txt).indexOf(norm(x.n)) > -1 || norm(x.n).indexOf(t) > -1);
-        if (o && !o.act) return answer(cur, o.k);
-      }
-      if (node.type === "multi") {
-        const hits = opts(cur).filter(x => t.indexOf(norm(x.n).split(" ")[0]) > -1).map(x => x.k);
-        if (hits.length) return answer(cur, hits.slice(0, node.max || 9));
-      }
-      autoFill();
-      if (current() !== cur) return save("new");
-    } else if (n && st.a.people) { st.a.people = n; st.adj = {}; return save("new"); }
-    st.note = L("ما فهمت عليك تماماً — اختر من الخيارات تحت، أو اكتب مثل: «كبسة جمل لـ 12 شخص».", "I didn't quite get that — pick from the options below, or type something like “camel kabsa for 12 people”.");
+    } else {
+      /* الخطة جاهزة: عدد جديد، سلة، حفظ، أو مناسبة ثانية */
+      if (r.people && !r.occ) { st.a.people = r.people; st.adj = {}; notes.push(L(`حسبتها من جديد على ${people(r.people)}.`, `Recalculated for ${people(r.people)}.`)); }
+      else if (I.cart) { st.said = ""; st.note = notes.join("<br>"); addToCart(); return; }
+      else if (I.save) { savePlan(); notes.push(L("حفظتها لك في حسابك.", "Saved to your account.")); }
+      else if (r.occ && has("occ", r.occ)) { if (!st.added) st.sections.push(compute()); else st.sections = []; st.a = { occ: r.occ }; st.adj = {}; st.added = 0; autoFill(); notes.push(L("تمام، نضيفها على الخطة:", "Sure, adding it to the plan:")); }
+      else if (!notes.length) notes.push(L("خطتك جاهزة — تقدر تضيفها للسلة، أو تكتب عدداً جديداً وأعيد الحساب، أو تضيف مناسبة ثانية.", "Your plan is ready — add it to the cart, type a new headcount and I'll recalculate, or add another occasion."));
+    }
+    st.note = notes.join("<br>"); st.adj = st.adj || {}; if (current() !== cur0) st.added = 0;
+    if (cur0 === "occ" && st.a.occ) TRK("start", st.a.occ);
+    trackPlan();
     save("new");
   }
 
@@ -496,13 +628,13 @@ window.NUDJ_ADVISOR = (function () {
   /* يبدأ مناسبة محددة (من بطاقات الرئيسية مثلاً) */
   function start(occ, hints) {
     if (st.a.occ && current() !== "occ") { if (!st.added && current() == null) st.sections.push(compute()); }
-    st.a = {}; st.adj = {}; st.added = 0; st.note = ""; st.hints = hints || {};
+    st.a = {}; st.adj = {}; st.added = 0; st.note = ""; st.said = ""; st.hints = hints || {};
     if (occ) answer("occ", occ); else save("new");
   }
   /* سؤال عن قطعة محددة (من صفحة المنتج) */
   function askAbout(id) {
     const p = D.byId(id); if (!p || p.sold !== "kg") return start();
-    st.a = { occ: "ask", qAnimal: p.animal, qCut: p.id }; st.adj = {}; st.added = 0; st.note = ""; save("new");
+    st.a = { occ: "ask", qAnimal: p.animal, qCut: p.id }; st.adj = {}; st.added = 0; st.note = ""; st.said = ""; save("new");
   }
   /* الكمية المقترحة لقطعة وعدد أشخاص (لميزان صفحة المنتج) */
   function suggestKg(p, n) { const g = gramsFor(p); return { kg: up(g.g * n / 1000), g: g.g, use: g.use }; }
@@ -520,5 +652,5 @@ window.NUDJ_ADVISOR = (function () {
     return tips.slice(0, 3);
   }
 
-  return { mount, start, askAbout, suggestKg, cartTips, state: () => st, current, reset };
+  return { mount, start, askAbout, suggestKg, cartTips, state: () => st, current, reset, say: understand };
 })();

@@ -262,7 +262,7 @@
     form.addEventListener("submit", e => {
       e.preventDefault();
       const r = readForm(form, p);
-      S.cart.add(p.id, { kg: r.kg, qty: r.qty, opts: r.opts, note: r.note });
+      if (!S.cart.add(p.id, { kg: r.kg, qty: r.qty, opts: r.opts, note: r.note })) { toast(L("نفدت كمية ", "Sold out: ") + p.name, { icon: "info" }); return; }
       bump();
       toast(L("أُضيف ", "Added ") + p.name + (p.sold === "kg" ? " · " + U.kgTxt(r.kg) : ""), { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } });
       if (o.onAdded) o.onAdded(r);
@@ -276,6 +276,7 @@
     const b = e.target.closest("[data-quick]"); if (!b) return;
     e.preventDefault();
     const p = D.byId(b.dataset.quick); if (!p) return;
+    if (D.soldOut(p)) { toast(L("نفدت كمية ", "Sold out: ") + p.name, { icon: "info" }); return; }
     if (p.sold === "piece") { S.cart.add(p.id, { qty: 1 }); bump(); toast(L("أُضيف ", "Added ") + p.name, { icon: "cart", action: { label: L("السلة", "Cart"), href: "cart.html" } }); return; }
     const body = document.createElement("div");
     body.innerHTML = `<div class="qs-head">${U.productImg(p, "qs-head__img")}<div class="qs-head__b"><span class="tag__code num">${p.code}</span><b>${U.esc(p.name)}</b><span>${U.priceTag(p)}</span></div></div>
