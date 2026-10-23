@@ -2251,3 +2251,11 @@ html .hero.hero--center .btn--line:hover{background:#F2ECE2;border-color:#F2ECE2
 .occ-chosen b{font-family:var(--f-display);font-size:1rem;color:var(--bone)}
 .occ-chosen .link{margin-inline-start:auto;font-size:.82rem;font-weight:700;color:var(--ember)}
 .occ-chosen .occ-meat__art{width:44px;height:28px}
+.occ-h{margin:6px 0 0;font-size:.86rem;font-weight:700;color:var(--muted)}
+.occ-cuts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.occ-cut{display:flex;align-items:center;gap:9px;padding:5px 8px 5px 6px;border-radius:12px;border:1px solid var(--line-2);background:var(--char);text-align:start;min-height:50px;transition:border-color .2s,background .2s}
+.occ-cut:hover{border-color:var(--ember);background:var(--ember-tint)}
+.occ-cut__img{width:38px;height:38px;flex-shrink:0;border-radius:9px;overflow:hidden;background:var(--slate)}
+.occ-cut__img img{width:100%;height:100%;object-fit:cover}
+.occ-cut b{display:block;font-size:.84rem;font-weight:700;color:var(--bone);line-height:1.3}
+.occ-cut small{display:block;font-size:.72rem;color:var(--muted)}

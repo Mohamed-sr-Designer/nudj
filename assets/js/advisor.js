@@ -73,6 +73,12 @@ window.NUDJ_ADVISOR = (function () {
     style: { type: "chips", ask: () => L("كيف نقطّعها لك؟ التقطيع مجاني.", "How shall we cut it? Cutting is free."), opts: () => D.STYLES.map(s => ({ k: s.k, n: s.n, d: s.d })) },
     vacuum: { type: "chips", ask: a => a.occ === "carcass" ? L("نغلّفها مفرّغة من الهواء؟ تدوم أطول في الفريزر.", "Shall we vacuum-pack it? It keeps longer in the freezer.") : L("نغلّف كل وجبة في كيس مفرّغ؟", "Shall we vacuum-pack each meal?"),
       opts: a => [yes(L("إيه غلّفوها", "Yes, vacuum-pack it"), a.occ === "carcass" ? D.SERVICES.vacuum.carcass : D.SERVICES.vacuum.p, a.occ === "carcass" ? "" : "/" + KG), { k: "no", n: L("أكياس عادية", "Regular bags"), p: 0 }] },
+    cKg: { type: "chips", ask: a => L("كم كيلو " + D.byId(a.qCut).name + "؟", "How many kilos of " + lc(D.byId(a.qCut).name) + "?"),
+      opts: a => { const p = D.byId(a.qCut); return [0.5, 1, 1.5, 2, 3, 5].map(x => ({ k: String(x), n: U.kgTxt(x), p: Math.round(p.price * x), abs: true })); } },
+    cPrep: { type: "chips", ask: () => L("كيف تبغى نقطّعها؟ التقطيع مجاني.", "How should we cut it? Cutting is free."),
+      opts: a => (D.byId(a.qCut).preps || []).map(k => ({ k, n: D.PREPS[k].n, d: D.PREPS[k].d })) },
+    cSkew: { type: "chips", skip: a => !(a.cPrep && D.PREPS[a.cPrep] && D.PREPS[a.cPrep].skew), ask: () => L("نسيّخها لك جاهزة على أسياخ؟", "Shall we put it on skewers for you, ready to grill?"),
+      opts: () => [yes(L("إيه سيّخوها", "Yes, skewer it"), D.SERVICES.skewer.p, "/" + KG), { k: "no", n: L("لا، أسيّخها بنفسي", "No, I'll do it myself") }] },
     cSpice: { type: "multi", min: 0, ask: () => L("تبغى بهارات معها؟", "Want spices with it?"), opts: () => ["spice-kabsa", "spice-mandi", "spice-grill"].map(id => ({ k: id, n: D.byId(id).name.replace(/ 100 (جم|g)$/, ""), p: priceOf(id), per: L("/كيس", "/bag") })) },
     steakCut: { type: "chips", ask: () => L("أي ستيك؟", "Which steak?"), opts: () => AD.steaks.map(id => { const p = D.byId(id); return { k: id, n: p.name, d: p.short, p: p.price, per: "/" + KG, abs: true }; }).concat([{ k: "mix", n: L("نوّع لي", "Mix it up"), d: L("ريب آي + تندرلوين", "Ribeye + tenderloin") }]) },
     where: { type: "chips", ask: () => L("على الفحم ولا بالمقلاة؟", "Over charcoal or in a pan?"), opts: () => [{ k: "coal", n: L("على الفحم", "Over charcoal"), d: L("أضيف لك الفحم", "I'll add charcoal") }, { k: "pan", n: L("مقلاة أو فرن", "Pan or oven") }] },
@@ -92,7 +98,8 @@ window.NUDJ_ADVISOR = (function () {
     carcass: ["occ", "cAnimal", "people", "style", "vacuum", "cSpice"],
     steak: ["occ", "people", "steakCut", "where", "sMarinade"],
     weekly: ["occ", "people", "days", "items", "wAnimal", "vacuum"],
-    ask: ["occ", "qAnimal", "qCut", "qNext", "people"]
+    ask: ["occ", "qAnimal", "qCut", "qNext", "people"],
+    cut: ["occ", "qAnimal", "qCut", "cKg", "cPrep", "marinade", "cSkew", "vacuum"]
   };
   const flow = () => FLOWS[st.a.occ] || ["occ"];
   const isSkip = k => NODES[k].skip && NODES[k].skip(st.a);
@@ -100,6 +107,7 @@ window.NUDJ_ADVISOR = (function () {
   const opts = k => (typeof NODES[k].opts === "function" ? NODES[k].opts(st.a) : NODES[k].opts) || [];
   function label(k, v) {
     const n = NODES[k];
+    if (k === "occ" && v === "cut") return L("قطعة محددة", "A specific cut");
     if (n.type === "people") return people(v);
     if (n.type === "multi") { if (!v.length) return L("بدون", "None"); const o = opts(k); return v.map(x => (o.find(y => y.k === x) || { n: x }).n).join(L("، ", ", ")); }
     const o = opts(k).find(x => x.k === v); return o ? o.n : v;
@@ -211,6 +219,13 @@ window.NUDJ_ADVISOR = (function () {
       });
       notes.push(L("حسبتها على " + AD.grams.dailyDay + " جم للشخص في يوم الطبخ.", "Based on " + AD.grams.dailyDay + " g per person per cooking day."));
       title = L("طبخ الأسبوع · ", "Weekly cooking · ") + people(a.people) + " · " + days + L(" أيام", " days");
+    } else if (a.occ === "cut") {
+      const p = D.byId(a.qCut), kg = +a.cKg, o = { prep: a.cPrep };
+      if (a.marinade && a.marinade !== "none") o.marinade = a.marinade;
+      if (a.cSkew === "yes") o.skewer = true;
+      if (a.vacuum === "yes") o.vacuum = true;
+      lines.push({ id: p.id, kg, opts: o, why: "" });
+      title = p.name + " · " + U.kgTxt(kg);
     } else if (a.occ === "ask") {
       const p = D.byId(a.qCut), g = gramsFor(p);
       lines.push({ id: p.id, kg: up(g.g * a.people / 1000), opts: { prep: p.prepDef }, why: g.g + " " + G + L(" للشخص", " per person") + " (" + g.use + ")" });
@@ -227,7 +242,7 @@ window.NUDJ_ADVISOR = (function () {
   /* ---------------- العرض ---------------- */
   /* ---------------- الشخصيتان ----------------
      الجزار «من برّا»: المناسبة والعدد والقطعة والكمية — الشيف «من جوّا»: شكل التقطيع والتتبيل والإضافات */
-  const CHEF = { forms: 1, marinade: 1, skewer: 1, tools: 1, spice: 1, trays: 1, style: 1, vacuum: 1, cSpice: 1, where: 1, sMarinade: 1 };
+  const CHEF = { cPrep: 1, cSkew: 1, forms: 1, marinade: 1, skewer: 1, tools: 1, spice: 1, trays: 1, style: 1, vacuum: 1, cSpice: 1, where: 1, sMarinade: 1 };
   const who = k => k && CHEF[k] ? "chef" : "butcher";
   const PER = {
     butcher: { n: L("الجزار", "The Butcher"), r: L("يختار معك القطعة والكمية", "Picks the cut and quantity with you") },
@@ -253,7 +268,7 @@ window.NUDJ_ADVISOR = (function () {
         }
         return x;
       }).filter(Boolean),
-      totals: [[L("مجموع الخطة", "Plan total"), U.money2(t), "is-total"], [L("للشخص تقريباً", "Per person, approx."), U.money2(t / (s.people || 1))]],
+      totals: [[L("مجموع الخطة", "Plan total"), U.money2(t), "is-total"], s.people ? [L("للشخص تقريباً", "Per person, approx."), U.money2(t / s.people)] : null].filter(Boolean),
       save: U.saveNote(s.lines)
     });
   }
@@ -315,7 +330,8 @@ window.NUDJ_ADVISOR = (function () {
     const chosen = st.hints.animal ? `<div class="occ-chosen">${U.herdArt(st.hints.animal, "occ-meat__art")}<b>${esc(aName(st.hints.animal))}</b><button type="button" class="link" data-meat-change>${L("غيّر", "Change")}</button></div>` : "";
     return `<div class="occ-pick">${chosen}<div class="occ-meat" hidden role="radiogroup" aria-label="${L("اللحم", "Meat")}">${meat.map(k => `<button type="button" class="occ-meat__b${st.hints.animal === k ? " on" : ""}" data-meat="${k}" role="radio" aria-checked="${st.hints.animal === k}">${U.herdArt(k, "occ-meat__art")}<b>${esc(aName(k))}</b></button>`).join("")}</div>
       <div class="occ-list">${list.filter(o => o.k !== "ask").map(o => `<button type="button" class="occ-row" data-occ="${o.k}">${o.img ? U.slot(o.img, "occ-row__img") : `<span class="occ-row__ic">${icon(o.ic, "", 1.6)}</span>`}<b>${o.n}</b></button>`).join("")}</div>
-      ${ask ? `<button type="button" class="occ-ask" data-occ="ask">${icon(ask.ic || "help", "", 1.8)}${ask.n}</button>` : ""}</div>`;
+      ${st.hints.animal ? (() => { const cuts = D.cutsOf(st.hints.animal); return cuts.length ? `<h4 class="occ-h">${L("أو اختر القطعة مباشرة", "Or pick a cut directly")}</h4><div class="occ-cuts">${cuts.map(p => `<button type="button" class="occ-cut" data-cut="${p.id}">${U.productImg(p, "occ-cut__img")}<span><b>${esc(p.name)}</b><small class="num">${p.sold === "carcass" ? L("من ", "from ") + U.money(p.sizes[0].p) + " " + CUR : U.money(p.price) + " " + CUR + "/" + KG}</small></span></button>`).join("")}</div>` : ""; })() : ""}
+      ${ask && !st.hints.animal ? `<button type="button" class="occ-ask" data-occ="ask">${icon(ask.ic || "help", "", 1.8)}${ask.n}</button>` : ""}</div>`;
   }
 
   function chipHTML(o, on, multi) {
@@ -476,6 +492,13 @@ window.NUDJ_ADVISOR = (function () {
     v.root.addEventListener("click", e => {
       const t = e.target;
       const mt = t.closest("[data-meat]"); if (mt) { st.hints.animal = mt.dataset.meat; st.meatSkip = 0; save("new"); return; }
+      const ct = t.closest("[data-cut]");
+      if (ct) {
+        const p = D.byId(ct.dataset.cut); if (!p) return;
+        if (p.sold === "carcass") { start("carcass", { animal: p.animal }); return; }
+        st.a = { occ: "cut", qAnimal: p.animal, qCut: p.id }; st.adj = {}; st.note = ""; st.said = ""; st.added = 0;
+        TRK("start", "cut"); save("new"); return;
+      }
       if (t.closest("[data-meat-skip]")) { st.meatSkip = 1; save("new"); return; }
       if (t.closest("[data-meat-change]")) { delete st.hints.animal; st.meatSkip = 0; save("new"); return; }
       const occ = t.closest("[data-occ]"); if (occ) { answer("occ", occ.dataset.occ); return; }
