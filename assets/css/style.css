@@ -2142,3 +2142,29 @@ html.cmp-open .tabbar{z-index:83}
   .hero--center .hero__in{margin-top:0;padding:40px 16px 170px}
   .hero--center .hero__cta .btn{flex:0 1 auto}
 }
+
+/* ---------- الشخصية داخل دائرة: القناع من تحت فقط — الرأس والكتفين يطلعون فوق الدائرة ---------- */
+.cmp{--chH:230px;--d:184px;--chW:var(--d)}
+@media(min-width:900px){.cmp{--chH:230px}}
+.cmp[data-state=open]{--chH:min(50vh,400px);--d:calc(var(--chH) * .8)}
+.cmp__floor{display:none}
+.cmp__cast{width:var(--d)}
+.cmp__disc{position:absolute;bottom:0;inset-inline:0;height:var(--d);border-radius:50%;background:radial-gradient(circle at 50% 30%,#FF8A63,var(--ember) 58%,#9E2B10);box-shadow:0 18px 40px -16px var(--ember-glow),inset 0 0 0 5px rgba(255,255,255,.18);transition:background .5s}
+.cmp[data-who=chef] .cmp__disc{background:radial-gradient(circle at 50% 30%,#3A4652,#1C2228 62%,#0E1216);box-shadow:0 18px 40px -16px rgba(0,0,0,.5),inset 0 0 0 5px rgba(255,255,255,.12)}
+.cmp__mask{position:absolute;inset:0;display:block;
+  -webkit-mask:linear-gradient(#000 0 0) top/100% calc(100% - var(--d) / 2) no-repeat,radial-gradient(circle closest-side,#000 99%,transparent 100%) bottom/var(--d) var(--d) no-repeat;
+  mask:linear-gradient(#000 0 0) top/100% calc(100% - var(--d) / 2) no-repeat,radial-gradient(circle closest-side,#000 99%,transparent 100%) bottom/var(--d) var(--d) no-repeat}
+.cmp__ch img{inset:auto 0 calc(var(--d) * -.18) 0;height:calc(100% + var(--d) * .18);filter:drop-shadow(0 10px 14px rgba(0,0,0,.28))}
+.cmp__ch.is-talking img{animation:cmpTalk .85s ease-in-out infinite}
+.cmp__ch.is-talking .o{animation:cmpTalk .85s ease-in-out infinite,lipsSlow .5s steps(1,end) infinite}
+@keyframes lipsSlow{0%{opacity:1}40%{opacity:0}58%{opacity:1}82%{opacity:0}}
+.cmp__min{bottom:calc(var(--d) - 14px)}
+.cmp__panel{inset-inline-end:calc(var(--edge) + var(--d) + 14px);width:min(460px,calc(100vw - var(--d) - 60px))}
+@media(max-width:899px){
+  .cmp{--chH:156px;--d:124px}
+  .cmp[data-state=open]{--chH:126px;--d:100px}
+  .cmp__panel{inset-inline:8px;width:auto}
+}
+html:not([data-theme=dark]) .chips-row img{filter:invert(1) brightness(.35);opacity:1}
+html:not([data-theme=dark]) .chips-row button[aria-checked=true] img{filter:none}
+@media(min-width:900px){.cmp__cast{bottom:16px}.cmp__min{margin-bottom:16px}.cmp__hint{margin-bottom:16px}}

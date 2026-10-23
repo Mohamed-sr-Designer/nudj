@@ -389,19 +389,19 @@ window.NUDJ_ADVISOR = (function () {
       if (simple) {
         const nodes = [], walk = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
         while (walk.nextNode()) if (walk.currentNode.nodeValue.trim()) nodes.push([walk.currentNode, walk.currentNode.nodeValue]);
-        const total = nodes.reduce((x, n) => x + n[1].length, 0), step = Math.max(8, Math.min(28, 1600 / Math.max(1, total)));
-        dur = Math.min(1300, total * step) + 150;
+        const total = nodes.reduce((x, n) => x + n[1].length, 0), step = Math.max(26, Math.min(48, 3400 / Math.max(1, total)));
+        dur = Math.min(3800, total * step) + 250;
         nodes.forEach(n => { n[0].nodeValue = ""; });
         b.style.visibility = "hidden";
         setTimeout(() => {
           b.style.visibility = "";
           let i = 0, shown = 0;
           const id = setInterval(() => {
-            shown += 2;
+            shown += 1;
             let left = shown;
             nodes.forEach(n => { const k = Math.max(0, Math.min(n[1].length, left)); n[0].nodeValue = n[1].slice(0, k); left -= n[1].length; });
             if (shown >= total) clearInterval(id);
-          }, step * 2);
+          }, step);
           v.typers.push(id);
         }, delay);
       } else { b.style.animationDelay = delay + "ms"; }

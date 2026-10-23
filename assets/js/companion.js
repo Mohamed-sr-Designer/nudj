@@ -64,7 +64,7 @@ window.NUDJ_CMP = (function () {
     el.className = "cmp"; el.dataset.who = who;
     el.innerHTML = `<div class="cmp__panel" role="dialog" aria-label="${L("مستشار نُضْج: الجزار والشيف", "NUDJ advisor: the butcher and the chef")}"></div>
   <button type="button" class="cmp__hint" data-cmp-open></button>
-  <button type="button" class="cmp__cast" data-cmp-open aria-label="${L("اسأل الجزار والشيف", "Ask the butcher and the chef")}">${ch("butcher")}${ch("chef")}<span class="cmp__floor" aria-hidden="true"></span></button>
+  <button type="button" class="cmp__cast" data-cmp-open aria-label="${L("اسأل الجزار والشيف", "Ask the butcher and the chef")}"><span class="cmp__disc" aria-hidden="true"></span><span class="cmp__mask">${ch("butcher")}${ch("chef")}</span></button>
   <button type="button" class="cmp__min" data-cmp-min aria-label="${L("إخفاء", "Hide")}">${U.icon("chevD", "", 2.4)}</button>`;
     document.body.appendChild(el);
     let s0 = "peek"; try { s0 = sessionStorage.getItem(KEY) || "peek"; } catch (e) { }
