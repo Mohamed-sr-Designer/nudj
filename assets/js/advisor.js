@@ -306,7 +306,11 @@ window.NUDJ_ADVISOR = (function () {
     return out.join("");
   }
   function occGrid() {
-    return `<div class="occ-grid">${opts("occ").map(o => `<button type="button" class="occ" data-occ="${o.k}">${o.img ? U.slot(o.img, "occ__img") : `<span class="occ__ic">${icon(o.ic, "", 1.6)}</span>`}<span class="occ__b"><b>${o.n}</b><small>${o.d}</small></span></button>`).join("")}</div>`;
+    /* مختصر: اختر اللحم (ضأن/بقر) ثم المناسبة — والجزار يكمل بدون ما يسأل عن اللحم مرة ثانية */
+    const meat = ["lamb", "beef"].filter(aOn), list = opts("occ"), ask = list.find(o => o.k === "ask");
+    return `<div class="occ-pick"><div class="occ-meat" role="radiogroup" aria-label="${L("اللحم", "Meat")}">${meat.map(k => `<button type="button" class="occ-meat__b${st.hints.animal === k ? " on" : ""}" data-meat="${k}" role="radio" aria-checked="${st.hints.animal === k}">${U.herdArt(k, "occ-meat__art")}<b>${esc(aName(k))}</b></button>`).join("")}</div>
+      <div class="occ-list">${list.filter(o => o.k !== "ask").map(o => `<button type="button" class="occ-row" data-occ="${o.k}">${o.img ? U.slot(o.img, "occ-row__img") : `<span class="occ-row__ic">${icon(o.ic, "", 1.6)}</span>`}<b>${o.n}</b></button>`).join("")}</div>
+      ${ask ? `<button type="button" class="occ-ask" data-occ="ask">${icon(ask.ic || "help", "", 1.8)}${ask.n}</button>` : ""}</div>`;
   }
 
   function chipHTML(o, on, multi) {
@@ -390,7 +394,7 @@ window.NUDJ_ADVISOR = (function () {
     let delay = 0;
     bubbles.forEach(b => {
       const t = $(".bb__text", b), p = b.classList.contains("bb--chef") ? "chef" : "butcher";
-      const simple = t && !t.querySelector(".receipt,.occ-grid,.adv-cut,details");
+      const simple = t && !t.querySelector(".receipt,.occ-grid,.occ-pick,.adv-cut,details,button");
       let dur = 900;
       if (simple) {
         const nodes = [], walk = document.createTreeWalker(t, NodeFilter.SHOW_TEXT);
@@ -466,6 +470,7 @@ window.NUDJ_ADVISOR = (function () {
   function bind(v) {
     v.root.addEventListener("click", e => {
       const t = e.target;
+      const mt = t.closest("[data-meat]"); if (mt) { const k = mt.dataset.meat; if (st.hints.animal === k) delete st.hints.animal; else st.hints.animal = k; save(); return; }
       const occ = t.closest("[data-occ]"); if (occ) { answer("occ", occ.dataset.occ); return; }
       const ed = t.closest("[data-edit]"); if (ed) { edit(ed.dataset.edit); return; }
       const cl = t.closest("[data-close]"); if (cl) { if (v.o.onClose) v.o.onClose(); return; }

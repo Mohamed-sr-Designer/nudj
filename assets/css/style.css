@@ -2206,3 +2206,41 @@ html:not([data-theme=dark]) .chips-row button[aria-checked=true] img{filter:none
 .cmp__disc{box-shadow:none!important}
 /* حركة الشفايف ملغاة — تبقى إيماءة الراس فقط */
 .cmp__ch .o,.bb__av .av-open{display:none!important;animation:none!important}
+
+/* ---------- البداية المختصرة: اللحم + المناسبة ---------- */
+.occ-pick{display:grid;gap:10px;margin-top:10px}
+.occ-meat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.occ-meat__b{display:flex;align-items:center;justify-content:center;gap:10px;min-height:58px;border-radius:16px;border:1.5px solid var(--line-2);background:var(--char);font-family:var(--f-display);font-size:1.1rem;color:var(--bone);transition:border-color .2s,background .2s}
+.occ-meat__b:hover{border-color:var(--ember)}
+.occ-meat__art{width:52px;height:34px;object-fit:contain;filter:invert(1) brightness(.35)}
+html[data-theme=dark] .occ-meat__art{filter:none}
+.occ-meat__b.on{background:var(--ember);border-color:var(--ember);color:#fff}
+.occ-meat__b.on .occ-meat__art{filter:brightness(0) invert(1)}
+.occ-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.occ-row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:14px;border:1px solid var(--line-2);background:var(--char);text-align:start;min-height:52px;transition:border-color .2s,background .2s}
+.occ-row:hover{border-color:var(--ember);background:var(--ember-tint)}
+.occ-row__img,.occ-row__ic{width:40px;height:40px;flex-shrink:0;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:var(--slate);color:var(--ember)}
+.occ-row__img img{width:100%;height:100%;object-fit:cover}
+.occ-row b{font-size:.9rem;font-family:var(--f-display);font-weight:700;color:var(--bone);line-height:1.3}
+.occ-ask{display:inline-flex;align-items:center;gap:6px;justify-self:start;font-size:.84rem;font-weight:600;color:var(--ember);padding:4px 2px}
+.occ-ask .ic{width:16px;height:16px}
+/* تباين الأيقونات والرسومات */
+html:not([data-theme=dark]) .pd__animal img{filter:invert(1) brightness(.35)}
+.bento__ic,.bento__ic .ic{color:var(--ember)!important}
+/* ---------- البطل: تباين أقوى بدون غطاء أبيض ---------- */
+.hero--center .hero__media img{filter:brightness(.5) saturate(1.05)}
+.hero--center .hero__media::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 62% 58% at 50% 50%,rgba(10,12,14,.62),rgba(10,12,14,.25) 65%,rgba(10,12,14,.05))}
+.hero--center .eyebrow{background:rgba(10,12,14,.6);color:#fff;border-color:rgba(255,255,255,.3)}
+.hero--center .btn--line{background:#fff;color:#1B1512;border-color:#fff}
+.hero--center .btn--line:hover{background:#F2ECE2;border-color:#F2ECE2;color:#1B1512}
+.hero--center .hero__s{color:#fff}
+.hero--center .hero__stats dd{color:rgba(255,255,255,.88)}
+/* ---------- الوضع الداكن: تباين الأزرار والنصوص الخافتة ---------- */
+html[data-theme=dark]{--faint:#7D868D}
+html[data-theme=dark] :is(.btn--ember,.btn--brand,.qr--main,.time[aria-checked=true],.kgp__presets button.on,.util,.seg-tabs button[aria-selected=true],.chips-row--sm button[aria-checked=true],.buy-submit,.co-steps li.now b,.track li.now span){background-color:#C9391A;border-color:#C9391A}
+html[data-theme=dark] .tone-light{--ember:#C9391A;--ember-2:#B3300F}
+html[data-theme=dark]{--paper-mute:#6B5F54;--ember-d:#B3300F}
+html[data-theme=dark] :is(.pin:hover,.pin.is-hl,.pin:focus-visible,.herd-map--focus .pin[aria-current]){color:#fff}
+html .hero.hero--center .eyebrow{background:rgba(10,12,14,.62);color:#fff;border-color:rgba(255,255,255,.32)}
+html .hero.hero--center .btn--line{background:#fff;color:#1B1512;border-color:#fff}
+html .hero.hero--center .btn--line:hover{background:#F2ECE2;border-color:#F2ECE2}
