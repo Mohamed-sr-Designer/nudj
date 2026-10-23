@@ -307,7 +307,7 @@
     openAdvisor({ occ: b.dataset.advisor && b.dataset.advisor !== "open" ? b.dataset.advisor : null, ask: b.dataset.ask || null, hints: b.dataset.animal ? { animal: b.dataset.animal } : null, sheet: b.hasAttribute("data-sheet") });
   });
   function initFab() {
-    if (window.NUDJ_CMP) { window.NUDJ_CMP.init(); if (window.NUDJ_CMP.ok() || document.body.classList.contains("page-checkout")) return; }
+    if (window.NUDJ_CMP) { window.NUDJ_CMP.init(); return; }
     if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]")) return;
     /* في الرئيسية: يظهر بعد النزول عن مستشار البطل، ويختفي حين يعود للظهور */
     const inline = $("[data-advisor-inline]");

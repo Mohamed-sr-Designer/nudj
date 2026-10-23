@@ -10,7 +10,7 @@ window.NUDJ_CMP = (function () {
   const L = D.L || (ar => ar), R = D.R || "";
   const KEY = "nudj_cmp";
   const file = (document.body && document.body.dataset.file) || "";
-  const OFF = { "admin.html": 1, "checkout.html": 1, "login.html": 1, "order.html": 1 };
+  const OFF = { "admin.html": 1, "cart.html": 1, "checkout.html": 1, "login.html": 1, "order.html": 1 };
   let el = null, view = null, state = "peek", who = "butcher", idleT = null;
 
   const img = (p, talk) => R + "assets/img/site/" + p + "-pose" + (talk ? "-talk" : "") + ".webp";

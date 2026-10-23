@@ -53,7 +53,7 @@ window.NUDJ_ADVISOR = (function () {
       : { grill: "كم شخص على الشواية؟", feast: "كم شخص معزوم؟", carcass: "كم شخص بتكفيهم الذبيحة؟", steak: "كم شخص على العشاء؟", weekly: "كم شخص في البيت؟", ask: "لكم شخص تبغى تطبخها؟" })[a.occ] },
     forms: { type: "multi", max: 3, ask: () => L("وش تبغى على الشواية؟ قطع، شرائح، ولا قطع سليمة؟ تقدر تختار لين ثلاثة.", "What do you want on the grill? Cubes, slices or whole cuts? You can pick up to three."), opts: () => AD.grillForms.map(f => ({ k: f.k, n: f.n, d: f.d })) },
     gAnimal: { type: "chips", ask: () => L("أي لحم تفضّل؟", "Which meat do you prefer?"),
-      opts: a => { const ks = D.ANIMALS.map(x => x.k).filter(k => (a.forms || []).some(f => AD.grillForms.find(g => g.k === f).pick[k])); return [{ k: "mix", n: L("نوّع لي", "Mix it up"), d: L("الأنسب لكل نوع", "The best for each style") }].concat(animalsOpt(ks)); } },
+      opts: a => { const ks = D.ANIMALS.map(x => x.k).filter(k => !(a.forms || []).length || (a.forms || []).some(f => AD.grillForms.find(g => g.k === f).pick[k])); return [{ k: "mix", n: L("نوّع لي", "Mix it up"), d: L("الأنسب لكل نوع", "The best for each style") }].concat(animalsOpt(ks)); } },
     marinade: { type: "chips", ask: () => L("تبغى نتبّلها لك؟ التتبيل خدمة إضافية تنحسب بالكيلو.", "Shall we marinate it for you? Marinating is an extra, charged per kilo."), opts: () => D.MARINADES.map(m => ({ k: m.k, n: m.n, d: m.d, p: m.p, per: "/" + KG })) },
     skewer: { type: "chips", skip: a => !hasSkew(a), ask: () => L("نسيّخها لك جاهزة على أسياخ؟", "Shall we put it on skewers for you, ready to grill?"),
       opts: () => [yes(L("إيه سيّخوها", "Yes, skewer it"), D.SERVICES.skewer.p, "/" + KG), { k: "no", n: L("لا، أسيّخها بنفسي", "No, I'll do it myself") }] },
@@ -85,7 +85,7 @@ window.NUDJ_ADVISOR = (function () {
   };
   NODES.people.skip = a => a.occ === "ask" && a.qNext !== "plan";
   const FLOWS = {
-    grill: ["occ", "people", "forms", "gAnimal", "marinade", "skewer", "tools"],
+    grill: ["occ", "people", "gAnimal", "forms", "marinade", "skewer", "tools"],
     feast: ["occ", "people", "dish", "fAnimal", "mode", "bone", "spice", "trays"],
     carcass: ["occ", "cAnimal", "people", "style", "vacuum", "cSpice"],
     steak: ["occ", "people", "steakCut", "where", "sMarinade"],
@@ -265,16 +265,22 @@ window.NUDJ_ADVISOR = (function () {
       out.push(`<details class="bb-sec"><summary>${icon("check", "", 2.4)}<b>${esc(s.title)}</b><span class="num">${U.money2(total(s.lines))} ${CUR}</span>${icon("chevD")}</summary>${sectionReceipt(s)}<button type="button" class="link" data-drop-sec="${i}">${L("احذفها من الخطة", "Remove from plan")}</button></details>`);
     });
     const f = flow(), cur = current();
-    let handed = false;
+    let handed = false, firstChef = null;
     speaker = "butcher";
+    /* ملخص ما اخترته — كل إجابة زر صغير تضغطه لتعديلها */
+    const done = f.filter(k => !isSkip(k) && st.a[k] != null);
+    f.forEach(k => { if (!firstChef && !isSkip(k) && CHEF[k]) firstChef = k; });
+    if (done.length) {
+      const last = done[done.length - 1];
+      out.push(`<div class="adv-sum"><button type="button" class="adv-sum__back" data-edit="${last}">${icon("chevR", "", 2.4)}${L("رجوع", "Back")}</button>${done.map(k => `<button type="button" class="adv-sum__c" data-edit="${k}" title="${L("عدّل", "Edit")}">${esc(label(k, st.a[k]))}</button>`).join("")}</div>`);
+    }
     for (const k of f) {
       if (isSkip(k)) continue;
       const n = NODES[k], v = st.a[k];
-      if (who(k) === "chef" && !handed) {
-        handed = true;
-        out.push(bot(L("تمام، القطعة والكمية جاهزة 👌 أسلّمك للشيف يكمل معك التقطيع والإضافات.", "Great, the cut and quantity are set 👌 Handing you to the chef for cutting and extras."), "is-hand", "butcher"));
-        speaker = "chef";
-        out.push(bot(L("هلا! أنا الشيف 👨‍🍳 خلّنا نجهّزها على طبختك.", "Hi! I'm the chef 👨‍🍳 Let's get it ready for your dish."), "is-hand", "chef"));
+      if (who(k) === "chef") handed = true;
+      if (v != null) continue;
+      if (k === cur && k === firstChef) {
+        out.push(bot(L("القطعة والكمية جاهزة 👌 الحين الشيف يكمل معك التقطيع والإضافات.", "The cut and quantity are set 👌 Now the chef takes over for cutting and extras."), "is-hand", "butcher"));
       }
       speaker = who(k);
       /* نص السؤال من لوحة التحكم إن وُجد (في الإنجليزية: فقط إن كُتبت له نسخة إنجليزية) */
@@ -284,8 +290,6 @@ window.NUDJ_ADVISOR = (function () {
         if (k === cur) { said(); out.push(bot(n.type === "occ" ? esc(q) + occGrid() : n.html ? q : esc(q), "is-q")); }
         break;
       }
-      out.push(bot(n.html ? q : esc(q) + (n.type === "occ" ? "" : "")));
-      out.push(`<button class="bb bb--me" type="button" data-edit="${k}" aria-label="${L("عدّل: ", "Edit: ")}${esc(label(k, v))}"><span>${esc(label(k, v))}</span>${icon("edit")}</button>`);
     }
     if (!cur && st.a.occ) {
       speaker = handed ? "chef" : "butcher";
@@ -364,7 +368,9 @@ window.NUDJ_ADVISOR = (function () {
     v.log.innerHTML = logHTML();
     v.qr.innerHTML = dockHTML();
     /* الفقاعات الجديدة فقط تتحرّك (مع مؤشر الكتابة للمستشار) */
-    Array.prototype.forEach.call(v.log.children, (b, i) => { if (i >= prevCount && !first) b.classList.add("is-new"); });
+    const qKey = JSON.stringify([st.a, st.note, st.added, st.sections.length]);
+    if (!first && v.qKey !== qKey) $$(".bb--bot", v.log).forEach(b => b.classList.add("is-new"));
+    v.qKey = qKey;
     const f = flow().filter(k => !isSkip(k)), done = f.filter(k => st.a[k] != null).length;
     /* الشخصية المتكلمة في الترويسة + حركة الشفايف مع ظهور النص */
     const cur = current(), sp = cur ? who(cur) : (f.some(k => CHEF[k]) && st.a.occ ? "chef" : "butcher");
@@ -373,7 +379,7 @@ window.NUDJ_ADVISOR = (function () {
     const wn = $("[data-who-n]", v.root), wr = $("[data-who-r]", v.root);
     if (wn) wn.textContent = PER[sp].n; if (wr) wr.textContent = PER[sp].r;
     if (!first) talk(v);
-    v.steps.innerHTML = st.a.occ ? f.map((k, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("") : "";
+    v.steps.innerHTML = st.a.occ ? `<span class="adv__count num">${Math.min(done + 1, f.length)} / ${f.length}</span>` + f.map((k, i) => `<i class="${i < done ? "on" : ""}"></i>`).join("") : "";
     if (!first || v.o.scroll) requestAnimationFrame(() => { const last = v.log.lastElementChild; if (last) scrollLog(v, last); });
   }
   /* الكلام: النص يظهر حرفاً حرفاً والشخصية تحرّك شفايفها (بدون صوت) */
