@@ -334,6 +334,8 @@ window.NUDJ_ADVISOR = (function () {
       ${ask && !st.hints.animal ? `<button type="button" class="occ-ask" data-occ="ask">${icon(ask.ic || "help", "", 1.8)}${ask.n}</button>` : ""}</div>`;
   }
 
+  /* زر المتابعة للاختيار المتعدد: واضح ويعرض العدد */
+  const goLabel = (c, n) => c ? L("التالي", "Next") + ` (${c})` : (n && n.min === 0 ? L("التالي — بدون إضافات", "Next — no extras") : L("اختر واحد على الأقل", "Pick at least one"));
   function chipHTML(o, on, multi) {
     const price = o.p ? `<em class="num">${o.abs ? "" : "+"}${U.money(o.p)}${o.per || ""}</em>` : o.p === 0 ? `<em>${L("مجاناً", "Free")}</em>` : "";
     return `<button type="button" class="qr${on ? " on" : ""}${o.act ? " qr--act" : ""}" data-v="${esc(o.k)}"${multi ? ` aria-pressed="${on}"` : ""}><b>${esc(o.n)}</b>${o.d ? `<small>${esc(o.d)}</small>` : ""}${price}</button>`;
@@ -361,7 +363,7 @@ window.NUDJ_ADVISOR = (function () {
     if (n.type === "multi") {
       const pre = st.pre[cur] || (n.def ? n.def(st.a) : []);
       return `<div class="qrs" data-multi="${cur}">${list.map(o => chipHTML(o, pre.indexOf(o.k) > -1, true)).join("")}</div>
-        <button type="button" class="qr qr--main qr--go" data-multi-go="${cur}"><b>${L("تم", "Done")}</b>${n.max ? `<small>${L("حتى", "up to")} ${n.max}</small>` : ""}</button>`;
+        <button type="button" class="qr qr--main qr--go" data-multi-go="${cur}"><b data-go-l>${goLabel(pre.length, n)}</b>${icon("chevL", "", 2.4)}</button>${n.max ? `<p class="qr-note">${L("اختر حتى ", "Pick up to ")}${n.max}</p>` : `<p class="qr-note">${L("اختر واحد أو أكثر، ثم اضغط التالي", "Pick one or more, then tap Next")}</p>`}`;
     }
     return `<div class="qrs">${list.map(o => o.href ? `<a class="qr qr--act" href="${o.href}"><b>${esc(o.n)}</b></a>` : chipHTML(o, st.pre[cur] === o.k)).join("")}</div>`;
   }
@@ -536,7 +538,9 @@ window.NUDJ_ADVISOR = (function () {
         if (m) {
           const n = NODES[m.dataset.multi], on = !q.classList.contains("on");
           if (on && n.max && $$(".qr.on", m).length >= n.max) { hint(v, L("حدّك " + n.max + " — شيل واحد أول", "Max " + n.max + " — remove one first")); return; }
-          q.classList.toggle("on", on); q.setAttribute("aria-pressed", on); return;
+          q.classList.toggle("on", on); q.setAttribute("aria-pressed", on);
+          const gl = $("[data-go-l]", v.root); if (gl) gl.textContent = goLabel($$(".qr.on", m).length, n);
+          return;
         }
         const cur = current(); if (!cur) return;
         const o = opts(cur).find(x => x.k === q.dataset.v);
