@@ -59,7 +59,8 @@ window.NUDJ_CMP = (function () {
   }
 
   function init() {
-    if (el || OFF[file] || document.querySelector("[data-no-fab]")) return;
+    const page = (location.pathname.split("/").pop() || "index.html");
+    if (el || OFF[file] || OFF[page] || /cart|checkout/.test(document.body.className) || document.querySelector("[data-no-fab]")) return;
     el = document.createElement("div");
     el.className = "cmp"; el.dataset.who = who;
     el.innerHTML = `<div class="cmp__panel" role="dialog" aria-label="${L("مستشار نُضْج: الجزار والشيف", "NUDJ advisor: the butcher and the chef")}"></div>
