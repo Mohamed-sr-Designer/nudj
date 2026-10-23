@@ -5,7 +5,7 @@ module.exports = function (ctx) {
   const T = D.COPY.product;
   const R = D.R || "", EN = D.lang === "en", KG = L("كجم", "kg"), CUR = C.currency;
 
-  return D.PRODUCTS.map(p => {
+  return D.PRODUCTS.filter(p => !D.locked(p)).map(p => {
     const a = D.animal(p.animal);
     const isExtra = p.animal === "extra";
     const back = isExtra ? ["shop.html?a=extra", D.COPY.nav.extras] : [p.animal + ".html", a.n];

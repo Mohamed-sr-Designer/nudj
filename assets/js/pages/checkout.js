@@ -9,7 +9,19 @@
   const bar = $("#actionBar");
   const cur = n => U.money(n) + " " + C.currency;
   const here = "checkout.html";
-  let coupon = null, slot = null, pay = null, addrId = null;
+  let coupon = null, slot = null, pay = null, addrId = null, askedTips = false;
+  const ADV = window.NUDJ_ADVISOR;
+  /* ما تخطّاه العميل (بهارات، فحم، أسياخ، تتبيل) يرجع هنا مرة ثانية — اقتراح لا يمنع الطلب */
+  const tips = () => (ADV && ADV.cartTips ? ADV.cartTips(S.cart.get()) : []);
+  function tipsBox() {
+    const list = tips(); if (!list.length) return "";
+    return `<section class="co-tips"><div class="co-tips__h"><img src="${D.R || ""}assets/img/site/chef.webp" alt=""><div><b>${L("الشيف يذكّرك قبل ما تأكد", "The chef's reminder before you confirm")}</b><small>${L("تخطّيتها قبل — تبغى نضيفها؟", "You skipped these earlier — add them?")}</small></div></div>
+      ${list.map((t, i) => `<div class="co-tip"><span>${t.t}</span><button type="button" class="btn btn--line btn--sm" data-co-tip="${i}">${U.icon("plus")}${L("أضف", "Add")}</button></div>`).join("")}</section>`;
+  }
+  function applyTip(t) {
+    if (t.id) { S.cart.add(t.id, { qty: t.qty, src: "advisor" }); A.toast(L("أُضيف ", "Added ") + D.byId(t.id).name, { icon: "cart" }); }
+    else if (t.key) { S.cart.setOpts(t.key, { marinade: t.marinade }); A.toast(L("أُضيفت التتبيلة", "Marinade added"), { icon: "spark" }); }
+  }
 
   function summary(ls) {
     const t = S.cart.totals(ls, coupon);
@@ -24,7 +36,8 @@
         [L("التوصيل", "Delivery"), t.delivery ? U.money2(t.delivery) : L("مجاني", "Free")],
         [L("الإجمالي", "Total"), U.money2(t.total), "is-total"],
         [L("منها ضريبة 15٪", "Incl. 15% VAT"), U.money2(t.vat), "is-muted"]
-      ].filter(Boolean)
+      ].filter(Boolean),
+      save: U.saveNote(ls)
     }) + `<button class="btn btn--ember btn--lg btn--block desk-cta" type="button" data-place>${L("تأكيد الطلب", "Place order")} · <span class="num">${cur(t.total)}</span></button>`;
   }
   function contactSec() {
@@ -51,6 +64,7 @@
     const sec = (title, body) => `<section class="co-sec"><h2 class="co-sec__h"><span class="num">0${++n}</span>${title}</h2>${body}</section>`;
     root.innerHTML = `<ol class="co-steps" id="coSteps"></ol><div class="co">
       <div class="co__main">
+        <div id="tipsBox">${tipsBox()}</div>
         ${sec(L("بيانات التواصل", "Contact details"), contactSec())}
         ${sec(L("عنوان التوصيل", "Delivery address"), `<div id="addrBox">${addrSec()}</div>`)}
         ${sec(L("موعد التوصيل", "Delivery time"), `<div class="card"><div class="days" id="days" role="radiogroup" aria-label="${L("اليوم", "Day")}"></div><div class="times" id="times" role="radiogroup" aria-label="${L("الفترة", "Time slot")}"></div></div>`)}
@@ -77,12 +91,14 @@
   function refreshSummary() {
     const ls = S.cart.get(); const t = S.cart.totals(ls, coupon);
     $("#sumBox").innerHTML = summary(ls);
+    const tb = $("#tipsBox"); if (tb) tb.innerHTML = tipsBox();
     if (bar) $("#abTotal").textContent = cur(t.total);
   }
 
   root.addEventListener("change", e => { if (e.target.name === "addr") addrId = e.target.value; steps(); });
   root.addEventListener("click", () => setTimeout(steps, 0));
   root.addEventListener("click", e => {
+    const ct = e.target.closest("[data-co-tip]"); if (ct) { const t = tips()[+ct.dataset.coTip]; if (t) { applyTip(t); refreshSummary(); } return; }
     if (e.target.closest("[data-addr-new]")) { A.addressSheet(null, a => { addrId = a.id; $("#addrBox").innerHTML = addrSec(); }); return; }
     const ed = e.target.closest("[data-addr-edit]");
     if (ed) { e.preventDefault(); A.addressSheet(S.addr.get(ed.dataset.addrEdit), a => { addrId = a.id; $("#addrBox").innerHTML = addrSec(); }); return; }
@@ -105,6 +121,13 @@
     if (!address) { A.toast(L("أضف عنوان التوصيل", "Add a delivery address"), { icon: "pin" }); $("#addrBox").scrollIntoView({ behavior: "smooth", block: "center" }); return; }
     if (!slot) { A.toast(L("اختر موعد التوصيل", "Choose a delivery time"), { icon: "calendar" }); return; }
     if (!pay.valid()) { A.toast(L("أكمل بيانات البطاقة", "Complete your card details"), { icon: "info" }); return; }
+    const left = tips().filter(t => t.id);
+    if (left.length && !askedTips) {
+      askedTips = true;
+      const t = left[0], p = D.byId(t.id);
+      const yes = await A.confirmSheet({ title: L("هل تريد إضافة " + p.name + "؟", "Add " + p.name + "?"), text: t.t + " — " + t.qty + " × " + U.money(p.price) + " " + C.currency, ok: L("أضف وأكمل", "Add & continue"), cancel: L("لا، أكمل الطلب", "No, place the order") });
+      if (yes) { applyTip(t); refreshSummary(); }
+    }
     await A.busy(btn, 1200);
     const o = S.orders.create({ lines: ls, coupon, address, slot, payment: { k: pay.value(), n: pay.label() } });
     S.cart.clear();

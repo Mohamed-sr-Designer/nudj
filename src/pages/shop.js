@@ -7,11 +7,11 @@ module.exports = function (ctx) {
   const pages = [];
 
   /* ================= المتجر ================= */
-  const filters = [["all", L("الكل", "All")]].concat(D.ANIMALS.map(a => [a.k, a.n]), [["carcass", T.nav.carcass], ["extra", T.nav.extras]]);
+  const filters = [["all", L("الكل", "All")]].concat(D.activeAnimals().map(a => [a.k, a.n]), [["carcass", T.nav.carcass], ["extra", T.nav.extras]]);
   const uses = Object.keys(D.USES);
   pages.push({
     name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: T.shop.title, scripts: ["shop"], trail: ["search", "herd"],
-    title: L("المتجر — قطعيات ضأن وماعز وجمل وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
+    title: L("المتجر — قطعيات ضأن وماعز وحاشي وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
     desc: L("كل قطعيات نُضْج بالكيلو مع التقطيع المجاني، والذبائح الكاملة، وعدّة الشواء والبهارات.", "Every NUDJ cut by the kilo with free cutting, plus whole carcasses, BBQ kit and spices."),
     main: `<div class="wrap">
   ${h.crumbs([[T.shop.title]])}
@@ -32,12 +32,12 @@ module.exports = function (ctx) {
   /* ================= خريطة القطيع ================= */
   pages.push({
     name: "herd", file: "cuts.html", tab: "shop", nav: "herd", mode: "push", back: ["shop.html", T.shop.title], appTitle: T.herd.title,
-    title: L("القطيع — خريطة قطعيات الضأن والماعز والجمل والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
+    title: L("القطيع — خريطة قطعيات الضأن والماعز والحاشي والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
     desc: L("خريطة القطعيات لكل ماشية: اضغط على أي رقم لتشوف القطعة وسعرها والتقطيع المتاح.", "A cuts map for every animal: tap any number to see the cut, its price and the cutting styles available."),
     main: `<div class="wrap">
   ${h.crumbs([[T.herd.title]])}
   <div class="page-head"><h1 class="large-title">${esc(T.herd.title)}</h1><p>${tpl(T.herd.sub)}</p></div>
-  <div class="herd-index">${D.ANIMALS.map((a, i) => `<a class="herd-tile" href="${U.url.animal(a.k)}">
+  <div class="herd-index">${D.ANIMALS.map((a, i) => a.soon ? `<div class="herd-tile is-soon" aria-disabled="true"><span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile", static: true })}<span class="herd-tile__b"><b>${esc(a.n)}</b><i class="num">${esc(U.altName(a))}</i><small>${esc(a.note)}</small><span class="soon-pill">${icon("lock")}${L("قريباً", "Coming soon")}</span></span></div>` : `<a class="herd-tile" href="${U.url.animal(a.k)}">
     <span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile", static: true })}
     <span class="herd-tile__b"><b>${esc(a.n)}</b><i class="num">${esc(U.altName(a))}</i><small>${esc(a.note)}</small><span class="seeall">${D.cutsOf(a.k).length} ${L("منتجات", "products")} ${icon("chevL")}</span></span></a>`).join("")}</div>
 </div>`
@@ -45,6 +45,7 @@ module.exports = function (ctx) {
 
   /* ================= صفحة كل ماشية ================= */
   D.ANIMALS.forEach((a, i) => {
+    if (a.soon) return;
     const list = D.cutsOf(a.k), kg = list.filter(p => p.sold === "kg"), car = list.filter(p => p.sold === "carcass");
     const from = kg.length ? Math.min.apply(null, kg.map(p => p.price)) : 0;
     pages.push({
@@ -55,7 +56,7 @@ module.exports = function (ctx) {
       main: `<div class="wrap">
   ${h.crumbs([[T.herd.title, "cuts.html"], [a.n]])}
   <section class="animal-hero">
-    <div class="animal-hero__t"><span class="animal-hero__n num">0${i + 1} / 06</span><h1 class="animal-hero__name">${esc(a.n)}<i class="num">${esc(U.altName(a))}</i></h1><p>${esc(a.note)}</p>
+    <div class="animal-hero__t"><span class="animal-hero__n num">0${i + 1} / 0${D.ANIMALS.length}</span><h1 class="animal-hero__name">${esc(a.n)}<i class="num">${esc(U.altName(a))}</i></h1><p>${esc(a.note)}</p>
       <dl class="hero__stats"><div><dt class="num">${kg.length}</dt><dd>${L("قطعيات", "Cuts")}</dd></div><div><dt class="num">${from}</dt><dd>${L("ر.س/كجم يبدأ من", "SAR/kg, from")}</dd></div>${car.length ? `<div><dt class="num">${car.length}</dt><dd>${L("ذبائح", "Carcasses")}</dd></div>` : ""}</dl>
       <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="ask" data-animal="${a.k}">${U.mark("btn__mark")}${esc(T.animal.ask)} ${esc(L(a.n, a.n.toLowerCase()))}</button></div></div>
     <div class="animal-hero__map">${U.herdMap(a)}</div>

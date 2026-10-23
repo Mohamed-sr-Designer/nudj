@@ -380,7 +380,7 @@ window.NUDJ_STATS = (function () {
       for (let i = 0; i < Math.min(pview, 400); i++) inc(views, wpick(popular));
       for (let i = 0; i < cart; i++) inc(carts, wpick(popular));
       const advStart = Math.round(s * (.16 + rnd() * .06)), advPlan = Math.round(advStart * (.52 + rnd() * .12)), advCart = Math.round(advPlan * (.36 + rnd() * .1));
-      const terms = { "ريش": 6, "كبسة": 5, "جمل": 4, "ستيك": 4, "مفروم": 3, "كبدة": 3, "ذبيحة": 3, "فحم": 2, "تندرلوين": 2, "مندي": 2 }, zeroT = { "دجاج": 3, "سمك": 2, "نقانق": 1, "كوارع": 1, "روبيان": 1 };
+      const terms = { "ريش": 6, "كبسة": 5, "حاشي": 4, "ستيك": 4, "مفروم": 3, "كبدة": 3, "ذبيحة": 3, "فحم": 2, "تندرلوين": 2, "مندي": 2 }, zeroT = { "دجاج": 3, "سمك": 2, "نقانق": 1, "كوارع": 1, "روبيان": 1 };
       const ns = Math.round(s * .06), srch = {}, zero = {};
       for (let i = 0; i < ns; i++) { if (rnd() < .18) { const z = wpick(zeroT); inc(zero, z); inc(srch, z); } else inc(srch, wpick(terms)); }
       traf.push({ d: t0, s, v: Math.round(s * .82), pv: Math.round(s * (3.1 + rnd() * .8)), bn: Math.round(s * (.34 + rnd() * .08)), pview, cart, co, buy: dayOrders, abVal: r2((co - dayOrders) * (330 + rnd() * 80)),

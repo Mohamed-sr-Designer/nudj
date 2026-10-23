@@ -226,7 +226,7 @@
   }
   function setKg(form, p, kg) {
     kg = S.snapKg(p, kg); form.dataset.kg = kg;
-    const out = form.querySelector(".scale__read"); if (out) out.textContent = kg.toFixed(2);
+    const out = form.querySelector(".kgp__read"); if (out) out.textContent = U.kgTxt(kg);
     const nd = form.querySelector(".scale__needle"); if (nd) nd.style.transform = `rotate(${-90 + Math.min(1, kg / 5) * 180}deg)`;
     $$("[data-kg]", form).forEach(b => b.classList.toggle("on", +b.dataset.kg === kg));
     form.dispatchEvent(new Event("change"));
@@ -352,6 +352,14 @@
 
   /* تبديل اللغة: نفس الصفحة بنفس البحث — العربية في الجذر والإنجليزية في /en/ */
   document.addEventListener("click", e => {
+    const th = e.target.closest("[data-theme-toggle]");
+    if (th) {
+      const dark = document.documentElement.getAttribute("data-theme") !== "dark";
+      if (dark) document.documentElement.setAttribute("data-theme", "dark"); else document.documentElement.removeAttribute("data-theme");
+      try { localStorage.setItem("nudj_theme", dark ? "dark" : "light"); } catch (x) { }
+      const tc = document.querySelector("meta[name=theme-color]"); if (tc) tc.content = dark ? "#161A1F" : "#F5F1EA";
+      return;
+    }
     const b = e.target.closest("[data-lang-switch]"); if (!b) return;
     e.preventDefault();
     const path = location.pathname, en = D.lang === "en";

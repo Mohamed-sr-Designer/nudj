@@ -60,7 +60,7 @@ window.NUDJ_NLU = (function () {
     /* المواشي */
     ["animal:lamb", "ضان ضاني ضأن غنم خروف خرفان نعيمي نجدي حري سواكني بربري حمري لحم_ضاني lamb sheep mutton"],
     ["animal:goat", "ماعز معز تيس عنز جدي سخل سخله goat kid"],
-    ["animal:camel", "جمل جملي حاشي حواشي ناقه قعود ابل بعير حوار camel camels hashi"],
+    ["animal:camel", "حاشي حواشي جمل جملي ناقه قعود ابل بعير حوار camel camels hashi"],
     ["animal:veal", "عجل عجول عجالي بتلو veal calf"],
     ["animal:beef", "بقر بقري بقره كندوز beef cow"],
     ["animal:buffalo", "جاموس جاموسي جاموسه buffalo"],

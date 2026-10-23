@@ -73,6 +73,9 @@
     download: '<path d="M12 4v11M7 11l5 5 5-5"/><path d="M5 20h14"/>',
     store: '<path d="M4 9.5 5.5 4h13L20 9.5"/><path d="M4 9.5a2.7 2.7 0 0 0 5.3 0 2.7 2.7 0 0 0 5.4 0 2.7 2.7 0 0 0 5.3 0"/><path d="M5.5 12v8h13v-8M10 20v-5h4v5"/>',
     image: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="m21 16-5-5-8 8"/>',
+    moon: '<path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z"/>',
+    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+    lock: '<rect x="5" y="10.5" width="14" height="10" rx="2.2"/><path d="M8.2 10.5V8a3.8 3.8 0 0 1 7.6 0v2.5"/>',
     box: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>'
   };
   /* الأسهم الأفقية تنقلب في الصفحات الإنجليزية (CSS: [dir=ltr] .ic--dir) */
@@ -149,14 +152,10 @@
   }
 
   /* ---------------- القطيع ---------------- */
-  function herdCard(a, i) {
-    const list = D.cutsOf(a.k), from = Math.min.apply(null, list.filter(p => p.sold === "kg").map(p => p.price));
-    return `<a class="herd-card" href="${url.animal(a.k)}">
-  <span class="herd-card__n num">0${i + 1}</span>
-  <span class="herd-card__art">${herdArt(a.k)}</span>
-  <span class="herd-card__b"><b>${a.n}</b><small class="num">${esc(altName(a))} · ${list.length} ${L("قطعيات", "cuts")}</small></span>
-  <span class="herd-card__p">${L("من", "from")} <b class="num">${from}</b> ${C.currency}/${KG}</span>
-</a>`;
+  function herdCard(a) {
+    if (a.soon) return `<span class="acirc is-soon" aria-disabled="true"><span class="acirc__ring">${herdArt(a.k)}<i class="acirc__lock">${icon("lock", "", 2)}</i></span><b>${esc(a.n)}</b><small>${L("قريباً", "Coming soon")}</small></span>`;
+    const list = D.cutsOf(a.k), kg = list.filter(p => p.sold === "kg"), from = kg.length ? Math.min.apply(null, kg.map(p => p.price)) : 0;
+    return `<a class="acirc is-on" href="${url.animal(a.k)}"><span class="acirc__ring">${herdArt(a.k)}</span><b>${esc(a.n)}</b><small class="num">${list.length} ${L("قطعيات", "cuts")} · ${L("من", "from")} ${from} ${C.currency}</small></a>`;
   }
   /* الرسم الخطي مع نقاط مرقّمة لكل قطعة */
   function herdMap(a, o) {
@@ -185,6 +184,25 @@
 
   /* ---------------- الفاتورة الحرارية ----------------
      o = { kicker, title, meta:[[k,v]], lines:[{name, sub, calc, amount, adds:[{n, calc, v}]}], totals:[[k, v, cls]], code, stamp, foot, empty } */
+  /* كم وفّر العميل مقارنة بسعر السوق المرجعي (اللحم فقط — التقطيع عندنا مجاني) */
+  function savings(lines) {
+    const M = C.market || {}; if (M.on === false) return null;
+    const S = root.NUDJ_STORE; let ours = 0, market = 0;
+    (lines || []).forEach(l => {
+      const p = D.byId(l.id); if (!p || p.animal === "extra") return;
+      const base = l.base != null ? l.base : S.breakdown(l).base; if (!base) return;
+      const unit = p.sold === "kg" ? p.price : p.sold === "carcass" ? sizeOf(p, l.opts && l.opts.size).p : p.price;
+      const mUnit = p.market ? +p.market : unit * (1 + (+M.pct || 0) / 100);
+      ours += base; market += base * mUnit / unit;
+    });
+    const save = Math.round(market - ours);
+    return save > 0 ? { save, market: Math.round(market), ours: Math.round(ours) } : null;
+  }
+  function saveNote(lines, o) {
+    const v = savings(lines); if (!v) return "";
+    o = o || {};
+    return `<div class="rc__save${o.cls ? " " + o.cls : ""}"><span class="rc__save-av"><img src="${R}assets/img/site/butcher.webp" alt=""><img src="${R}assets/img/site/chef.webp" alt=""></span><span><b>${L("بمساعدة الجزار والشيف وفّرت", "With the butcher & chef you saved")} <em class="num">${money(v.save)} ${C.currency}</em></b><small>${L("لو اشتريت نفس الكمية من السوق: ", "Same order at market prices: ")}<s class="num">${money(v.market)} ${C.currency}</s>${L(" · سعر مرجعي تقريبي", " · approximate reference")}</small></span></div>`;
+  }
   function receipt(o) {
     o = o || {};
     const rule = `<div class="rc__rule" aria-hidden="true"></div>`;
@@ -195,6 +213,7 @@
   ${rule}
   <div class="rc__lines">${(o.lines || []).length ? o.lines.map(receiptLine).join("") : `<p class="rc__empty">${o.empty || L("لا شيء بعد", "Nothing yet")}</p>`}</div>
   ${(o.totals || []).length ? rule + `<dl class="rc__totals">${o.totals.map(t => `<div class="${t[2] || ""}"><dt>${t[0]}</dt><dd class="num">${t[1]}</dd></div>`).join("")}</dl>` : ""}
+  ${o.save ? o.save : ""}
   ${o.code ? rule + `<div class="rc__code">${barcode(o.code)}<span class="num">${esc(o.code)}</span></div>` : ""}
   ${o.foot ? `<p class="rc__foot">${o.foot}</p>` : ""}
   ${o.stamp ? `<span class="rc__stamp">${o.stamp}</span>` : ""}
@@ -248,6 +267,16 @@
   }
   const toggle = (name, t, d, price) => `<label class="toggle"><input type="checkbox" name="${name}"><span class="toggle__sw" aria-hidden="true"></span><span class="toggle__b"><b>${t}</b><small>${d}</small></span><em class="num">+${price}</em></label>`;
 
+  /* الكمية بالكيلو: − القيمة + واختيارات سريعة (بدل الميزان) */
+  function kgPick(p) {
+    const presets = [0.5, 1, 1.5, 2, 3, 5];
+    return `<div class="kgp" data-kgp><span class="opt__label">${L("الكمية", "Quantity")}<small>${L("بالكيلو", "by the kilo")}</small></span>
+  <div class="kgp__row"><button type="button" class="kgp__btn" data-kg-step="-1" aria-label="${L("أنقص نصف كيلو", "Half a kilo less")}">${icon("minus", "", 2.4)}</button>
+    <output class="kgp__read num" name="kg">${kgTxt(p.def)}</output>
+    <button type="button" class="kgp__btn" data-kg-step="1" aria-label="${L("زد نصف كيلو", "Half a kilo more")}">${icon("plus", "", 2.4)}</button></div>
+  <div class="kgp__presets">${presets.map(v => `<button type="button" data-kg="${v}"${v === p.def ? ' class="on"' : ""}>${v === 0.5 ? "½" : v} ${KG}</button>`).join("")}</div>
+</div>`;
+  }
   function scale(p) {
     const presets = [0.5, 1, 1.5, 2, 3, 5];
     return `<div class="scale" data-scale>
@@ -265,7 +294,7 @@
     o = o || {}; const n = "f" + (++uid);
     const parts = [];
     if (p.sold === "kg") {
-      parts.push(scale(p));
+      parts.push(kgPick(p));
       parts.push(chips(n + "-prep", L("التقطيع", "Cutting"), p.preps.map(k => ({ k, n: D.PREPS[k].n, d: D.PREPS[k].d })), p.prepDef, { hint: L("مجاني", "Free") }));
       parts.push(chips(n + "-marinade", L("التتبيل", "Marinade"), D.MARINADES.map(m => ({ k: m.k, n: m.n, d: m.d, p: m.p, per: "/" + KG })), "none", { cls: "opt--paid", hint: L("خدمة إضافية", "Extra service") }));
       parts.push(`<div class="opt opt--paid"><span class="opt__label">${L("خدمات", "Services")}<small>${L("خدمة إضافية", "Extra service")}</small></span>
@@ -329,7 +358,7 @@
 
   root.NUDJ_UI = {
     L, EN, R, altName, esc, money, money2, cur, kgTxt, icon, logo, brand, mark, url, img, slot, productImg, herdArt, sizeOf, perTxt, priceTag, animalName,
-    tagCard, grid, productRow, spec, herdCard, herdMap, barcode, receipt, lineForReceipt, optsText, chips, buyForm, scale,
+    savings, saveNote, tagCard, grid, productRow, spec, herdCard, herdMap, barcode, receipt, lineForReceipt, optsText, chips, buyForm, scale,
     empty, cell, group, fmtDate, fmtTime, kicker, tpl, h, payLogos, payments
   };
 })(typeof window !== "undefined" ? window : globalThis);

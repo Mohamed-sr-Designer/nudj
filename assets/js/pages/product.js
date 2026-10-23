@@ -26,8 +26,8 @@
     const b = e.target.closest("[data-mp]"); if (b) { n = Math.max(1, Math.min(60, n + +b.dataset.mp)); v.textContent = n; calc(); return; }
     if (e.target.closest("#mpSet") && form && form.setKg) {
       const s = calc(); form.setKg(s.kg);
-      const sc = $(".scale", form); if (sc) { sc.classList.remove("flash"); void sc.offsetWidth; sc.classList.add("flash"); if (window.innerWidth < 900) sc.scrollIntoView({ behavior: "smooth", block: "center" }); }
-      A.toast(D.L("ضبطنا الميزان على ", "Scale set to ") + U.kgTxt(s.kg), { icon: "scale" });
+      const sc = $(".kgp", form); if (sc) { sc.classList.remove("flash"); void sc.offsetWidth; sc.classList.add("flash"); if (window.innerWidth < 900) sc.scrollIntoView({ behavior: "smooth", block: "center" }); }
+      A.toast(D.L("ضبطنا الكمية على ", "Quantity set to ") + U.kgTxt(s.kg), { icon: "scale" });
     }
     const th = e.target.closest("[data-thumb]"); if (th) {
       const img = $(".pd__img img"); if (img) img.src = th.dataset.thumb;

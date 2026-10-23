@@ -53,6 +53,7 @@
         [L("الإجمالي", "Total"), U.money2(t.total), "is-total"],
         [L("منها ضريبة 15٪", "Incl. 15% VAT"), U.money2(t.vat), "is-muted"]
       ].filter(Boolean),
+      save: U.saveNote(ls),
       foot: L("الأسعار شاملة الضريبة · التقطيع مجاني", "Prices include VAT · Cutting is free")
     });
     const pct = Math.min(100, Math.round((t.sub / C.delivery.freeOver) * 100));

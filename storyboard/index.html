@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>ستوري بورد — الجزار والشيف · نُضْج</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@500;700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#F5F1EA;--card:#fff;--bone:#1B1512;--text:#433931;--muted:#62574D;--line:rgba(40,28,20,.12);--ember:#C9391A;--tint:rgba(201,57,26,.09);--ok:#17704A}
+*{box-sizing:border-box}html,body{margin:0}
+body{font-family:"IBM Plex Sans Arabic",system-ui,sans-serif;background:var(--ink);color:var(--text);line-height:1.7}
+.wrap{max-width:1240px;margin:0 auto;padding:40px 24px 80px}
+h1,h2,h3{font-family:Alexandria,sans-serif;color:var(--bone);line-height:1.3;margin:0}
+h1{font-size:clamp(2rem,4vw,3.2rem);font-weight:900}
+h1 em{font-style:normal;color:var(--ember)}
+.lead{max-width:70ch;font-size:1.05rem;margin:14px 0 0}
+.kick{display:inline-block;font-size:.8rem;font-weight:700;color:var(--ember);background:var(--tint);padding:4px 12px;border-radius:99px;margin-bottom:14px}
+/* شخصية متحركة */
+.ch{position:relative;border-radius:50%;overflow:hidden;background:#F2ECE2;flex-shrink:0}
+.ch img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ch .o{opacity:0}
+.ch.talk .o{animation:lips .34s steps(1,end) infinite}
+.ch.talk{animation:nod 1.1s ease-in-out infinite}
+.ch.idle{animation:breathe 3.2s ease-in-out infinite}
+@keyframes lips{0%{opacity:1}45%{opacity:0}62%{opacity:1}85%{opacity:0}}
+@keyframes nod{0%,100%{transform:translateY(0) rotate(0)}30%{transform:translateY(-2px) rotate(-2deg)}65%{transform:translateY(1px) rotate(1.5deg)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025) translateY(-1px)}}
+/* العرض المباشر */
+.demo{display:grid;grid-template-columns:1fr 1.2fr;gap:30px;align-items:center;margin:34px 0 50px;padding:28px;border-radius:26px;background:var(--card);border:1px solid var(--line);box-shadow:0 20px 50px -30px rgba(60,40,20,.35)}
+.stage{position:relative;height:420px;border-radius:20px;background:#F3EEE6;overflow:hidden}
+.stage .ch{position:absolute;bottom:-20px;width:290px;height:290px;border-radius:0;background:none;transition:transform .7s cubic-bezier(.34,1.3,.5,1),opacity .5s,filter .5s}
+.stage .ch img{object-fit:contain;object-position:50% 100%}
+.stage .b{inset-inline-start:30px}.stage .c{inset-inline-end:30px}
+.stage[data-on=butcher] .c,.stage[data-on=chef] .b{transform:translateY(40px) scale(.82);opacity:.45;filter:saturate(.5)}
+.stage[data-on=butcher] .b,.stage[data-on=chef] .c{transform:translateY(0) scale(1);z-index:2}
+.bubble{position:absolute;z-index:5;top:22px;inset-inline:22px;min-height:64px;padding:14px 18px;border-radius:18px;background:#fff;box-shadow:0 10px 30px -14px rgba(60,40,20,.4);font-weight:600;color:var(--bone);font-size:1.02rem}
+.bubble small{display:block;font-size:.76rem;color:var(--ember);font-weight:700}
+.demo__ctl h2{font-size:1.5rem;margin-bottom:8px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.btns button{font:inherit;font-weight:700;font-size:.9rem;padding:10px 16px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--bone);cursor:pointer}
+.btns button:hover{border-color:var(--ember);color:var(--ember)}
+.btns button.main{background:var(--ember);border-color:var(--ember);color:#fff}
+/* الإطارات */
+.frames{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px;margin-top:22px}
+.fr{background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden;display:flex;flex-direction:column}
+.fr__shot{position:relative;aspect-ratio:16/10;background:#F7F2EA;border-bottom:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.fr__n{position:absolute;bottom:8px;inset-inline-start:14px;font-family:Alexandria;font-weight:900;font-size:2.4rem;color:rgba(201,57,26,.16);line-height:1}
+.row{display:flex;align-items:flex-end;gap:10px}
+.msg{background:#fff;border-radius:16px 16px 16px 6px;padding:10px 14px;font-size:.88rem;font-weight:600;color:var(--bone);box-shadow:0 6px 16px -10px rgba(60,40,20,.4);max-width:78%}
+[dir=rtl] .msg{border-radius:16px 16px 6px 16px}
+.me{align-self:flex-end;background:var(--ember);color:#fff;border-radius:16px;padding:8px 14px;font-weight:700;font-size:.86rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips span{font-size:.76rem;font-weight:700;padding:6px 10px;border-radius:99px;background:#fff;border:1px solid var(--line)}
+.chips span.on{background:var(--ember);border-color:var(--ember);color:#fff}
+.save{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#E9F4EC;border:1px dashed #6BAF84;border-radius:12px;padding:8px 12px;font-size:.82rem;color:#14402A;font-weight:700}
+.save em{font-style:normal;color:#0F6B3D}
+.fr__b{padding:16px 18px 20px;display:grid;gap:8px}
+.fr__b h3{font-size:1.1rem}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:.86rem}
+.meta dt{font-weight:700;color:var(--bone)}
+.meta dd{margin:0}
+.tag{display:inline-block;font-size:.72rem;font-weight:700;padding:2px 9px;border-radius:99px;background:var(--tint);color:var(--ember)}
+.notes{margin-top:50px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.note{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px}
+.note h3{font-size:1rem;margin-bottom:6px}
+.note p{margin:0;font-size:.9rem}
+.typing::after{content:"";display:inline-block;width:2px;height:1em;background:var(--ember);margin-inline-start:2px;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+@media(max-width:860px){.demo{grid-template-columns:1fr}.stage{height:340px}.stage .ch{width:210px;height:210px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="kick">ستوري بورد مبدئي · للاعتماد</span>
+  <h1>الجزار والشيف — <em>كيف يتحركون</em> مع العميل</h1>
+  <p class="lead">المستشار صار شخصيتين: <b>الجزار</b> من برّا يساعدك تختار القطعة والعدد والكمية، و<b>الشيف</b> من جوّا يكمل معك شكل التقطيع والتتبيل والإضافات. الشخصية تحرّك شفايفها والنص يظهر حرفاً حرفاً — بدون صوت. هذا تصوّر الحركة حسب تفاعل العميل؛ قل لي «تمام» أو وش نعدّل.</p>
+
+  <section class="demo">
+    <div class="stage" id="stage" data-on="butcher">
+      <div class="bubble"><small id="who">الجزار</small><span id="say" class="typing"></span></div>
+      <div class="ch b idle" id="chB"><img src="../assets/img/site/butcher-full.webp" alt="الجزار"><img class="o" src="../assets/img/site/butcher-talk-full.webp" alt=""></div>
+      <div class="ch c idle" id="chC"><img src="../assets/img/site/chef-full.webp" alt="الشيف"><img class="o" src="../assets/img/site/chef-talk-full.webp" alt=""></div>
+    </div>
+    <div class="demo__ctl">
+      <span class="tag">جرّبها مباشرة</span>
+      <h2>عرض حي للحركة</h2>
+      <p>اضغط أي خطوة: الشخصية المتكلمة تتقدم للأمام وتحرّك شفايفها مع ظهور النص، والثانية ترجع للخلف. عند التسليم ينزلق الجزار ويطلع الشيف.</p>
+      <div class="btns">
+        <button class="main" data-s="0">1 · الترحيب</button>
+        <button data-s="1">2 · اختيار المناسبة</button>
+        <button data-s="2">3 · العميل كتب «لعشرة ضأن»</button>
+        <button data-s="3">4 · التسليم للشيف</button>
+        <button data-s="4">5 · الشيف: التقطيع</button>
+        <button data-s="5">6 · تخطّى البهارات</button>
+        <button data-s="6">7 · النتيجة والتوفير</button>
+      </div>
+    </div>
+  </section>
+
+  <h2>الإطارات حسب تفاعل العميل</h2>
+  <div class="frames">
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">01</span>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/butcher.webp" alt=""><img class="o" src="../assets/img/site/butcher-talk.webp" alt=""></div><div class="msg">هلا! أنا الجزار 🔪 قل لي وش المناسبة وكم شخص…</div></div>
+      <div class="chips"><span>حفلة مشاوي</span><span>عزومة</span><span>ذبيحة</span><span>ستيك</span></div></div>
+      <div class="fr__b"><h3>الترحيب <span class="tag">فتح المستشار</span></h3><dl class="meta"><dt>المحفّز</dt><dd>فتح صفحة المستشار أو الزر العائم</dd><dt>الحركة</dt><dd>الجزار يطلع من تحت (0.5ث)، يتنفس بهدوء، ثم الشفايف تتحرك مع كتابة الترحيب</dd><dt>المدة</dt><dd>≈ 1.5 ث، ثم تظهر بطاقات المناسبات</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">02</span>
+      <div class="me">حفلة مشاوي</div>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/butcher.webp" alt=""><img class="o" src="../assets/img/site/butcher-talk.webp" alt=""></div><div class="msg">حلو! كم شخص على الشواية؟</div></div>
+      <div class="chips"><span>4</span><span>6</span><span class="on">10</span><span>15</span><span>20</span></div></div>
+      <div class="fr__b"><h3>سؤال العدد <span class="tag">ضغط بطاقة</span></h3><dl class="meta"><dt>المحفّز</dt><dd>العميل يختار مناسبة</dd><dt>الحركة</dt><dd>إيماءة رأس سريعة (موافقة) ثم كلام</dd><dt>ملاحظة</dt><dd>كل إجابة تبقى فقاعة قابلة للتعديل</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">03</span>
+      <div class="me">ابغى مشاوي لعشرة ضأن</div>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/butcher.webp" alt=""><img class="o" src="../assets/img/site/butcher-talk.webp" alt=""></div><div class="msg">تمام، سجّلت: 10 أشخاص، ضأن ✓</div></div></div>
+      <div class="fr__b"><h3>العميل يكتب بكلامه <span class="tag">نص حر</span></h3><dl class="meta"><dt>المحفّز</dt><dd>كتابة حرة (لهجة، أخطاء إملائية، أرقام بالكلام)</dd><dt>الحركة</dt><dd>نقاط «يفكّر» 0.4ث ثم يعيد ما فهمه — ولا يقول أبداً «كتبت غلط»</dd><dt>النتيجة</dt><dd>يتخطّى الأسئلة اللي جاوبها العميل</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">04</span>
+      <div class="row"><div class="ch" style="width:54px;height:54px;opacity:.6"><img src="../assets/img/site/butcher.webp" alt=""></div><div class="msg">القطعة والكمية جاهزة 👌 أسلّمك للشيف</div></div>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/chef.webp" alt=""><img class="o" src="../assets/img/site/chef-talk.webp" alt=""></div><div class="msg">هلا! أنا الشيف 👨‍🍳 خلّنا نجهّزها على طبختك.</div></div></div>
+      <div class="fr__b"><h3>التسليم للشيف <span class="tag">انتقال</span></h3><dl class="meta"><dt>المحفّز</dt><dd>انتهاء أسئلة القطعة والعدد</dd><dt>الحركة</dt><dd>الجزار يصغر ويرجع للخلف، الشيف ينزلق للأمام مع ارتداد خفيف (0.7ث)، الترويسة تتغير لاسم الشيف</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">05</span>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/chef.webp" alt=""><img class="o" src="../assets/img/site/chef-talk.webp" alt=""></div><div class="msg">وش تبغى على الشواية؟ قطع، شرائح، ولا قطع سليمة؟</div></div>
+      <div class="chips"><span class="on">أوصال</span><span>كباب</span><span>شرائح</span><span>ريش</span></div></div>
+      <div class="fr__b"><h3>الشيف: التقطيع والتتبيل <span class="tag">اختيارات</span></h3><dl class="meta"><dt>المحفّز</dt><dd>دور الشيف</dd><dt>الحركة</dt><dd>عند الضغط على تتبيلة: الشيف يبتسم + «رشّة» صغيرة فوق الاختيار</dd><dt>يغطي</dt><dd>شكل التقطيع، التتبيلة، التسييخ، الفحم والعدّة، البهارات، التغليف</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">06</span>
+      <div class="me">بدون بهارات</div>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/chef.webp" alt=""><img class="o" src="../assets/img/site/chef-talk.webp" alt=""></div><div class="msg">ولا يهمك — أذكّرك فيها قبل الدفع لو احتجتها.</div></div></div>
+      <div class="fr__b"><h3>تخطّي الإضافات <span class="tag">تخطّي</span></h3><dl class="meta"><dt>المحفّز</dt><dd>العميل يتخطّى البهارات أو الفحم</dd><dt>الحركة</dt><dd>كتف «ولا يهمك» خفيف، بدون ضغط</dd><dt>بعدها</dt><dd>يرجع الاقتراح مرة واحدة في إتمام الطلب «هل تريد إضافة…؟»</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">07</span>
+      <div class="row"><div class="ch talk" style="width:54px;height:54px"><img src="../assets/img/site/butcher.webp" alt=""><img class="o" src="../assets/img/site/butcher-talk.webp" alt=""></div><div class="ch talk" style="width:54px;height:54px;margin-inline-start:-16px"><img src="../assets/img/site/chef.webp" alt=""><img class="o" src="../assets/img/site/chef-talk.webp" alt=""></div><div class="msg">هذي خطتك — 3.5 كجم ضأن، تتبيلة، فحم</div></div>
+      <div class="save">👨‍🍳🔪 بمساعدة الجزار والشيف وفّرت <em>86 ر.س</em> عن سعر السوق</div></div>
+      <div class="fr__b"><h3>النتيجة والتوفير <span class="tag">الخطة جاهزة</span></h3><dl class="meta"><dt>المحفّز</dt><dd>اكتمال الأسئلة</dd><dt>الحركة</dt><dd>الشخصيتان جنب بعض، الفاتورة «تنطبع» من الأعلى، رقم التوفير يعدّ من 0</dd><dt>ملاحظة</dt><dd>سعر السوق مرجعي ويُعدّل من لوحة التحكم</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">08</span>
+      <div class="row"><div class="ch talk" style="width:62px;height:62px"><img src="../assets/img/site/chef.webp" alt=""><img class="o" src="../assets/img/site/chef-talk.webp" alt=""></div><div class="msg">قبل ما تأكد: لحم كبسة 3 كجم — نضيف البهارات؟</div></div>
+      <div class="chips"><span class="on">أضف وأكمل</span><span>لا، أكمل الطلب</span></div></div>
+      <div class="fr__b"><h3>تذكير في إتمام الطلب <span class="tag">الدفع</span></h3><dl class="meta"><dt>المحفّز</dt><dd>ضغط «تأكيد الطلب» وفيه إضافة متخطّاة</dd><dt>الحركة</dt><dd>الشيف يطلّ من طرف الشاشة (peek) ويتكلم، ويختفي بعد الاختيار</dd><dt>القاعدة</dt><dd>مرة واحدة فقط — لا يمنع الطلب</dd></dl></div></article>
+
+    <article class="fr"><div class="fr__shot"><span class="fr__n">09</span>
+      <div class="row"><div class="ch idle" style="width:62px;height:62px"><img src="../assets/img/site/butcher.webp" alt=""></div><div class="msg">محتار؟ اكتب لي «كبسة لعشرين» وأحسبها لك 👋</div></div></div>
+      <div class="fr__b"><h3>العميل توقف <span class="tag">خمول 20ث</span></h3><dl class="meta"><dt>المحفّز</dt><dd>لا تفاعل 20 ثانية في سؤال</dd><dt>الحركة</dt><dd>تلويحة يد صغيرة + اقتراح مثال — مرة واحدة فقط</dd><dt>يحتاج</dt><dd>إطار «تلويح» إضافي للشخصية (نولّده بعد الاعتماد)</dd></dl></div></article>
+  </div>
+
+  <div class="notes">
+    <div class="note"><h3>المنفّذ الآن في الموقع</h3><p>الشخصيتان وتقسيم الأسئلة بينهما، التسليم من الجزار للشيف، حركة الشفايف مع ظهور النص حرفاً حرفاً، تبديل المتكلم في الترويسة، سطر التوفير، وتذكير الإضافات في الدفع.</p></div>
+    <div class="note"><h3>بعد اعتمادكم</h3><p>مسرح أكبر للشخصيات فوق المحادثة (مثل العرض الحي أعلاه)، إيماءة الموافقة، «رشّة» التتبيلة، تلويحة الخمول، وإطلالة الشيف في صفحة الدفع.</p></div>
+    <div class="note"><h3>الأداء والوصول</h3><p>إطاران فقط لكل شخصية (فم مغلق/مفتوح) بصيغة webp خفيفة. من يفضّل تقليل الحركة في جهازه يشوف النص مباشرة بدون حركة.</p></div>
+  </div>
+</div>
+<script>
+(function () {
+  var S = [
+    ["butcher", "هلا! أنا الجزار 🔪 قل لي وش المناسبة وكم شخص، وأختار لك القطعة والكمية بالجرام."],
+    ["butcher", "حلو! حفلة مشاوي 🔥 كم شخص على الشواية؟"],
+    ["butcher", "تمام، سجّلت: 10 أشخاص، ضأن ✓"],
+    ["butcher", "القطعة والكمية جاهزة 👌 أسلّمك للشيف يكمل معك."],
+    ["chef", "هلا! أنا الشيف 👨‍🍳 وش تبغى على الشواية؟ أوصال، كباب، ولا ريش؟"],
+    ["chef", "ولا يهمك — أذكّرك بالبهارات قبل الدفع لو احتجتها."],
+    ["chef", "خطتك جاهزة! وبمساعدتنا وفّرت 86 ر.س عن سعر السوق 🎉"]
+  ];
+  var stage = document.getElementById("stage"), say = document.getElementById("say"), who = document.getElementById("who");
+  var chB = document.getElementById("chB"), chC = document.getElementById("chC"), t, stopT;
+  function play(i) {
+    var s = S[i], el = s[0] === "chef" ? chC : chB, other = s[0] === "chef" ? chB : chC;
+    stage.dataset.on = s[0]; who.textContent = s[0] === "chef" ? "الشيف" : "الجزار";
+    clearInterval(t); clearTimeout(stopT); say.textContent = "";
+    other.classList.remove("talk"); other.classList.add("idle");
+    setTimeout(function () {
+      el.classList.remove("idle"); el.classList.add("talk");
+      var n = 0, txt = Array.from(s[1]);
+      t = setInterval(function () { n++; say.textContent = txt.slice(0, n).join(""); if (n >= txt.length) { clearInterval(t); stopT = setTimeout(function () { el.classList.remove("talk"); el.classList.add("idle"); }, 250); } }, 38);
+    }, 380);
+    document.querySelectorAll(".btns button").forEach(function (b, j) { b.classList.toggle("main", j === i); });
+  }
+  document.querySelectorAll("[data-s]").forEach(function (b) { b.addEventListener("click", function () { play(+b.dataset.s); }); });
+  play(0);
+})();
+</script>
+</body>
+</html>

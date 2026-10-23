@@ -34,6 +34,7 @@
         [L("الإجمالي", "Total"), U.money2(t.total), "is-total"],
         [L("منها ضريبة 15٪", "Incl. 15% VAT"), U.money2(t.vat), "is-muted"]
       ].filter(Boolean),
+      save: cancelled ? "" : U.saveNote(o.items),
       code: o.id,
       stamp: cancelled ? L("ملغي", "Void") : cod ? L("الدفع عند الاستلام", "Cash on delivery") : L("مدفوع", "Paid"),
       foot: L("شكراً لك — نقطّعها لك على طبختك.", "Thank you — we cut it for your dish.")

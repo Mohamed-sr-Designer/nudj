@@ -45,8 +45,9 @@ ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="can
 <link rel="alternate" hreflang="${EN ? "ar" : "en"}" href="${alt(m.file)}">
 <link rel="alternate" hreflang="x-default" href="${EN ? alt(m.file) : url(m.file)}">`}
 <meta name="nudj-content" content="${ctx.contentHash || "0"}" data-tpl="${V("assets/js/templates.js")}">
-<meta name="theme-color" content="#161A1F">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#F5F1EA">
+<meta name="color-scheme" content="light dark">
+<script>try{if(localStorage.getItem("nudj_theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");document.querySelector('meta[name=theme-color]').content="#161A1F"}}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -83,6 +84,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
   <form class="hdr-search" role="search" data-search-form>${icon("search")}<input type="search" name="q" placeholder="${esc(T().nav.search)}" aria-label="${L("ابحث في المتجر", "Search the shop")}" autocomplete="off"></form>
   <div class="hdr-tools">
     ${langBtn(m, "tool tool--lang")}
+    <button type="button" class="tool tool--theme" data-theme-toggle aria-label="${L("الوضع الداكن / الفاتح", "Dark / light mode")}">${icon("moon", "ic-moon")}${icon("sun", "ic-sun")}</button>
     <a class="tool${m.tab === "account" ? " is-on" : ""}" href="account.html" aria-label="${L("حسابي", "My account")}">${icon("user")}</a>
     <a class="tool" href="wishlist.html" aria-label="${L("المفضلة", "Wishlist")}">${icon("heart")}</a>
     <a class="tool hdr-cart${m.tab === "cart" ? " is-on" : ""}" href="cart.html" aria-label="${L("السلة", "Cart")}">${icon("cart")}<b class="badge" data-cart-count>0</b></a>
@@ -102,7 +104,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
       ? `<a class="ab-back" href="${m.back ? m.back[0] : "index.html"}" data-back aria-label="${L("رجوع إلى", "Back to")} ${esc(m.back ? m.back[1] : L("الرئيسية", "Home"))}">${icon("chevR", "", 2.4)}<span>${esc(m.back ? m.back[1] : L("رجوع", "Back"))}</span></a>`
       : `<a class="ab-brand" href="index.html" aria-label="${L("نُضْج — الرئيسية", "NUDJ — Home")}">${U.logo()}</a>`}</div>
   <div class="ab-title" aria-hidden="true">${esc(m.appTitle || "")}</div>
-  <div class="ab-trail">${m.mode === "push" || m.chrome === false ? "" : langBtn(m, "ab-btn ab-lang")}${(m.trail || []).map(trailBtn).join("")}</div>
+  <div class="ab-trail">${m.mode === "push" || m.chrome === false ? "" : `<button type="button" class="ab-btn tool--theme" data-theme-toggle aria-label="${L("الوضع الداكن / الفاتح", "Dark / light mode")}">${icon("moon", "ic-moon")}${icon("sun", "ic-sun")}</button>` + langBtn(m, "ab-btn ab-lang")}${(m.trail || []).map(trailBtn).join("")}</div>
 </header>`;
 
   const tabbar = m => `<nav class="tabbar" aria-label="${L("التبويبات", "Tabs")}">${TABS.map(([k, h, ic, t]) => k === "advisor"
@@ -113,7 +115,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
   <div class="ftr">
     <div class="ftr__brand"><a href="index.html" class="ftr__logo" aria-label="${L("نُضْج — الرئيسية", "NUDJ — Home")}">${U.brand()}</a><p>${tpl(T().footer.about)}</p>
       <div class="ftr__meta"><span>${L("السجل التجاري", "CR no.")} <b>${esc(C.contact.cr)}</b></span><span>${L("الرقم الضريبي", "VAT no.")} <b>${esc(C.contact.vatNo)}</b></span><span>${L("للطلبات", "Orders")} <b>${esc(C.contact.phone)}</b></span></div></div>
-    <div><h3>${esc(T().nav.herd)}</h3><ul>${D.ANIMALS.map(a => `<li><a href="${a.k}.html">${esc(a.n)}</a></li>`).join("")}</ul></div>
+    <div><h3>${esc(T().nav.herd)}</h3><ul>${D.ANIMALS.map(a => a.soon ? `<li><span class="ftr-soon">${esc(a.n)} <small>${L("قريباً", "soon")}</small></span></li>` : `<li><a href="${a.k}.html">${esc(a.n)}</a></li>`).join("")}</ul></div>
     <div><h3>${L("تسوّق", "Shop")}</h3><ul><li><a href="shop.html">${L("كل القطعيات", "All cuts")}</a></li><li><a href="shop.html?a=carcass">${esc(T().nav.carcass)}</a></li><li><a href="shop.html?a=extra">${esc(T().nav.extras)}</a></li><li><a href="advisor.html">${L("مستشار نُضْج", "NUDJ Advisor")}</a></li><li><a href="cuts.html">${L("خريطة القطعيات", "Cuts map")}</a></li></ul></div>
     <div><h3>${L("المساعدة", "Help")}</h3><ul><li><a href="help.html">${L("الأسئلة الشائعة", "FAQ")}</a></li><li><a href="help.html#delivery">${L("التوصيل", "Delivery")}</a></li><li><a href="account.html?s=orders">${L("تتبّع طلبك", "Track your order")}</a></li><li><a href="contact.html">${L("تواصل معنا", "Contact us")}</a></li><li><a href="about.html">${L("من نحن", "About us")}</a></li>
       <li><a href="${langHref(m)}" data-lang-switch hreflang="${EN ? "ar" : "en"}">${EN ? "العربية" : "English"}</a></li>

@@ -47,7 +47,7 @@ module.exports = function (ctx) {
       kf += `${f(st + TT * .8)}%{left:${f(x - SL - .6)}%;top:175%;animation-timing-function:steps(1,end)}`;
     });
     kf += `100%{left:${f(cutX(N - 2) - SL - .6)}%;top:175%}`;
-    return `<section class="cutband" data-cutband aria-labelledby="cutH">
+    return `<section class="cutband tone-dark" data-cutband aria-labelledby="cutH">
   <style>@keyframes knife{${kf}}</style>
   <div class="cutband__stage" style="--sl:${SL}%" aria-hidden="true">
     ${strips}
@@ -82,7 +82,7 @@ module.exports = function (ctx) {
       <h1 class="hero__t" id="heroT">${esc(T.hero.title)}<em>${esc(T.hero.em)}</em></h1>
       <p class="hero__s">${tpl(T.hero.sub)}</p>
       <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}${esc(T.hero.cta1)}</a><a class="btn btn--line btn--lg" href="shop.html">${esc(T.hero.cta2)}</a></div>
-      <dl class="hero__stats"><div><dt class="num">${D.ANIMALS.length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
+      <dl class="hero__stats"><div><dt class="num">${D.activeAnimals().length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
     </div>
     <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>${L("مستشار نُضْج", "NUDJ Advisor")}</b></div><div class="adv__log"><p class="muted" style="padding:20px">${L("جارٍ تشغيل المستشار…", "Starting the advisor…")}</p></div></div></div>
   </div>

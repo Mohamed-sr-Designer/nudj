@@ -51,8 +51,9 @@ ${m.noindex ? '<meta name="robots" content="noindex, follow">' : `<link rel="can
 <link rel="alternate" hreflang="${EN ? "ar" : "en"}" href="${alt(m.file)}">
 <link rel="alternate" hreflang="x-default" href="${EN ? alt(m.file) : url(m.file)}">`}
 <meta name="nudj-content" content="${ctx.contentHash || "0"}" data-tpl="${V("assets/js/templates.js")}">
-<meta name="theme-color" content="#161A1F">
-<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#F5F1EA">
+<meta name="color-scheme" content="light dark">
+<script>try{if(localStorage.getItem("nudj_theme")==="dark"){document.documentElement.setAttribute("data-theme","dark");document.querySelector('meta[name=theme-color]').content="#161A1F"}}catch(e){}</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -89,6 +90,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
   <form class="hdr-search" role="search" data-search-form>${icon("search")}<input type="search" name="q" placeholder="${esc(T().nav.search)}" aria-label="${L("ابحث في المتجر", "Search the shop")}" autocomplete="off"></form>
   <div class="hdr-tools">
     ${langBtn(m, "tool tool--lang")}
+    <button type="button" class="tool tool--theme" data-theme-toggle aria-label="${L("الوضع الداكن / الفاتح", "Dark / light mode")}">${icon("moon", "ic-moon")}${icon("sun", "ic-sun")}</button>
     <a class="tool${m.tab === "account" ? " is-on" : ""}" href="account.html" aria-label="${L("حسابي", "My account")}">${icon("user")}</a>
     <a class="tool" href="wishlist.html" aria-label="${L("المفضلة", "Wishlist")}">${icon("heart")}</a>
     <a class="tool hdr-cart${m.tab === "cart" ? " is-on" : ""}" href="cart.html" aria-label="${L("السلة", "Cart")}">${icon("cart")}<b class="badge" data-cart-count>0</b></a>
@@ -108,7 +110,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
       ? `<a class="ab-back" href="${m.back ? m.back[0] : "index.html"}" data-back aria-label="${L("رجوع إلى", "Back to")} ${esc(m.back ? m.back[1] : L("الرئيسية", "Home"))}">${icon("chevR", "", 2.4)}<span>${esc(m.back ? m.back[1] : L("رجوع", "Back"))}</span></a>`
       : `<a class="ab-brand" href="index.html" aria-label="${L("نُضْج — الرئيسية", "NUDJ — Home")}">${U.logo()}</a>`}</div>
   <div class="ab-title" aria-hidden="true">${esc(m.appTitle || "")}</div>
-  <div class="ab-trail">${m.mode === "push" || m.chrome === false ? "" : langBtn(m, "ab-btn ab-lang")}${(m.trail || []).map(trailBtn).join("")}</div>
+  <div class="ab-trail">${m.mode === "push" || m.chrome === false ? "" : `<button type="button" class="ab-btn tool--theme" data-theme-toggle aria-label="${L("الوضع الداكن / الفاتح", "Dark / light mode")}">${icon("moon", "ic-moon")}${icon("sun", "ic-sun")}</button>` + langBtn(m, "ab-btn ab-lang")}${(m.trail || []).map(trailBtn).join("")}</div>
 </header>`;
 
   const tabbar = m => `<nav class="tabbar" aria-label="${L("التبويبات", "Tabs")}">${TABS.map(([k, h, ic, t]) => k === "advisor"
@@ -119,7 +121,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
   <div class="ftr">
     <div class="ftr__brand"><a href="index.html" class="ftr__logo" aria-label="${L("نُضْج — الرئيسية", "NUDJ — Home")}">${U.brand()}</a><p>${tpl(T().footer.about)}</p>
       <div class="ftr__meta"><span>${L("السجل التجاري", "CR no.")} <b>${esc(C.contact.cr)}</b></span><span>${L("الرقم الضريبي", "VAT no.")} <b>${esc(C.contact.vatNo)}</b></span><span>${L("للطلبات", "Orders")} <b>${esc(C.contact.phone)}</b></span></div></div>
-    <div><h3>${esc(T().nav.herd)}</h3><ul>${D.ANIMALS.map(a => `<li><a href="${a.k}.html">${esc(a.n)}</a></li>`).join("")}</ul></div>
+    <div><h3>${esc(T().nav.herd)}</h3><ul>${D.ANIMALS.map(a => a.soon ? `<li><span class="ftr-soon">${esc(a.n)} <small>${L("قريباً", "soon")}</small></span></li>` : `<li><a href="${a.k}.html">${esc(a.n)}</a></li>`).join("")}</ul></div>
     <div><h3>${L("تسوّق", "Shop")}</h3><ul><li><a href="shop.html">${L("كل القطعيات", "All cuts")}</a></li><li><a href="shop.html?a=carcass">${esc(T().nav.carcass)}</a></li><li><a href="shop.html?a=extra">${esc(T().nav.extras)}</a></li><li><a href="advisor.html">${L("مستشار نُضْج", "NUDJ Advisor")}</a></li><li><a href="cuts.html">${L("خريطة القطعيات", "Cuts map")}</a></li></ul></div>
     <div><h3>${L("المساعدة", "Help")}</h3><ul><li><a href="help.html">${L("الأسئلة الشائعة", "FAQ")}</a></li><li><a href="help.html#delivery">${L("التوصيل", "Delivery")}</a></li><li><a href="account.html?s=orders">${L("تتبّع طلبك", "Track your order")}</a></li><li><a href="contact.html">${L("تواصل معنا", "Contact us")}</a></li><li><a href="about.html">${L("من نحن", "About us")}</a></li>
       <li><a href="${langHref(m)}" data-lang-switch hreflang="${EN ? "ar" : "en"}">${EN ? "العربية" : "English"}</a></li>
@@ -213,7 +215,7 @@ module.exports = function (ctx) {
       kf += `${f(st + TT * .8)}%{left:${f(x - SL - .6)}%;top:175%;animation-timing-function:steps(1,end)}`;
     });
     kf += `100%{left:${f(cutX(N - 2) - SL - .6)}%;top:175%}`;
-    return `<section class="cutband" data-cutband aria-labelledby="cutH">
+    return `<section class="cutband tone-dark" data-cutband aria-labelledby="cutH">
   <style>@keyframes knife{${kf}}</style>
   <div class="cutband__stage" style="--sl:${SL}%" aria-hidden="true">
     ${strips}
@@ -248,7 +250,7 @@ module.exports = function (ctx) {
       <h1 class="hero__t" id="heroT">${esc(T.hero.title)}<em>${esc(T.hero.em)}</em></h1>
       <p class="hero__s">${tpl(T.hero.sub)}</p>
       <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}${esc(T.hero.cta1)}</a><a class="btn btn--line btn--lg" href="shop.html">${esc(T.hero.cta2)}</a></div>
-      <dl class="hero__stats"><div><dt class="num">${D.ANIMALS.length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
+      <dl class="hero__stats"><div><dt class="num">${D.activeAnimals().length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
     </div>
     <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>${L("مستشار نُضْج", "NUDJ Advisor")}</b></div><div class="adv__log"><p class="muted" style="padding:20px">${L("جارٍ تشغيل المستشار…", "Starting the advisor…")}</p></div></div></div>
   </div>
@@ -337,11 +339,11 @@ module.exports = function (ctx) {
   const pages = [];
 
   /* ================= المتجر ================= */
-  const filters = [["all", L("الكل", "All")]].concat(D.ANIMALS.map(a => [a.k, a.n]), [["carcass", T.nav.carcass], ["extra", T.nav.extras]]);
+  const filters = [["all", L("الكل", "All")]].concat(D.activeAnimals().map(a => [a.k, a.n]), [["carcass", T.nav.carcass], ["extra", T.nav.extras]]);
   const uses = Object.keys(D.USES);
   pages.push({
     name: "shop", file: "shop.html", tab: "shop", nav: "shop", mode: "root", appTitle: T.shop.title, scripts: ["shop"], trail: ["search", "herd"],
-    title: L("المتجر — قطعيات ضأن وماعز وجمل وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
+    title: L("المتجر — قطعيات ضأن وماعز وحاشي وعجل وبقر وجاموس · نُضْج", "Shop — lamb, goat, camel, veal, beef and buffalo cuts · NUDJ"),
     desc: L("كل قطعيات نُضْج بالكيلو مع التقطيع المجاني، والذبائح الكاملة، وعدّة الشواء والبهارات.", "Every NUDJ cut by the kilo with free cutting, plus whole carcasses, BBQ kit and spices."),
     main: `<div class="wrap">
   ${h.crumbs([[T.shop.title]])}
@@ -362,12 +364,12 @@ module.exports = function (ctx) {
   /* ================= خريطة القطيع ================= */
   pages.push({
     name: "herd", file: "cuts.html", tab: "shop", nav: "herd", mode: "push", back: ["shop.html", T.shop.title], appTitle: T.herd.title,
-    title: L("القطيع — خريطة قطعيات الضأن والماعز والجمل والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
+    title: L("القطيع — خريطة قطعيات الضأن والماعز والحاشي والعجل والبقر والجاموس · نُضْج", "The Herd — cuts map for lamb, goat, camel, veal, beef and buffalo · NUDJ"),
     desc: L("خريطة القطعيات لكل ماشية: اضغط على أي رقم لتشوف القطعة وسعرها والتقطيع المتاح.", "A cuts map for every animal: tap any number to see the cut, its price and the cutting styles available."),
     main: `<div class="wrap">
   ${h.crumbs([[T.herd.title]])}
   <div class="page-head"><h1 class="large-title">${esc(T.herd.title)}</h1><p>${tpl(T.herd.sub)}</p></div>
-  <div class="herd-index">${D.ANIMALS.map((a, i) => `<a class="herd-tile" href="${U.url.animal(a.k)}">
+  <div class="herd-index">${D.ANIMALS.map((a, i) => a.soon ? `<div class="herd-tile is-soon" aria-disabled="true"><span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile", static: true })}<span class="herd-tile__b"><b>${esc(a.n)}</b><i class="num">${esc(U.altName(a))}</i><small>${esc(a.note)}</small><span class="soon-pill">${icon("lock")}${L("قريباً", "Coming soon")}</span></span></div>` : `<a class="herd-tile" href="${U.url.animal(a.k)}">
     <span class="herd-tile__n num">0${i + 1}</span>${U.herdMap(a, { cls: "herd-map--tile", static: true })}
     <span class="herd-tile__b"><b>${esc(a.n)}</b><i class="num">${esc(U.altName(a))}</i><small>${esc(a.note)}</small><span class="seeall">${D.cutsOf(a.k).length} ${L("منتجات", "products")} ${icon("chevL")}</span></span></a>`).join("")}</div>
 </div>`
@@ -375,6 +377,7 @@ module.exports = function (ctx) {
 
   /* ================= صفحة كل ماشية ================= */
   D.ANIMALS.forEach((a, i) => {
+    if (a.soon) return;
     const list = D.cutsOf(a.k), kg = list.filter(p => p.sold === "kg"), car = list.filter(p => p.sold === "carcass");
     const from = kg.length ? Math.min.apply(null, kg.map(p => p.price)) : 0;
     pages.push({
@@ -385,7 +388,7 @@ module.exports = function (ctx) {
       main: `<div class="wrap">
   ${h.crumbs([[T.herd.title, "cuts.html"], [a.n]])}
   <section class="animal-hero">
-    <div class="animal-hero__t"><span class="animal-hero__n num">0${i + 1} / 06</span><h1 class="animal-hero__name">${esc(a.n)}<i class="num">${esc(U.altName(a))}</i></h1><p>${esc(a.note)}</p>
+    <div class="animal-hero__t"><span class="animal-hero__n num">0${i + 1} / 0${D.ANIMALS.length}</span><h1 class="animal-hero__name">${esc(a.n)}<i class="num">${esc(U.altName(a))}</i></h1><p>${esc(a.note)}</p>
       <dl class="hero__stats"><div><dt class="num">${kg.length}</dt><dd>${L("قطعيات", "Cuts")}</dd></div><div><dt class="num">${from}</dt><dd>${L("ر.س/كجم يبدأ من", "SAR/kg, from")}</dd></div>${car.length ? `<div><dt class="num">${car.length}</dt><dd>${L("ذبائح", "Carcasses")}</dd></div>` : ""}</dl>
       <div class="row-btns"><button type="button" class="btn btn--ember" data-advisor="ask" data-animal="${a.k}">${U.mark("btn__mark")}${esc(T.animal.ask)} ${esc(L(a.n, a.n.toLowerCase()))}</button></div></div>
     <div class="animal-hero__map">${U.herdMap(a)}</div>
@@ -410,7 +413,7 @@ module.exports = function (ctx) {
   const T = D.COPY.product;
   const R = D.R || "", EN = D.lang === "en", KG = L("كجم", "kg"), CUR = C.currency;
 
-  return D.PRODUCTS.map(p => {
+  return D.PRODUCTS.filter(p => !D.locked(p)).map(p => {
     const a = D.animal(p.animal);
     const isExtra = p.animal === "extra";
     const back = isExtra ? ["shop.html?a=extra", D.COPY.nav.extras] : [p.animal + ".html", a.n];

@@ -238,7 +238,7 @@
         seoTitle: "NUDJ — Butcher & cooking advisor: meat cut for your occasion, to the gram",
         seoDesc: "Tell the NUDJ advisor the occasion — BBQ, kabsa, a whole carcass, steak — and it works out the quantity to the gram, plus the cut, marinade and charcoal. Lamb, goat, camel, veal, beef and buffalo, with free cutting.",
         hero: { eyebrow: "Butcher · Cooking advisor", title: "Tell us the occasion.", em: "We'll cut it to the gram.", sub: "The advisor asks how many of you there are and what you're cooking, then works out how many grams of each cut, the cutting style, the marinade and how many bags of charcoal — and you order the whole plan in one tap.", cta1: "Start with the advisor", cta2: "Shop the cuts", s1: "Animals", s2: "Cuts", s3: "SAR for cutting" },
-        herd: { kicker: "The Herd", title: "Six animals. Every cut has a number.", sub: "Pick an animal and see its cuts on the drawing — every dot is a cut you can order, cut the way you want.", link: "Cuts map" },
+        herd: { kicker: "The Herd", title: "Lamb and beef now — more coming soon.", sub: "Pick an animal and see its cuts on the drawing — every dot is a cut you can order, cut the way you want.", link: "Cuts map" },
         occasions: { kicker: "The Advisor", title: "Your occasion first. The cut second.", sub: "Pick the occasion and the advisor takes it from there: cubes, slices or whole cuts? Marinated? Skewered? — then hands you a receipt to the gram.", go: "Start" },
         how: { kicker: "How it works", title: "From “we have guests” to a ready receipt.", cta: "Try it with a BBQ party",
           steps: [{ t: "Name the occasion and headcount", d: "BBQ for ten? Camel kabsa for twenty? Pick one, or type it in your own words." }, { t: "Answer the butcher's questions", d: "Cubes or slices? Bone-in? Marinade? Skewers? Every option is clear, with its price." }, { t: "Adjust and order", d: "Change any weight with − and +, add a second dish, and order the whole plan in one tap." }] },
@@ -249,7 +249,7 @@
         faq: { kicker: "Questions", title: "Before you order", link: "All questions" }
       },
       shop: { title: "Shop", sub: "products · prices include VAT", ask: "Not sure? Ask the advisor", empty: "No products match this filter" },
-      herd: { title: "The Herd", sub: "Six animals, every cut numbered on the drawing. Pick an animal." },
+      herd: { title: "The Herd", sub: "We start with lamb and beef — every cut numbered on the drawing. Goat, hashi, veal and buffalo are coming soon." },
       animal: { ask: "Ask about the cuts of", carcassSub: "Free cutting in any style: freezer, kabsa, mandi or by dish." },
       product: { free: "Free cutting", howMuch: "How much do you need?", pair: "Goes well with", pairSub: "Kit and spices that suit this cut." },
       advisorPage: { kicker: "NUDJ Advisor", title: "Name the occasion.", em: "We'll work it out to the gram.", sub: "You can go back and change any answer. Once you have a plan, add a second occasion or adjust any weight before you order.", rules: "How does it calculate?", note: "Quantities are approximate raw weights, rounded to the nearest half kilo." },

@@ -1,7 +1,7 @@
 # نُضْج — NUDJ
 
 > English version: https://mohamed-sr-designer.github.io/nudj/en/
-> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، جمل، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
+> ملحمة إلكترونية سعودية ومستشار طبخ تفاعلي. ست مواشي (ضأن، ماعز، حاشي، عجل، بقر، جاموس)، قطعيات بالكيلو تُقطّع مجاناً بأي شكل، وذبائح كاملة ونصف وربع. المستشار يسأل عن المناسبة وعدد الأشخاص ويحسب الكميات بالجرام مع التتبيلة والفحم والبهارات، ثم يضيف الخطة للسلة.
 
 - كل الأسعار بالريال السعودي وشاملة ضريبة القيمة المضافة (15٪). الأسعار الحالية مقترحة لنسخة العرض.
 - التقطيع مجاني. خدمات مدفوعة بالكيلو: تتبيل (كلاسيكي 8، مشاوي حار 10، ليمون وأعشاب 10، زبادي وبهارات 12 ر.س)، تسييخ 6 ر.س، تغليف مفرّغ 3 ر.س (35 ر.س للذبيحة).
@@ -26,35 +26,6 @@
 - [مفروم ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-mince.html): للكباب والكفتة — 65 ر.س للكيلو
 - [كبدة ضأن](https://mohamed-sr-designer.github.io/nudj/lamb-liver.html): للفطور والمشاوي — 45 ر.س للكيلو
 
-## ماعز
-- [قطعيات ماعز](https://mohamed-sr-designer.github.io/nudj/goat.html): أحمر داكن وقليل الدهن ونكهته أوضح — يحبّه أهل المندي والمظبي.
-- [ذبيحة ماعز كاملة](https://mohamed-sr-designer.github.io/nudj/goat-whole.html): تُقطّع مجاناً على طبختك — صغيرة ≈9 كجم 850 ر.س، وسط ≈12 كجم 1,050 ر.س، كبيرة ≈15 كجم 1,250 ر.س
-- [نصف ذبيحة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-half.html): فخذ وكتف وريش — صغيرة ≈4.5 كجم 460 ر.س، وسط ≈6 كجم 570 ر.س، كبيرة ≈7.5 كجم 680 ر.س
-- [كتف ماعز](https://mohamed-sr-designer.github.io/nudj/goat-shoulder.html): للمندي والمظبي — 68 ر.س للكيلو
-- [فخذ ماعز](https://mohamed-sr-designer.github.io/nudj/goat-leg.html): ألحم قطعة في الماعز — 72 ر.س للكيلو
-- [ريش ماعز](https://mohamed-sr-designer.github.io/nudj/goat-rack.html): ريش قليلة الدهن — 88 ر.س للكيلو
-- [رقبة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-neck.html): للمرق والإيدام — 52 ر.س للكيلو
-- [مفروم ماعز](https://mohamed-sr-designer.github.io/nudj/goat-mince.html): مفروم قليل الدهن — 62 ر.س للكيلو
-
-## جمل
-- [قطعيات جمل](https://mohamed-sr-designer.github.io/nudj/camel.html): ألياف خشنة ونكهة خاصة وسنام دهني — للكبسة والطبخ الطويل.
-- [جمل بالعظم](https://mohamed-sr-designer.github.io/nudj/camel-bone.html): للكبسة والمندي — 58 ر.س للكيلو
-- [فخذ جمل](https://mohamed-sr-designer.github.io/nudj/camel-leg.html): لحم أحمر بلا عظم — 64 ر.س للكيلو
-- [ضلوع جمل](https://mohamed-sr-designer.github.io/nudj/camel-ribs.html): ضلوع بطبقة دهن — 60 ر.س للكيلو
-- [سنام جمل](https://mohamed-sr-designer.github.io/nudj/camel-hump.html): دهن نقي للكباب والطبخ — 45 ر.س للكيلو
-- [مفروم جمل](https://mohamed-sr-designer.github.io/nudj/camel-mince.html): مفروم أحمر قليل الدهن — 56 ر.س للكيلو
-- [كبدة جمل](https://mohamed-sr-designer.github.io/nudj/camel-liver.html): للمشاوي والفطور — 52 ر.س للكيلو
-
-## عجل
-- [قطعيات عجل](https://mohamed-sr-designer.github.io/nudj/veal.html): لحم فاتح ناعم الألياف قليل الدهن — إسكالوب وستيك خفيف ومفروم.
-- [مكعبات كتف عجل](https://mohamed-sr-designer.github.io/nudj/veal-cubes.html): للقدر والأوصال — 62 ر.س للكيلو
-- [انتركوت عجل](https://mohamed-sr-designer.github.io/nudj/veal-entrecote.html): ستيك خفيف طري — 110 ر.س للكيلو
-- [فيليه عجل](https://mohamed-sr-designer.github.io/nudj/veal-fillet.html): أنعم قطعة في العجل — 140 ر.س للكيلو
-- [إسكالوب عجل](https://mohamed-sr-designer.github.io/nudj/veal-escalope.html): شرائح رفيعة جاهزة — 85 ر.س للكيلو
-- [موزة عجل](https://mohamed-sr-designer.github.io/nudj/veal-shank.html): حلقات بالنخاع — 58 ر.س للكيلو
-- [مفروم عجل](https://mohamed-sr-designer.github.io/nudj/veal-mince.html): مفروم فاتح متوازن — 56 ر.س للكيلو
-- [كبدة عجل](https://mohamed-sr-designer.github.io/nudj/veal-liver.html): ناعمة وطعمها هادئ — 48 ر.س للكيلو
-
 ## بقر
 - [قطعيات بقر](https://mohamed-sr-designer.github.io/nudj/beef.html): دهن متداخل ونكهة عميقة — منطقة الستيك والبريسكت والمكعبات.
 - [كتف بقر مكعبات](https://mohamed-sr-designer.github.io/nudj/beef-chuck.html): أساس اليخنات — 58 ر.س للكيلو
@@ -65,6 +36,35 @@
 - [بريسكت](https://mohamed-sr-designer.github.io/nudj/beef-brisket.html): للتدخين والطبخ الطويل — 72 ر.س للكيلو
 - [موزة بقر](https://mohamed-sr-designer.github.io/nudj/beef-shank.html): حلقات للمرق — 55 ر.س للكيلو
 - [مفروم بقر](https://mohamed-sr-designer.github.io/nudj/beef-mince.html): للبرجر والكفتة — 49 ر.س للكيلو
+
+## ماعز
+- [قطعيات ماعز](https://mohamed-sr-designer.github.io/nudj/goat.html): أحمر داكن وقليل الدهن ونكهته أوضح — يحبّه أهل المندي والمظبي.
+- [ذبيحة ماعز كاملة](https://mohamed-sr-designer.github.io/nudj/goat-whole.html): تُقطّع مجاناً على طبختك — صغيرة ≈9 كجم 850 ر.س، وسط ≈12 كجم 1,050 ر.س، كبيرة ≈15 كجم 1,250 ر.س
+- [نصف ذبيحة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-half.html): فخذ وكتف وريش — صغيرة ≈4.5 كجم 460 ر.س، وسط ≈6 كجم 570 ر.س، كبيرة ≈7.5 كجم 680 ر.س
+- [كتف ماعز](https://mohamed-sr-designer.github.io/nudj/goat-shoulder.html): للمندي والمظبي — 68 ر.س للكيلو
+- [فخذ ماعز](https://mohamed-sr-designer.github.io/nudj/goat-leg.html): ألحم قطعة في الماعز — 72 ر.س للكيلو
+- [ريش ماعز](https://mohamed-sr-designer.github.io/nudj/goat-rack.html): ريش قليلة الدهن — 88 ر.س للكيلو
+- [رقبة ماعز](https://mohamed-sr-designer.github.io/nudj/goat-neck.html): للمرق والإيدام — 52 ر.س للكيلو
+- [مفروم ماعز](https://mohamed-sr-designer.github.io/nudj/goat-mince.html): مفروم قليل الدهن — 62 ر.س للكيلو
+
+## حاشي
+- [قطعيات حاشي](https://mohamed-sr-designer.github.io/nudj/camel.html): ألياف خشنة ونكهة خاصة وسنام دهني — للكبسة والطبخ الطويل.
+- [حاشي بالعظم](https://mohamed-sr-designer.github.io/nudj/camel-bone.html): للكبسة والمندي — 58 ر.س للكيلو
+- [فخذ حاشي](https://mohamed-sr-designer.github.io/nudj/camel-leg.html): لحم أحمر بلا عظم — 64 ر.س للكيلو
+- [ضلوع حاشي](https://mohamed-sr-designer.github.io/nudj/camel-ribs.html): ضلوع بطبقة دهن — 60 ر.س للكيلو
+- [سنام حاشي](https://mohamed-sr-designer.github.io/nudj/camel-hump.html): دهن نقي للكباب والطبخ — 45 ر.س للكيلو
+- [مفروم حاشي](https://mohamed-sr-designer.github.io/nudj/camel-mince.html): مفروم أحمر قليل الدهن — 56 ر.س للكيلو
+- [كبدة حاشي](https://mohamed-sr-designer.github.io/nudj/camel-liver.html): للمشاوي والفطور — 52 ر.س للكيلو
+
+## عجل
+- [قطعيات عجل](https://mohamed-sr-designer.github.io/nudj/veal.html): لحم فاتح ناعم الألياف قليل الدهن — إسكالوب وستيك خفيف ومفروم.
+- [مكعبات كتف عجل](https://mohamed-sr-designer.github.io/nudj/veal-cubes.html): للقدر والأوصال — 62 ر.س للكيلو
+- [انتركوت عجل](https://mohamed-sr-designer.github.io/nudj/veal-entrecote.html): ستيك خفيف طري — 110 ر.س للكيلو
+- [فيليه عجل](https://mohamed-sr-designer.github.io/nudj/veal-fillet.html): أنعم قطعة في العجل — 140 ر.س للكيلو
+- [إسكالوب عجل](https://mohamed-sr-designer.github.io/nudj/veal-escalope.html): شرائح رفيعة جاهزة — 85 ر.س للكيلو
+- [موزة عجل](https://mohamed-sr-designer.github.io/nudj/veal-shank.html): حلقات بالنخاع — 58 ر.س للكيلو
+- [مفروم عجل](https://mohamed-sr-designer.github.io/nudj/veal-mince.html): مفروم فاتح متوازن — 56 ر.س للكيلو
+- [كبدة عجل](https://mohamed-sr-designer.github.io/nudj/veal-liver.html): ناعمة وطعمها هادئ — 48 ر.س للكيلو
 
 ## جاموس
 - [قطعيات جاموس](https://mohamed-sr-designer.github.io/nudj/buffalo.html): أحمر قاتم وكثيف وقليل الدهن — يعطي أفضل ما عنده في الطبخ الطويل.

@@ -515,6 +515,7 @@
       ${p.sold === "kg" ? F.checks(b + ".preps", "أشكال التقطيع المتاحة (مجانية)", Object.keys(draft.PREPS).map(k => [k, draft.PREPS[k].n])) + F.select(b + ".prepDef", "التقطيع الافتراضي", (p.preps || []).map(k => [k, (draft.PREPS[k] || {}).n || k])) : ""}
       ${p.animal !== "extra" ? F.checks(b + ".uses", "تنفع لـ", Object.keys(draft.USES).map(k => [k, draft.USES[k].n])) : ""}
       ${p.animal !== "extra" ? grid2(F.num(b + ".spec.0", "الطراوة (0–5)", { step: 1, min: 0 }), F.num(b + ".spec.1", "الدهن (0–5)", { step: 1, min: 0 }), F.num(b + ".spec.2", "النكهة (0–5)", { step: 1, min: 0 })) + F.bool(b + ".bone", "بالعظم") : ""}
+      ${F.num(b + ".market", "سعر السوق المرجعي", { suf: "ر.س", hint: "اختياري — للكيلو أو للقطعة. فارغ = النسبة العامة من الإعدادات" })}
       ${F.bool(b + ".hidden", "مخفي من الموقع", { hint: "يبقى في السلات والطلبات السابقة" })}
       <label class="af af--num"><span class="af__l">تكلفة المنتج<small>٪ من صافي سعر البيع · فارغ = النسبة العامة (${ST.costs().pct == null ? "غير محددة" : ST.costs().pct + "٪"}) · لا تُنشر</small></span><span class="af__num"><input class="input num" type="number" min="0" max="100" step="1" data-cost-id="${esc(p.id)}" value="${ST.costs().byId[p.id] == null ? "" : ST.costs().byId[p.id]}"><em>٪</em></span></label>
       <div class="row-btns"><button type="button" class="btn btn--ghost btn--danger-t" data-del-product="${i}">${icon("trash")}حذف المنتج</button></div>
@@ -536,7 +537,7 @@
   }
 
   function vHerd() {
-    return draft.ANIMALS.map((a, i) => card(`${esc(a.n)} <small class="num">${esc(a.en)}</small>`, `${grid2(F.text(`ANIMALS.${i}.n`, "الاسم"), F.text(`ANIMALS.${i}.en`, "الاسم بالإنجليزي", { dir: "ltr" }), F.text(`ANIMALS.${i}.code`, "حرف الكود", { dir: "ltr" }))}
+    return draft.ANIMALS.map((a, i) => card(`${esc(a.n)} <small class="num">${esc(a.en)}</small>${a.soon ? " " + badge("قريباً", "mute") : ""}`, `${F.bool(`ANIMALS.${i}.soon`, "قريباً — مقفلة في المتجر", { hint: "تظهر في القطيع بقفل «قريباً» ومنتجاتها لا تُعرض ولا تُباع. بعد فتحها شغّل node build.js لتوليد صفحاتها" })}${grid2(F.text(`ANIMALS.${i}.n`, "الاسم"), F.text(`ANIMALS.${i}.en`, "الاسم بالإنجليزي", { dir: "ltr" }), F.text(`ANIMALS.${i}.code`, "حرف الكود", { dir: "ltr" }))}
       ${F.text(`ANIMALS.${i}.note`, "الوصف")}
       ${F.img(`ANIMALS.${i}.art`, "الرسم الخطي", { hint: "أبيض على خلفية شفافة — فارغ = الرسم الحالي", logo: true })}
       <div class="af"><span class="af__l">مواقع القطعيات على الرسم<small>اسحب أي نقطة لمكانها</small></span>
@@ -594,6 +595,7 @@
       card("طرق الدفع", draft.CONFIG.payments.map((p, i) => `<div class="adm-pay">${grid2(F.bool(`${C}.payments.${i}.on`, "مفعّلة"), F.text(`${C}.payments.${i}.n`, "الاسم"), F.text(`${C}.payments.${i}.s`, "الوصف"))}
         <div class="adm-pay__logos">${(p.logos || []).map((l, j) => F.img(`${C}.payments.${i}.logos.${j}`, "شعار " + (j + 1), { logo: true })).join("")}<button type="button" class="btn btn--ghost btn--sm" data-add="${C}.payments.${i}.logos" data-blank='""'>${icon("plus")}شعار</button></div>
         ${grid2(F.bool(`${C}.payments.${i}.card`, "تطلب بيانات بطاقة"), F.bool(`${C}.payments.${i}.cod`, "دفع عند الاستلام"))}</div>`).join("")) +
+      card("سعر السوق المرجعي <small>لسطر «بمساعدة الجزار والشيف وفّرت…»</small>", grid2(F.bool(`${C}.market.on`, "إظهار سطر التوفير"), F.num(`${C}.market.pct`, "سعر السوق أعلى من سعرنا بـ", { suf: "٪", step: 1, hint: "قيمة مبدئية — عدّلها حسب أسعار السوق الفعلية، أو حدّد سعر سوق لكل منتج من نموذج المنتج" }))) +
       card("التوصيل والضريبة", grid2(F.num(`${C}.delivery.fee`, "رسوم التوصيل", { suf: "ر.س" }), F.num(`${C}.delivery.freeOver`, "مجاني من", { suf: "ر.س" }), F.num(`${C}.vat`, "الضريبة", { hint: "0.15 = 15٪", step: .01 }), F.num(`${C}.deliveryDays`, "أيام التوصيل المعروضة", { step: 1 })) +
         list(`${C}.cities`, "المدن", p => F.text(p, "المدينة"), "", { tr: true }) +
         list(`${C}.windows`, "فترات التوصيل", p => grid2(F.text(p + ".l", "الفترة"), F.num(p + ".h", "ساعة البداية", { step: 1, hint: "24 ساعة" })), { l: "", h: 9 })) +
