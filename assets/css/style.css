@@ -2204,3 +2204,5 @@ html:not([data-theme=dark]) .chips-row button[aria-checked=true] img{filter:none
 @media(max-width:899px){.cmp__panel{height:auto;max-height:min(64vh,560px)}.cmp[data-state=open] .cmp__cast{bottom:auto;top:auto}}
 .cmp__ch img{filter:none!important}
 .cmp__disc{box-shadow:none!important}
+/* حركة الشفايف ملغاة — تبقى إيماءة الراس فقط */
+.cmp__ch .o,.bb__av .av-open{display:none!important;animation:none!important}
