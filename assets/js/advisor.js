@@ -369,6 +369,7 @@ window.NUDJ_ADVISOR = (function () {
     /* الشخصية المتكلمة في الترويسة + حركة الشفايف مع ظهور النص */
     const cur = current(), sp = cur ? who(cur) : (f.some(k => CHEF[k]) && st.a.occ ? "chef" : "butcher");
     v.root.dataset.speaker = sp;
+    if (v.lastSp !== sp) { v.lastSp = sp; document.dispatchEvent(new CustomEvent("nudj:speaker", { detail: sp })); }
     const wn = $("[data-who-n]", v.root), wr = $("[data-who-r]", v.root);
     if (wn) wn.textContent = PER[sp].n; if (wr) wr.textContent = PER[sp].r;
     if (!first) talk(v);
@@ -411,6 +412,7 @@ window.NUDJ_ADVISOR = (function () {
   function mouth(v, b, p, dur) {
     const avs = [$(".bb__av", b), $(`.adv__duo .av--${p}`, v.root)].filter(Boolean);
     avs.forEach(a => a.classList.add("is-talking"));
+    document.dispatchEvent(new CustomEvent("nudj:talk", { detail: { p, dur } }));
     v.root.classList.add("is-talking-" + p);
     setTimeout(() => { avs.forEach(a => a.classList.remove("is-talking")); v.root.classList.remove("is-talking-" + p); }, dur);
   }

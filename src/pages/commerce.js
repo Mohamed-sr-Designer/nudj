@@ -31,7 +31,7 @@ module.exports = function (ctx) {
       <div id="advPlans"></div>
     </div>
   </aside>
-  <div class="adv-main" data-advisor-inline="adv--page"><div class="adv adv--page adv--ssr"><div class="adv__log">${loading}</div></div></div>
+  <div class="adv-main adv-main--cmp"><p class="adv-main__note">${L("الجزار والشيف معك في ركن الشاشة 👇 — اختر مناسبتك أو اكتبها بكلامك.", "The butcher and the chef are with you in the corner of the screen 👇 — pick your occasion or type it in your own words.")}</p></div>
 </div>${noscript}`
     },
     {

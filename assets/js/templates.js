@@ -133,7 +133,7 @@ ${(m.jsonld || []).map(j => `<script type="application/ld+json">${JSON.stringify
 
   /* en.js يُحمَّل في الإنجليزية ولوحة التحكم و404 (التي تخدم اللغتين) */
   const SCRIPTS = m => ["assets/js/data.js"].concat(EN || m.name === "admin" || m.file === "404.html" ? ["assets/js/en.js"] : [],
-    ["assets/js/images.js", "assets/js/content.js", "assets/js/cms.js", "assets/js/store.js", "assets/js/ui.js"], m.name === "admin" ? [] : ["assets/js/track.js"], ["assets/js/app.js", "assets/js/nlu.js", "assets/js/advisor.js"]);
+    ["assets/js/images.js", "assets/js/content.js", "assets/js/cms.js", "assets/js/store.js", "assets/js/ui.js"], m.name === "admin" ? [] : ["assets/js/track.js"], ["assets/js/app.js", "assets/js/nlu.js", "assets/js/advisor.js"], m.name === "admin" ? [] : ["assets/js/companion.js"]);
 
   function render(m, main) {
     const mode = m.mode || "root";
@@ -242,7 +242,7 @@ module.exports = function (ctx) {
   const byUse = u => D.live().filter(p => p.sold === "kg" && p.uses[0] === u).slice(0, 8);
   const num = i => String(i).padStart(2, "0");
   const SECTIONS = {
-    hero: () => `<section class="hero" aria-labelledby="heroT">
+    hero: () => `<section class="hero hero--center tone-dark" aria-labelledby="heroT">
   <div class="hero__media">${U.slot("home-hero", "hero__img", "", { eager: true })}</div>
   <div class="wrap hero__in">
     <div class="hero__copy">
@@ -252,7 +252,6 @@ module.exports = function (ctx) {
       <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}${esc(T.hero.cta1)}</a><a class="btn btn--line btn--lg" href="shop.html">${esc(T.hero.cta2)}</a></div>
       <dl class="hero__stats"><div><dt class="num">${D.activeAnimals().length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
     </div>
-    <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>${L("مستشار نُضْج", "NUDJ Advisor")}</b></div><div class="adv__log"><p class="muted" style="padding:20px">${L("جارٍ تشغيل المستشار…", "Starting the advisor…")}</p></div></div></div>
   </div>
 </section>`,
     marquee: () => `<div class="marquee" aria-hidden="true"><div class="marquee__track">${Array(2).fill(D.ANIMALS.map(a => `<span>${esc(a.n)}</span><i>${esc(U.altName(a))}</i>`).join("")).join("")}</div></div>`,
@@ -512,7 +511,7 @@ module.exports = function (ctx) {
       <div id="advPlans"></div>
     </div>
   </aside>
-  <div class="adv-main" data-advisor-inline="adv--page"><div class="adv adv--page adv--ssr"><div class="adv__log">${loading}</div></div></div>
+  <div class="adv-main adv-main--cmp"><p class="adv-main__note">${L("الجزار والشيف معك في ركن الشاشة 👇 — اختر مناسبتك أو اكتبها بكلامك.", "The butcher and the chef are with you in the corner of the screen 👇 — pick your occasion or type it in your own words.")}</p></div>
 </div>${noscript}`
     },
     {

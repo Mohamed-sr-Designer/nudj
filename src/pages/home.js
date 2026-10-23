@@ -74,7 +74,7 @@ module.exports = function (ctx) {
   const byUse = u => D.live().filter(p => p.sold === "kg" && p.uses[0] === u).slice(0, 8);
   const num = i => String(i).padStart(2, "0");
   const SECTIONS = {
-    hero: () => `<section class="hero" aria-labelledby="heroT">
+    hero: () => `<section class="hero hero--center tone-dark" aria-labelledby="heroT">
   <div class="hero__media">${U.slot("home-hero", "hero__img", "", { eager: true })}</div>
   <div class="wrap hero__in">
     <div class="hero__copy">
@@ -84,7 +84,6 @@ module.exports = function (ctx) {
       <div class="hero__cta"><a class="btn btn--ember btn--lg" href="advisor.html" data-advisor="open">${U.mark("btn__mark")}${esc(T.hero.cta1)}</a><a class="btn btn--line btn--lg" href="shop.html">${esc(T.hero.cta2)}</a></div>
       <dl class="hero__stats"><div><dt class="num">${D.activeAnimals().length}</dt><dd>${esc(T.hero.s1)}</dd></div><div><dt class="num">${cutsCount}</dt><dd>${esc(T.hero.s2)}</dd></div><div><dt class="num">0</dt><dd>${esc(T.hero.s3)}</dd></div></dl>
     </div>
-    <div class="hero__adv" id="advisor" data-advisor-inline="adv--hero"><div class="adv adv--hero adv--ssr"><div class="adv__head">${U.mark()}<b>${L("مستشار نُضْج", "NUDJ Advisor")}</b></div><div class="adv__log"><p class="muted" style="padding:20px">${L("جارٍ تشغيل المستشار…", "Starting the advisor…")}</p></div></div></div>
   </div>
 </section>`,
     marquee: () => `<div class="marquee" aria-hidden="true"><div class="marquee__track">${Array(2).fill(D.ANIMALS.map(a => `<span>${esc(a.n)}</span><i>${esc(U.altName(a))}</i>`).join("")).join("")}</div></div>`,

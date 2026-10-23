@@ -292,6 +292,8 @@
     o = o || {};
     const ADV = window.NUDJ_ADVISOR; if (!ADV) { location.href = "advisor.html"; return; }
     if (o.occ) ADV.start(o.occ, o.hints); else if (o.ask) ADV.askAbout(o.ask);
+    /* الجزار والشيف في الركن: نفتحهم بدل الورقة */
+    if (window.NUDJ_CMP && window.NUDJ_CMP.ok()) { window.NUDJ_CMP.open(); return; }
     /* إن كان المستشار موجوداً في الصفحة ننتقل له بدل فتح ورقة */
     const inline = $("[data-advisor-inline]");
     if (inline && !o.sheet) { inline.scrollIntoView({ behavior: "smooth", block: "center" }); const i = inline.querySelector(".adv__input input"); if (i && window.innerWidth >= 900) setTimeout(() => i.focus({ preventScroll: true }), 500); return; }
@@ -305,6 +307,7 @@
     openAdvisor({ occ: b.dataset.advisor && b.dataset.advisor !== "open" ? b.dataset.advisor : null, ask: b.dataset.ask || null, hints: b.dataset.animal ? { animal: b.dataset.animal } : null, sheet: b.hasAttribute("data-sheet") });
   });
   function initFab() {
+    if (window.NUDJ_CMP) { window.NUDJ_CMP.init(); if (window.NUDJ_CMP.ok() || document.body.classList.contains("page-checkout")) return; }
     if (document.body.classList.contains("page-advisor") || document.body.classList.contains("page-admin") || $("[data-no-fab]")) return;
     /* في الرئيسية: يظهر بعد النزول عن مستشار البطل، ويختفي حين يعود للظهور */
     const inline = $("[data-advisor-inline]");
