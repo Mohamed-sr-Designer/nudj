@@ -72,7 +72,7 @@ window.NUDJ_CMP = (function () {
     if (document.body.classList.contains("page-advisor")) s0 = "open";
     if (s0 === "open" && !document.body.classList.contains("page-advisor") && window.innerWidth < 760) s0 = "peek";
     el.dataset.state = "enter";
-    requestAnimationFrame(() => setTimeout(() => set(s0), 450));
+    setTimeout(() => set(s0), 450);
     el.addEventListener("click", e => {
       if (e.target.closest("[data-cmp-min]")) { set(state === "mini" ? "peek" : "mini"); return; }
       if (e.target.closest("[data-cmp-open]")) { set(state === "open" ? "peek" : "open"); }

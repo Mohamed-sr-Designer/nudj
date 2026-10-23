@@ -30,6 +30,8 @@ window.NUDJ_ADVISOR = (function () {
   const dish = a => AD.dishes.find(d => d.k === a.dish) || AD.dishes[0];
   const aName = k => (D.animal(k) || {}).n || "";
   const aOn = k => !D.soon(k);
+  /* البداية خطوتين واضحتين: اللحم ثم المناسبة */
+  const needMeat = () => !st.sections.length && !st.hints.animal && !st.meatSkip;
   const animalsOpt = keys => keys.filter(aOn).map(k => ({ k, n: aName(k) }));
   const priceOf = id => D.byId(id).price;
 
@@ -47,7 +49,7 @@ window.NUDJ_ADVISOR = (function () {
   }
   const yes = (n, p, per) => ({ k: "yes", n, p, per });
   const NODES = {
-    occ: { type: "occ", ask: () => st.sections.length ? L("حلو! وش المناسبة أو الطبق الثاني؟", "Nice! What's the next occasion or dish?") : L("هلا! أنا الجزار 🔪 قل لي وش المناسبة وكم شخص، وأختار لك القطعة والكمية بالجرام — وبعدها الشيف يكمل معك التقطيع والإضافات.", "Hi! I'm the butcher 🔪 Tell me the occasion and how many people, and I'll pick the cut and quantity to the gram — then the chef takes over for cutting and extras."),
+    occ: { type: "occ", ask: () => st.sections.length ? L("حلو! وش المناسبة أو الطبق الثاني؟", "Nice! What's the next occasion or dish?") : (needMeat() ? L("هلا! أنا الجزار 🔪 أي لحم تبغى؟", "Hi! I'm the butcher 🔪 Which meat would you like?") : L("حلو! وش المناسبة؟ وأحسب لك الكمية بالجرام.", "Great! What's the occasion? I'll work out the quantity to the gram.")),
       opts: () => AD.occasions.filter(o => o.on !== false).map(o => ({ k: o.k, n: o.n, d: o.s, img: o.img, ic: o.ic })) },
     people: { type: "people", ask: a => (EN ? { grill: "How many people at the grill?", feast: "How many guests?", carcass: "How many people should the carcass feed?", steak: "How many for dinner?", weekly: "How many people at home?", ask: "How many people are you cooking for?" }
       : { grill: "كم شخص على الشواية؟", feast: "كم شخص معزوم؟", carcass: "كم شخص بتكفيهم الذبيحة؟", steak: "كم شخص على العشاء؟", weekly: "كم شخص في البيت؟", ask: "لكم شخص تبغى تطبخها؟" })[a.occ] },
@@ -308,7 +310,10 @@ window.NUDJ_ADVISOR = (function () {
   function occGrid() {
     /* مختصر: اختر اللحم (ضأن/بقر) ثم المناسبة — والجزار يكمل بدون ما يسأل عن اللحم مرة ثانية */
     const meat = ["lamb", "beef"].filter(aOn), list = opts("occ"), ask = list.find(o => o.k === "ask");
-    return `<div class="occ-pick"><div class="occ-meat" role="radiogroup" aria-label="${L("اللحم", "Meat")}">${meat.map(k => `<button type="button" class="occ-meat__b${st.hints.animal === k ? " on" : ""}" data-meat="${k}" role="radio" aria-checked="${st.hints.animal === k}">${U.herdArt(k, "occ-meat__art")}<b>${esc(aName(k))}</b></button>`).join("")}</div>
+    if (needMeat()) return `<div class="occ-pick"><div class="occ-meat occ-meat--big" role="group" aria-label="${L("اللحم", "Meat")}">${meat.map(k => `<button type="button" class="occ-meat__b" data-meat="${k}">${U.herdArt(k, "occ-meat__art")}<b>${esc(aName(k))}</b></button>`).join("")}</div>
+      <button type="button" class="occ-ask" data-meat-skip>${L("مو متأكد؟ اختر المناسبة أول", "Not sure? Pick the occasion first")}</button></div>`;
+    const chosen = st.hints.animal ? `<div class="occ-chosen">${U.herdArt(st.hints.animal, "occ-meat__art")}<b>${esc(aName(st.hints.animal))}</b><button type="button" class="link" data-meat-change>${L("غيّر", "Change")}</button></div>` : "";
+    return `<div class="occ-pick">${chosen}<div class="occ-meat" hidden role="radiogroup" aria-label="${L("اللحم", "Meat")}">${meat.map(k => `<button type="button" class="occ-meat__b${st.hints.animal === k ? " on" : ""}" data-meat="${k}" role="radio" aria-checked="${st.hints.animal === k}">${U.herdArt(k, "occ-meat__art")}<b>${esc(aName(k))}</b></button>`).join("")}</div>
       <div class="occ-list">${list.filter(o => o.k !== "ask").map(o => `<button type="button" class="occ-row" data-occ="${o.k}">${o.img ? U.slot(o.img, "occ-row__img") : `<span class="occ-row__ic">${icon(o.ic, "", 1.6)}</span>`}<b>${o.n}</b></button>`).join("")}</div>
       ${ask ? `<button type="button" class="occ-ask" data-occ="ask">${icon(ask.ic || "help", "", 1.8)}${ask.n}</button>` : ""}</div>`;
   }
@@ -372,7 +377,7 @@ window.NUDJ_ADVISOR = (function () {
     v.log.innerHTML = logHTML();
     v.qr.innerHTML = dockHTML();
     /* الفقاعات الجديدة فقط تتحرّك (مع مؤشر الكتابة للمستشار) */
-    const qKey = JSON.stringify([st.a, st.note, st.added, st.sections.length]);
+    const qKey = JSON.stringify([st.a, st.note, st.added, st.sections.length, st.hints.animal, st.meatSkip]);
     if (!first && v.qKey !== qKey) $$(".bb--bot", v.log).forEach(b => b.classList.add("is-new"));
     v.qKey = qKey;
     const f = flow().filter(k => !isSkip(k)), done = f.filter(k => st.a[k] != null).length;
@@ -470,7 +475,9 @@ window.NUDJ_ADVISOR = (function () {
   function bind(v) {
     v.root.addEventListener("click", e => {
       const t = e.target;
-      const mt = t.closest("[data-meat]"); if (mt) { const k = mt.dataset.meat; if (st.hints.animal === k) delete st.hints.animal; else st.hints.animal = k; save(); return; }
+      const mt = t.closest("[data-meat]"); if (mt) { st.hints.animal = mt.dataset.meat; st.meatSkip = 0; save("new"); return; }
+      if (t.closest("[data-meat-skip]")) { st.meatSkip = 1; save("new"); return; }
+      if (t.closest("[data-meat-change]")) { delete st.hints.animal; st.meatSkip = 0; save("new"); return; }
       const occ = t.closest("[data-occ]"); if (occ) { answer("occ", occ.dataset.occ); return; }
       const ed = t.closest("[data-edit]"); if (ed) { edit(ed.dataset.edit); return; }
       const cl = t.closest("[data-close]"); if (cl) { if (v.o.onClose) v.o.onClose(); return; }
@@ -708,7 +715,7 @@ window.NUDJ_ADVISOR = (function () {
   /* يبدأ مناسبة محددة (من بطاقات الرئيسية مثلاً) */
   function start(occ, hints) {
     if (st.a.occ && current() !== "occ") { if (!st.added && current() == null) st.sections.push(compute()); }
-    st.a = {}; st.adj = {}; st.added = 0; st.note = ""; st.said = ""; st.hints = hints || {};
+    st.a = {}; st.adj = {}; st.added = 0; st.note = ""; st.said = ""; st.hints = hints || {}; st.meatSkip = 0;
     if (occ) answer("occ", occ); else save("new");
   }
   /* سؤال عن قطعة محددة (من صفحة المنتج) */

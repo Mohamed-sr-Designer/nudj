@@ -2244,3 +2244,10 @@ html[data-theme=dark] :is(.pin:hover,.pin.is-hl,.pin:focus-visible,.herd-map--fo
 html .hero.hero--center .eyebrow{background:rgba(10,12,14,.62);color:#fff;border-color:rgba(255,255,255,.32)}
 html .hero.hero--center .btn--line{background:#fff;color:#1B1512;border-color:#fff}
 html .hero.hero--center .btn--line:hover{background:#F2ECE2;border-color:#F2ECE2}
+.occ-meat--big .occ-meat__b{min-height:120px;flex-direction:column;gap:6px;font-size:1.3rem;border-radius:20px}
+.occ-meat--big .occ-meat__art{width:96px;height:60px}
+.occ-meat--big .occ-meat__b:hover{background:var(--ember-tint);transform:translateY(-2px)}
+.occ-chosen{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:14px;background:var(--ember-tint);border:1px solid var(--ember)}
+.occ-chosen b{font-family:var(--f-display);font-size:1rem;color:var(--bone)}
+.occ-chosen .link{margin-inline-start:auto;font-size:.82rem;font-weight:700;color:var(--ember)}
+.occ-chosen .occ-meat__art{width:44px;height:28px}
